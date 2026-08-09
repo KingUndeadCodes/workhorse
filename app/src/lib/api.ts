@@ -1,0 +1,292 @@
+import { get as getStore } from 'svelte/store';
+import type {
+  Agent,
+  AgentApprovalPolicy,
+  AgentBudget,
+  AgentRun,
+  Attachment,
+  AutomationAction,
+  AutomationRule,
+  Board,
+  Comment,
+  Component,
+  EventEnvelope,
+  EventType,
+  FieldDefinition,
+  FieldValue,
+  Issue,
+  IssueLink,
+  IssueLinkType,
+  IssueType,
+  Label,
+  Project,
+  ProjectVersion,
+  SavedView,
+  Sprint,
+  StatusCategory,
+  User,
+  Watcher,
+  WebhookSubscription,
+  Workflow,
+  WorkflowStatus,
+  WorkflowTransition,
+  Worklog,
+  Workspace,
+  WorkspaceMember,
+  WorkspaceRole,
+} from '$domain';
+import { authToken, clearAuth } from './stores/auth';
+
+/**
+ * Mirrors the server's `GET /api/bootstrap` response — defined here from domain types,
+ * not imported from the server package, so the frontend depends on the API contract
+ * rather than the server's internal storage shape.
+ */
+export interface Bootstrap {
+  workspace: Workspace;
+  users: User[];
+  workspaceMembers: WorkspaceMember[];
+  agents: Agent[];
+  agentRuns: AgentRun[];
+  statusCategories: StatusCategory[];
+  workflow: Workflow;
+  project: Project;
+  components: Component[];
+  versions: ProjectVersion[];
+  issueTypes: IssueType[];
+  labels: Label[];
+  fieldDefinitions: FieldDefinition[];
+  sprints: Sprint[];
+  board: Board;
+  savedViews: SavedView[];
+  automationRules: AutomationRule[];
+  webhookSubscriptions: WebhookSubscription[];
+  issues: Issue[];
+  issueLinks: IssueLink[];
+  comments: Comment[];
+  watchers: Watcher[];
+  worklogs: Worklog[];
+  attachments: Attachment[];
+  events: EventEnvelope[];
+  sequence: number;
+}
+
+const BASE = '/api';
+
+/** Thrown when a request comes back 401 — the token is missing/expired/invalid. */
+export class AuthError extends Error {
+  constructor() {
+    super('unauthorized');
+  }
+}
+
+function authHeaders(): Record<string, string> {
+  const token = getStore(authToken);
+  return token ? { authorization: `Bearer ${token}` } : {};
+}
+
+/** Parses a fetch {@link Response} as JSON, throwing if the request failed. */
+async function json<T>(res: Response): Promise<T> {
+  if (res.status === 401) {
+    clearAuth();
+    throw new AuthError();
+  }
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json() as Promise<T>;
+}
+
+function post<T>(path: string, body: unknown): Promise<T> {
+  return fetch(`${BASE}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', ...authHeaders() }, body: JSON.stringify(body) }).then((r) => json<T>(r));
+}
+function patch<T>(path: string, body: unknown): Promise<T> {
+  return fetch(`${BASE}${path}`, { method: 'PATCH', headers: { 'content-type': 'application/json', ...authHeaders() }, body: JSON.stringify(body) }).then((r) => json<T>(r));
+}
+function del<T>(path: string): Promise<T> {
+  return fetch(`${BASE}${path}`, { method: 'DELETE', headers: { ...authHeaders() } }).then((r) => json<T>(r));
+}
+function get<T>(path: string): Promise<T> {
+  return fetch(`${BASE}${path}`, { headers: { ...authHeaders() } }).then((r) => json<T>(r));
+}
+
+/** Loads the full read model — called once on app start. */
+export function fetchBootstrap(): Promise<Bootstrap> {
+  return get<Bootstrap>('/bootstrap');
+}
+
+/** Fetches every event with `sequence` greater than the given one. */
+export function fetchEventsSince(sequence: number): Promise<EventEnvelope[]> {
+  return get<EventEnvelope[]>(`/events?since=${sequence}`);
+}
+
+// ---- Issues -----------------------------------------------------------------
+
+export function createIssue(fields: Partial<Issue> & { title: string; issueTypeId: string }): Promise<{ issue: Issue; event: EventEnvelope }> {
+  return post('/issues', fields);
+}
+
+export function updateIssue(issueId: string, changes: Partial<Issue>): Promise<{ issue: Issue }> {
+  return patch(`/issues/${issueId}`, changes);
+}
+
+export function patchIssueStatus(issueId: string, statusId: string): Promise<{ issue: Issue; event: EventEnvelope | null }> {
+  return patch(`/issues/${issueId}`, { statusId });
+}
+
+export function setIssueField(issueId: string, fieldId: string, value: FieldValue['value']): Promise<{ issue: Issue; event: EventEnvelope }> {
+  return patch(`/issues/${issueId}/fields/${fieldId}`, { value });
+}
+
+export function deleteIssue(issueId: string): Promise<{ event: EventEnvelope }> {
+  return del(`/issues/${issueId}`);
+}
+
+export function postComment(issueId: string, body: string): Promise<{ comment: Comment; event: EventEnvelope }> {
+  return post(`/issues/${issueId}/comments`, { body });
+}
+
+export function addIssueLink(issueId: string, type: IssueLinkType, targetIssueId: string): Promise<{ link: IssueLink; event: EventEnvelope }> {
+  return post(`/issues/${issueId}/links`, { type, targetIssueId });
+}
+
+export function removeIssueLink(issueId: string, linkId: string): Promise<{ event: EventEnvelope }> {
+  return del(`/issues/${issueId}/links/${linkId}`);
+}
+
+/** Watches/unwatches always act as the authenticated caller — the server no longer accepts a target user id. */
+export function addWatcher(issueId: string): Promise<{ event: EventEnvelope }> {
+  return post(`/issues/${issueId}/watchers`, {});
+}
+
+export function removeWatcher(issueId: string): Promise<{ event: EventEnvelope }> {
+  return del(`/issues/${issueId}/watchers`);
+}
+
+export function addWorklog(issueId: string, timeSpentSeconds: number, note?: string): Promise<{ worklog: Worklog; issue: Issue; event: EventEnvelope }> {
+  return post(`/issues/${issueId}/worklogs`, { timeSpentSeconds, note });
+}
+
+export function addAttachment(issueId: string, fileName: string, url: string): Promise<{ attachment: Attachment; event: EventEnvelope }> {
+  return post(`/issues/${issueId}/attachments`, { fileName, url });
+}
+
+export function removeAttachment(attachmentId: string): Promise<{ ok: true }> {
+  return del(`/attachments/${attachmentId}`);
+}
+
+// ---- Catalog: labels, components, versions, fields ----------------------------
+
+export function createLabel(name: string, color?: string): Promise<Label> {
+  return post('/labels', { name, color });
+}
+export function deleteLabel(id: string): Promise<{ ok: true }> {
+  return del(`/labels/${id}`);
+}
+
+export function createComponent(name: string, description?: string): Promise<Component> {
+  return post('/components', { name, description });
+}
+export function deleteComponent(id: string): Promise<{ ok: true }> {
+  return del(`/components/${id}`);
+}
+
+export function createVersion(name: string, description?: string, releaseDate?: string): Promise<ProjectVersion> {
+  return post('/versions', { name, description, releaseDate });
+}
+export function releaseVersion(id: string): Promise<ProjectVersion> {
+  return post(`/versions/${id}/release`, {});
+}
+export function deleteVersion(id: string): Promise<{ ok: true }> {
+  return del(`/versions/${id}`);
+}
+
+export function createField(field: Omit<FieldDefinition, 'id' | 'workspaceId'>): Promise<FieldDefinition> {
+  return post('/fields', field);
+}
+export function deleteField(id: string): Promise<{ ok: true }> {
+  return del(`/fields/${id}`);
+}
+
+// ---- Planning: sprints, saved views ---------------------------------------
+
+export function createSprint(name: string, goal?: string, startDate?: string, endDate?: string): Promise<Sprint> {
+  return post('/sprints', { name, goal, startDate, endDate });
+}
+export function startSprint(id: string): Promise<{ sprint: Sprint; event: EventEnvelope }> {
+  return post(`/sprints/${id}/start`, {});
+}
+export function completeSprint(id: string): Promise<{ sprint: Sprint; event: EventEnvelope }> {
+  return post(`/sprints/${id}/complete`, {});
+}
+
+// ---- Workflow ---------------------------------------------------------------
+
+export function createStatusCategory(name: string, type: StatusCategory['type'], color?: string): Promise<StatusCategory> {
+  return post('/status-categories', { name, type, color });
+}
+export function createWorkflowStatus(name: string, categoryId: string, color?: string): Promise<WorkflowStatus> {
+  return post('/workflow/statuses', { name, categoryId, color });
+}
+export function createWorkflowTransition(name: string, fromStatusId: string | '*', toStatusId: string): Promise<WorkflowTransition> {
+  return post('/workflow/transitions', { name, fromStatusId, toStatusId });
+}
+export function deleteWorkflowTransition(id: string): Promise<{ ok: true }> {
+  return del(`/workflow/transitions/${id}`);
+}
+
+// ---- Automations --------------------------------------------------------------
+
+export function createAutomationRule(rule: Omit<AutomationRule, 'id'>): Promise<AutomationRule> {
+  return post('/automations', rule);
+}
+export function updateAutomationRule(id: string, changes: Partial<AutomationRule>): Promise<AutomationRule> {
+  return patch(`/automations/${id}`, changes);
+}
+export function deleteAutomationRule(id: string): Promise<{ ok: true }> {
+  return del(`/automations/${id}`);
+}
+
+// ---- Agents ---------------------------------------------------------------
+
+export function createAgent(agent: {
+  name: string;
+  description?: string;
+  eventFilter: EventType[] | '*';
+  allowedActionTypes: AutomationAction['type'][];
+  approvalPolicy: AgentApprovalPolicy;
+  budget: AgentBudget;
+}): Promise<Agent> {
+  return post('/agents', agent);
+}
+export function updateAgent(userId: string, changes: Partial<Agent>): Promise<Agent> {
+  return patch(`/agents/${userId}`, changes);
+}
+export function triggerAgent(userId: string, issueId?: string): Promise<{ event: EventEnvelope; run?: AgentRun }> {
+  return post(`/agents/${userId}/trigger`, { issueId });
+}
+export function approveAgentRun(runId: string): Promise<{ run: AgentRun }> {
+  return post(`/agent-runs/${runId}/approve`, {});
+}
+export function rejectAgentRun(runId: string): Promise<{ run: AgentRun }> {
+  return post(`/agent-runs/${runId}/reject`, {});
+}
+
+// ---- Webhooks ---------------------------------------------------------------
+
+export function createWebhook(targetUrl: string, eventFilter: EventType[] | '*'): Promise<WebhookSubscription> {
+  return post('/webhooks', { targetUrl, eventFilter });
+}
+export function updateWebhook(id: string, changes: Partial<Pick<WebhookSubscription, 'targetUrl' | 'eventFilter' | 'enabled'>>): Promise<WebhookSubscription> {
+  return patch(`/webhooks/${id}`, changes);
+}
+export function deleteWebhook(id: string): Promise<{ ok: true }> {
+  return del(`/webhooks/${id}`);
+}
+
+// ---- Workspace membership ---------------------------------------------------
+
+export function listWorkspaceMembers(): Promise<WorkspaceMember[]> {
+  return get('/workspace-members');
+}
+export function updateWorkspaceMemberRole(userId: string, role: WorkspaceRole): Promise<WorkspaceMember> {
+  return patch(`/workspace-members/${userId}`, { role });
+}
