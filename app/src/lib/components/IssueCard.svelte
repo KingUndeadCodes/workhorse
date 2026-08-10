@@ -68,7 +68,7 @@
         <span class="points-badge mono">{issue.storyPoints}</span>
       {/if}
       {#if assignee}
-        <Avatar userId={assignee.id} name={assignee.displayName} size={19} />
+        <Avatar userId={assignee.id} name={assignee.displayName} avatarUrl={assignee.avatarUrl} size={19} />
       {/if}
     </div>
   </div>

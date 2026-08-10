@@ -2,6 +2,7 @@
   import Icon from './Icon.svelte';
   import Avatar from './Avatar.svelte';
   import NewIssueModal from './NewIssueModal.svelte';
+  import AccountSettingsModal from './AccountSettingsModal.svelte';
   import { currentUser, logout } from '../stores/auth';
   import { currentView, issuesStore, selectedIssueId, settingsJumpTab, sprints } from '../stores/workspace';
 
@@ -23,6 +24,7 @@
   }
 
   let showNewIssue = false;
+  let showAccountSettings = false;
   let showUserMenu = false;
   let showNewMenu = false;
   let userMenuWrap: HTMLDivElement;
@@ -47,6 +49,11 @@
   function handleLogout() {
     showUserMenu = false;
     logout();
+  }
+
+  function openAccountSettings() {
+    showUserMenu = false;
+    showAccountSettings = true;
   }
 
   function newIssue() {
@@ -98,7 +105,7 @@
     {#if $currentUser}
       <div class="user-menu-wrap" bind:this={userMenuWrap}>
         <button class="avatar-btn" on:click={toggleUserMenu}>
-          <Avatar userId={$currentUser.id} name={$currentUser.displayName} size={28} />
+          <Avatar userId={$currentUser.id} name={$currentUser.displayName} avatarUrl={$currentUser.avatarUrl} size={28} />
         </button>
         {#if showUserMenu}
           <div class="dropdown">
@@ -106,6 +113,7 @@
               <div class="user-menu-name">{$currentUser.displayName}</div>
               <div class="user-menu-email">{$currentUser.email}</div>
             </div>
+            <button class="dropdown-item" on:click={openAccountSettings}>Account settings</button>
             <button class="dropdown-item" on:click={handleLogout}>Log out</button>
           </div>
         {/if}
@@ -116,6 +124,10 @@
 
 {#if showNewIssue}
   <NewIssueModal onClose={() => (showNewIssue = false)} />
+{/if}
+
+{#if showAccountSettings}
+  <AccountSettingsModal onClose={() => (showAccountSettings = false)} />
 {/if}
 
 <style>

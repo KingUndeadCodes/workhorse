@@ -1,6 +1,6 @@
 import { createMiddleware } from 'hono/factory';
+import { userRepo } from '../container';
 import { verifyToken } from './jwt';
-import { getUserById } from './repository';
 
 /** Hono context variable populated by {@link requireAuth} — read via `c.get('user')`. */
 export type AuthVariables = { user: import('../domain').User };
@@ -12,7 +12,7 @@ export const requireAuth = createMiddleware<{ Variables: AuthVariables }>(async 
   if (!token) return c.json({ error: 'unauthorized' }, 401);
   try {
     const claims = await verifyToken(token);
-    const user = getUserById(claims.sub);
+    const user = await userRepo.getById(claims.sub);
     if (!user) return c.json({ error: 'unauthorized' }, 401);
     c.set('user', user);
     await next();

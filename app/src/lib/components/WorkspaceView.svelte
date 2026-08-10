@@ -36,7 +36,7 @@
     {#each rows as { member, user } (member.userId)}
       {#if user}
         <div class="member-row">
-          <Avatar userId={user.id} name={user.displayName} size={32} />
+          <Avatar userId={user.id} name={user.displayName} avatarUrl={user.avatarUrl} size={32} />
           <div class="member-info">
             <div class="member-name">{user.displayName}{#if user.id === $currentUser?.id}<span class="you">you</span>{/if}</div>
             <div class="member-email">{user.email}</div>

@@ -8,6 +8,8 @@ export interface Comment {
   body: RichText;
   createdAt: string;
   editedAt?: string;
+  /** The comment this one is a reply to, if any. Replies can themselves be replied to — threads nest to any depth. */
+  parentCommentId?: CommentId;
 }
 
 export interface Attachment {

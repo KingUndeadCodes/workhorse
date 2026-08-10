@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 import type { User } from '$domain';
 
 const STORAGE_KEY = 'anvil.auth';
@@ -70,4 +70,12 @@ export async function signup(email: string, password: string, displayName: strin
 
 export function logout(): void {
   clearAuth();
+}
+
+/** Applies a fresh {@link User} (e.g. after PATCH /api/auth/me) to the store and localStorage, keeping the existing token. */
+export function setCurrentUser(user: User): void {
+  const token = get(authToken);
+  if (!token) return;
+  currentUser.set(user);
+  persist({ token, user });
 }

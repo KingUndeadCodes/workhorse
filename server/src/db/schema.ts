@@ -1,4 +1,14 @@
-import { eventsDb, run, stateDb } from './core';
+import { all, eventsDb, run, stateDb } from './core';
+
+/** Adds a column to an existing table if it isn't already there — `ALTER TABLE ADD COLUMN`
+ * has no `IF NOT EXISTS` form in SQLite, so this checks `pragma table_info` first. Needed
+ * for columns added after a table already shipped (the `CREATE TABLE IF NOT EXISTS` above
+ * it only helps on a brand-new database). */
+function addColumnIfMissing(table: string, column: string, type: string): void {
+  const columns = all<{ name: string }>(stateDb, `PRAGMA table_info(${table})`);
+  if (columns.some((c) => c.name === column)) return;
+  run(stateDb, `ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+}
 
 /**
  * Idempotent `CREATE TABLE IF NOT EXISTS` migrations, run on every boot. Arrays/objects
@@ -92,8 +102,9 @@ export function migrateStateDb(): void {
     stateDb,
     `CREATE TABLE IF NOT EXISTS issue_links (id TEXT PRIMARY KEY, type TEXT, source_issue_id TEXT, target_issue_id TEXT, created_at TEXT, created_by TEXT)`,
   );
-  run(stateDb, `CREATE TABLE IF NOT EXISTS comments (id TEXT PRIMARY KEY, issue_id TEXT, author_id TEXT, body TEXT, created_at TEXT, edited_at TEXT)`);
+  run(stateDb, `CREATE TABLE IF NOT EXISTS comments (id TEXT PRIMARY KEY, issue_id TEXT, author_id TEXT, body TEXT, created_at TEXT, edited_at TEXT, parent_comment_id TEXT)`);
   run(stateDb, `CREATE INDEX IF NOT EXISTS idx_comments_issue ON comments(issue_id)`);
+  addColumnIfMissing('comments', 'parent_comment_id', 'TEXT');
   run(stateDb, `CREATE TABLE IF NOT EXISTS watchers (issue_id TEXT, user_id TEXT, watching_since TEXT, PRIMARY KEY (issue_id, user_id))`);
   run(
     stateDb,

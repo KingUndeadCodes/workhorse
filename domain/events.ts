@@ -88,8 +88,8 @@ export type EventPayload =
       mimeType: string;
       sizeBytes: number;
     }
-  | { type: 'comment.created'; commentId: CommentId; issueId: IssueId; authorId: UserId; body: string }
-  | { type: 'comment.edited'; commentId: CommentId; issueId: IssueId }
+  | { type: 'comment.created'; commentId: CommentId; issueId: IssueId; authorId: UserId; body: string; parentCommentId?: CommentId }
+  | { type: 'comment.edited'; commentId: CommentId; issueId: IssueId; body: string }
   | { type: 'sprint.started'; sprintId: SprintId }
   | { type: 'sprint.completed'; sprintId: SprintId }
   | { type: 'project.created'; projectId: ProjectId }

@@ -2,16 +2,13 @@ import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import type { Agent, AgentApprovalPolicy, AgentBudget, AutomationAction, EventType } from '../domain';
 import type { AuthVariables } from '../auth/middleware';
-import { persistState, run, stateDb } from '../db/core';
-import { agentParams } from '../db/mappers';
-import { resolveAgentRun, triggerAgentManually } from '../engine';
-import { getAgent, getWorkspace, listAgentRuns, listAgents } from '../queries';
+import { agentRepo, agentRunRepo, engine, userRepo, workspaceRepo } from '../container';
 
-/** CRUD for agent definitions, plus manual triggering and run approval — execution lives in engine.ts. */
+/** CRUD for agent definitions, plus manual triggering and run approval — execution lives in {@link EventEngine}. */
 export const agentsRouter = new Hono<{ Variables: AuthVariables }>();
 
-agentsRouter.get('/agents', async (c) => c.json(await listAgents()));
-agentsRouter.get('/agent-runs', async (c) => c.json(await listAgentRuns()));
+agentsRouter.get('/agents', async (c) => c.json(await agentRepo.list()));
+agentsRouter.get('/agent-runs', async (c) => c.json(await agentRunRepo.list()));
 
 /**
  * POST /api/agents — registers a new agent. Since an Agent is a User (`kind: 'agent'`)
@@ -33,11 +30,11 @@ agentsRouter.post('/agents', async (c) => {
   const userId = `u_agent_${randomUUID()}`;
   const slug = body.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const now = new Date().toISOString();
-  run(stateDb, `INSERT INTO users (id, kind, email, display_name, avatar_url, status, created_at) VALUES (?, 'agent', ?, ?, NULL, 'active', ?)`, [userId, `${slug}@meridian.dev`, body.name.trim(), now]);
+  await userRepo.createAgentUser(userId, `${slug}@meridian.dev`, body.name.trim(), now);
 
   const agent: Agent = {
     userId,
-    workspaceId: (await getWorkspace()).id,
+    workspaceId: (await workspaceRepo.getWorkspace()).id,
     projectId: null,
     name: body.name.trim(),
     description: body.description,
@@ -49,21 +46,17 @@ agentsRouter.post('/agents', async (c) => {
     ignoreSelfTriggeredEvents: true,
     createdAt: now,
   };
-  run(stateDb, `INSERT INTO agents (user_id, workspace_id, project_id, name, description, enabled, event_filter, allowed_action_types, approval_policy, budget, ignore_self_triggered_events, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, agentParams(agent));
-  persistState();
+  await agentRepo.create(agent);
   return c.json(agent, 201);
 });
 
 agentsRouter.patch('/agents/:userId', async (c) => {
   const userId = c.req.param('userId');
-  const existing = await getAgent(userId);
+  const existing = await agentRepo.get(userId);
   if (!existing) return c.json({ error: 'Not found' }, 404);
   const body = await c.req.json<Partial<Agent>>();
   const merged: Agent = { ...existing, ...body, userId: existing.userId };
-  run(stateDb, `UPDATE agents SET name = ?, description = ?, enabled = ?, event_filter = ?, allowed_action_types = ?, approval_policy = ?, budget = ?, ignore_self_triggered_events = ? WHERE user_id = ?`, [
-    merged.name, merged.description ?? null, merged.enabled ? 1 : 0, JSON.stringify(merged.eventFilter), JSON.stringify(merged.allowedActionTypes), JSON.stringify(merged.approvalPolicy), JSON.stringify(merged.budget), merged.ignoreSelfTriggeredEvents ? 1 : 0, userId,
-  ]);
-  persistState();
+  await agentRepo.update(merged);
   return c.json(merged);
 });
 
@@ -77,7 +70,7 @@ agentsRouter.post('/agents/:userId/trigger', async (c) => {
   const userId = c.req.param('userId');
   const body = await c.req.json<{ issueId?: string }>();
   try {
-    const result = await triggerAgentManually(userId, c.get('user').id, body.issueId);
+    const result = await engine.triggerAgentManually(userId, c.get('user').id, body.issueId);
     return c.json(result, 201);
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : 'Failed to trigger agent' }, 404);
@@ -87,7 +80,7 @@ agentsRouter.post('/agents/:userId/trigger', async (c) => {
 /** POST /api/agent-runs/:id/approve — executes a run that was `awaitingApproval`. */
 agentsRouter.post('/agent-runs/:id/approve', async (c) => {
   const id = c.req.param('id');
-  const run = await resolveAgentRun(id, 'approved', c.get('user').id);
+  const run = await engine.resolveAgentRun(id, 'approved', c.get('user').id);
   if (!run) return c.json({ error: 'Run not found or not awaiting approval' }, 404);
   return c.json({ run });
 });
@@ -95,7 +88,7 @@ agentsRouter.post('/agent-runs/:id/approve', async (c) => {
 /** POST /api/agent-runs/:id/reject — discards a run that was `awaitingApproval`. */
 agentsRouter.post('/agent-runs/:id/reject', async (c) => {
   const id = c.req.param('id');
-  const run = await resolveAgentRun(id, 'rejected', c.get('user').id);
+  const run = await engine.resolveAgentRun(id, 'rejected', c.get('user').id);
   if (!run) return c.json({ error: 'Run not found or not awaiting approval' }, 404);
   return c.json({ run });
 });

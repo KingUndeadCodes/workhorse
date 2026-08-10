@@ -225,6 +225,7 @@ export interface DB {
     body: string | null;
     created_at: string | null;
     edited_at: string | null;
+    parent_comment_id: string | null;
   };
   watchers: {
     issue_id: string;

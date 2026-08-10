@@ -41,6 +41,7 @@ import {
   fetchBootstrap,
   patchIssueStatus,
   postComment,
+  updateComment as apiUpdateComment,
   removeAttachment as apiRemoveAttachment,
   removeIssueLink as apiRemoveIssueLink,
   removeWatcher as apiRemoveWatcher,
@@ -175,9 +176,14 @@ export async function deleteIssue(issueId: string): Promise<void> {
 }
 
 /** Posts a comment via the API, then appends the server's copy to {@link comments}. */
-export async function addComment(issueId: string, body: string): Promise<void> {
-  const { comment } = await postComment(issueId, body);
+export async function addComment(issueId: string, body: string, parentCommentId?: string): Promise<void> {
+  const { comment } = await postComment(issueId, body, parentCommentId);
   comments.update((list) => [...list, comment]);
+}
+
+export async function editComment(issueId: string, commentId: string, body: string): Promise<void> {
+  const { comment } = await apiUpdateComment(issueId, commentId, body);
+  comments.update((list) => list.map((c) => (c.id === commentId ? comment : c)));
 }
 
 export async function addIssueLink(issueId: string, type: IssueLinkType, targetIssueId: string): Promise<void> {

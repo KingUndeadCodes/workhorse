@@ -325,7 +325,15 @@ export function rowToIssueLink(r: Record<string, unknown>): IssueLink {
 }
 
 export function rowToComment(r: Record<string, unknown>): Comment {
-  return { id: r.id as string, issueId: r.issue_id as string, authorId: r.author_id as string, body: parse(r.body, { format: 'richtext-v1' as const, content: null, plainText: '' }), createdAt: r.created_at as string, editedAt: nullish(r.edited_at) };
+  return {
+    id: r.id as string,
+    issueId: r.issue_id as string,
+    authorId: r.author_id as string,
+    body: parse(r.body, { format: 'richtext-v1' as const, content: null, plainText: '' }),
+    createdAt: r.created_at as string,
+    editedAt: nullish(r.edited_at),
+    parentCommentId: nullish(r.parent_comment_id),
+  };
 }
 
 export function rowToWatcher(r: Record<string, unknown>): Watcher {

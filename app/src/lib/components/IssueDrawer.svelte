@@ -1,9 +1,12 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import Avatar from './Avatar.svelte';
+  import MarkdownEditor from './MarkdownEditor.svelte';
+  import CommentThread from './CommentThread.svelte';
   import { currentUser } from '../stores/auth';
   import {
     addComment,
+    editComment,
     addIssueLink,
     comments,
     components,
@@ -23,11 +26,15 @@
     watchers,
     workflow,
   } from '../stores/workspace';
-  import { formatRelativeDate, priorityIcon, renderMarkdown, typeIcon } from '../util';
+  import { priorityIcon, renderMarkdown, typeIcon } from '../util';
   import type { IssueLinkType } from '$domain';
 
   let draftComment = '';
   let submittingComment = false;
+
+  let replyingToId: string | null = null;
+  let draftReply = '';
+  let submittingReply = false;
 
   let linkTargetKey = '';
   let linkType: IssueLinkType = 'relatesTo';
@@ -36,6 +43,7 @@
   let worklogNote = '';
 
   let editingDescription = false;
+  let draftDescription = '';
   let showAdvanced = false;
 
   $: issue = $issuesStore.find((i) => i.id === $selectedIssueId);
@@ -44,6 +52,9 @@
   $: category = status ? $statusCategories.find((c) => c.id === status.categoryId) : undefined;
   $: reporter = issue ? $users.find((u) => u.id === issue.reporterId) : undefined;
   $: issueComments = issue ? $comments.filter((c) => c.issueId === issue.id) : [];
+  // Threading is one level deep (see domain/collaboration.ts) — top-level comments plus,
+  // for each, the replies attached to it, both ordered oldest-first.
+  $: topLevelComments = [...issueComments].filter((c) => !c.parentCommentId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   $: issueWatchers = issue ? $watchers.filter((w) => w.issueId === issue.id) : [];
   $: isWatching = issue ? issueWatchers.some((w) => w.userId === $currentUser?.id) : false;
   $: timePct = issue?.originalEstimateSeconds ? Math.min(100, (issue.loggedSeconds / issue.originalEstimateSeconds) * 100) : 0;
@@ -57,6 +68,7 @@
   $: if (issue && issue.id !== lastIssueId) {
     lastIssueId = issue.id;
     editingDescription = false;
+    replyingToId = null;
   }
 
   /** Closes the drawer by clearing the selection. */
@@ -80,17 +92,53 @@
     }
   }
 
+  function startReply(commentId: string) {
+    replyingToId = commentId;
+    draftReply = '';
+  }
+
+  function cancelReply() {
+    replyingToId = null;
+    draftReply = '';
+  }
+
+  async function submitReply() {
+    if (!issue || !replyingToId || !draftReply.trim() || submittingReply) return;
+    submittingReply = true;
+    try {
+      await addComment(issue.id, draftReply.trim(), replyingToId);
+      cancelReply();
+    } finally {
+      submittingReply = false;
+    }
+  }
+
   function handleTitleBlur(e: FocusEvent) {
     if (!issue) return;
     const value = (e.target as HTMLInputElement).value.trim();
     if (value && value !== issue.title) updateIssue(issue.id, { title: value });
   }
 
-  function handleDescriptionBlur(e: FocusEvent) {
-    if (!issue) return;
-    const value = (e.target as HTMLTextAreaElement).value;
-    if (value !== (issue.description?.plainText ?? '')) {
-      updateIssue(issue.id, { description: { format: 'richtext-v1', content: null, plainText: value } });
+  let savingDescription = false;
+
+  function startEditingDescription() {
+    draftDescription = issue?.description?.plainText ?? '';
+    editingDescription = true;
+  }
+
+  function cancelEditingDescription() {
+    editingDescription = false;
+  }
+
+  async function submitDescription() {
+    if (!issue || savingDescription) return;
+    if (draftDescription !== (issue.description?.plainText ?? '')) {
+      savingDescription = true;
+      try {
+        await updateIssue(issue.id, { description: { format: 'richtext-v1', content: null, plainText: draftDescription } });
+      } finally {
+        savingDescription = false;
+      }
     }
     editingDescription = false;
   }
@@ -175,17 +223,19 @@
       <div class="section">
         <div class="section-label">Description</div>
         {#if editingDescription}
-          <!-- svelte-ignore a11y-autofocus -->
-          <textarea
-            class="desc-input"
-            rows="5"
+          <MarkdownEditor
+            bind:value={draftDescription}
+            rows={5}
             autofocus
             placeholder="Add a description… (markdown supported)"
-            value={issue.description?.plainText ?? ''}
-            on:blur={handleDescriptionBlur}
-          ></textarea>
+            submitLabel="Save"
+            showCancel
+            submitting={savingDescription}
+            onSubmit={submitDescription}
+            onCancel={cancelEditingDescription}
+          />
         {:else}
-          <button class="desc-view" on:click={() => (editingDescription = true)}>
+          <button class="desc-view" on:click={startEditingDescription}>
             {#if issue.description?.plainText}
               <div class="markdown">{@html renderMarkdown(issue.description.plainText)}</div>
             {:else}
@@ -207,7 +257,7 @@
           <span class="field-label">Reporter</span>
           <span class="field-value">
             {#if reporter}
-              <Avatar userId={reporter.id} name={reporter.displayName} size={19} />{reporter.displayName}
+              <Avatar userId={reporter.id} name={reporter.displayName} avatarUrl={reporter.avatarUrl} size={19} />{reporter.displayName}
             {:else}
               Unassigned
             {/if}
@@ -248,38 +298,12 @@
         {/each}
       </div>
 
-      <div class="section">
-        <div class="section-label">Activity</div>
-        {#each issueComments as c (c.id)}
-          {@const author = $users.find((u) => u.id === c.authorId)}
-          {#if author}
-            <div class="comment">
-              <Avatar userId={author.id} name={author.displayName} size={26} />
-              <div class="comment-body">
-                <div class="comment-meta"><span class="comment-name">{author.displayName}</span><span class="comment-time">{formatRelativeDate(c.createdAt)}</span></div>
-                <div class="comment-text markdown">{@html renderMarkdown(c.body.plainText)}</div>
-              </div>
-            </div>
-          {/if}
-        {/each}
-        <form class="comment-input" on:submit|preventDefault={submitComment}>
-          <Icon name="comment" size={14} />
-          <input
-            type="text"
-            placeholder="Add a comment… (markdown supported)"
-            bind:value={draftComment}
-            disabled={submittingComment}
-            on:keydown={(e) => e.key === 'Enter' && submitComment()}
-          />
-        </form>
-      </div>
-
       <div class="section watchers-section">
         <div class="avatar-stack">
           {#each issueWatchers as w (w.userId)}
             {@const u = $users.find((usr) => usr.id === w.userId)}
             {#if u}
-              <div class="stack-item"><Avatar userId={u.id} name={u.displayName} size={22} /></div>
+              <div class="stack-item"><Avatar userId={u.id} name={u.displayName} avatarUrl={u.avatarUrl} size={22} /></div>
             {/if}
           {/each}
         </div>
@@ -339,6 +363,37 @@
           </div>
         {/if}
       </div>
+
+      <div class="section">
+        <div class="section-label">Activity</div>
+        {#each topLevelComments as c (c.id)}
+          <CommentThread
+            comment={c}
+            allComments={issueComments}
+            users={$users}
+            currentUserId={$currentUser?.id}
+            {replyingToId}
+            bind:draftReply
+            {submittingReply}
+            onStartReply={startReply}
+            onCancelReply={cancelReply}
+            onSubmitReply={submitReply}
+            onEditComment={async (commentId, body) => { if (issue) await editComment(issue.id, commentId, body); }}
+          />
+        {/each}
+
+        <div class="new-comment">
+          <MarkdownEditor
+            bind:value={draftComment}
+            rows={3}
+            placeholder="Add a comment… (markdown supported)"
+            submitLabel="Comment"
+            disabled={!draftComment.trim()}
+            submitting={submittingComment}
+            onSubmit={submitComment}
+          />
+        </div>
+      </div>
     </div>
   </div>
 {/if}
@@ -381,10 +436,6 @@
   }
   .section-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin: 0 0 8px; }
   .section { margin-bottom: 20px; }
-  .desc-input {
-    width: 100%; font: inherit; font-size: 12.5px; color: var(--text-2); line-height: 1.65; margin: 0; resize: vertical;
-    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px;
-  }
   .desc-view {
     display: block; width: 100%; text-align: left; font: inherit; background: var(--surface-2); border: 1px solid transparent;
     border-radius: 8px; padding: 8px; cursor: text; min-height: 40px;
@@ -409,16 +460,7 @@
   .time-bar { flex: 1; height: 7px; border-radius: 99px; background: var(--surface-sunken); overflow: hidden; }
   .time-bar > span { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
   .time-label { font-size: 11px; color: var(--text-3); white-space: nowrap; }
-  .comment { display: flex; gap: 9px; margin-bottom: 14px; }
-  .comment-body { flex: 1; }
-  .comment-meta { display: flex; align-items: baseline; gap: 7px; margin-bottom: 3px; }
-  .comment-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
-  .comment-time { font-size: 11px; color: var(--text-3); }
-  .comment-text { margin: 0; }
-  .comment-input { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 9px; padding: 8px 10px; color: var(--text-3); font-size: 12.5px; margin-top: 4px; }
-  .comment-input input { flex: 1; border: none; background: none; font: inherit; color: var(--text); outline: none; }
-  .comment-input input::placeholder { color: var(--text-3); }
-  .comment-input input:disabled { opacity: .6; }
+  .new-comment { margin-top: 4px; }
   .watchers-section { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
   .avatar-stack { display: flex; align-items: center; }
   .stack-item { margin-left: -6px; border-radius: 50%; border: 2px solid var(--surface); }

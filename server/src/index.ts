@@ -1,34 +1,35 @@
-/** Entry point: boots both databases, creates the minimal structural rows if `state.db` is brand new (see seed.ts — no sample content), then serves the Hono app (app.ts) on `PORT`, defaulting to 8787. */
+/** Entry point: boots both databases, wires the OO container, creates the minimal structural rows if `state.db` is brand new (see seed.ts — no sample content), then serves the Hono app (app.ts) on `PORT`, defaulting to 8787. */
 import { serve } from '@hono/node-server';
 import { app } from './app';
-import { initDatabases, persistState, run, stateDb } from './db/core';
+import { initContainer, userRepo, workspaceRepo } from './container';
+import { initDatabases, persistState } from './db/core';
 import { migrateEventsDb, migrateStateDb } from './db/schema';
-import { getWorkspace, listUsers, listWorkspaceMembers } from './queries';
 import { bootstrapDatabase } from './seed';
 
 const { isFreshState } = await initDatabases();
 migrateStateDb();
 migrateEventsDb();
+initContainer();
 if (isFreshState) bootstrapDatabase();
 
 /**
  * One-time catch-up for accounts created before workspace membership existed: gives every
  * human user with no `workspace_members` row a role, oldest account first as 'owner' so
  * there's always exactly one owner rather than none. New signups get their row directly in
- * `createUserWithCredentials` and never hit this path.
+ * `UserRepository.createHuman`'s caller (see routes/auth.ts) and never hit this path.
  */
 async function backfillWorkspaceMembers(): Promise<void> {
-  const existingIds = new Set((await listWorkspaceMembers()).map((m) => m.userId));
-  const missing = (await listUsers())
+  const existingIds = new Set((await workspaceRepo.listMembers()).map((m) => m.userId));
+  const missing = (await userRepo.list())
     .filter((u) => u.kind === 'human' && !existingIds.has(u.id))
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   if (missing.length === 0) return;
-  const hasOwner = (await listWorkspaceMembers()).some((m) => m.role === 'owner');
-  const workspaceId = (await getWorkspace()).id;
-  missing.forEach((u, i) => {
+  const hasOwner = await workspaceRepo.hasOwner();
+  const workspaceId = (await workspaceRepo.getWorkspace()).id;
+  for (let i = 0; i < missing.length; i++) {
     const role = !hasOwner && i === 0 ? 'owner' : 'member';
-    run(stateDb, `INSERT INTO workspace_members (workspace_id, user_id, role, joined_at) VALUES (?, ?, ?, ?)`, [workspaceId, u.id, role, u.createdAt]);
-  });
+    await workspaceRepo.addMember(workspaceId, missing[i].id, role, missing[i].createdAt);
+  }
   persistState();
 }
 await backfillWorkspaceMembers();

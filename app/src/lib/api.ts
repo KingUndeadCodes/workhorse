@@ -140,8 +140,11 @@ export function deleteIssue(issueId: string): Promise<{ event: EventEnvelope }> 
   return del(`/issues/${issueId}`);
 }
 
-export function postComment(issueId: string, body: string): Promise<{ comment: Comment; event: EventEnvelope }> {
-  return post(`/issues/${issueId}/comments`, { body });
+export function postComment(issueId: string, body: string, parentCommentId?: string): Promise<{ comment: Comment; event: EventEnvelope }> {
+  return post(`/issues/${issueId}/comments`, { body, parentCommentId });
+}
+export function updateComment(issueId: string, commentId: string, body: string): Promise<{ comment: Comment; event: EventEnvelope }> {
+  return patch(`/issues/${issueId}/comments/${commentId}`, { body });
 }
 
 export function addIssueLink(issueId: string, type: IssueLinkType, targetIssueId: string): Promise<{ link: IssueLink; event: EventEnvelope }> {
@@ -289,4 +292,11 @@ export function listWorkspaceMembers(): Promise<WorkspaceMember[]> {
 }
 export function updateWorkspaceMemberRole(userId: string, role: WorkspaceRole): Promise<WorkspaceMember> {
   return patch(`/workspace-members/${userId}`, { role });
+}
+
+// ---- Account ------------------------------------------------------------------
+
+/** Updates the caller's own profile. `avatarUrl` is a data: URL, or `null` to remove the picture. */
+export function updateProfile(changes: { displayName?: string; email?: string; avatarUrl?: string | null }): Promise<{ user: User }> {
+  return patch('/auth/me', changes);
 }
