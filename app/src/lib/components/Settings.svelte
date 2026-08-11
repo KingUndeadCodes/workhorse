@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
+  import WorkflowDiagram from './WorkflowDiagram.svelte';
   import {
     agentRuns,
     agents,
@@ -101,16 +102,16 @@
     statusCategories.update((l) => [...l, category]);
     newCategoryName = '';
   }
-  let newStatusName = '';
-  let newStatusCategoryId = '';
-  $: if (!newStatusCategoryId && $statusCategories.length) newStatusCategoryId = $statusCategories[0].id;
-  async function addStatus() {
-    if (!newStatusName.trim() || !newStatusCategoryId) return;
-    const status = await api.createWorkflowStatus(newStatusName.trim(), newStatusCategoryId);
-    workflow.update((w) => (w ? { ...w, statuses: [...w.statuses, status] } : w));
-    newStatusName = '';
+  let categoryError = '';
+  async function removeCategory(id: string) {
+    categoryError = '';
+    try {
+      await api.deleteStatusCategory(id);
+      statusCategories.update((l) => l.filter((c) => c.id !== id));
+    } catch (err) {
+      categoryError = err instanceof Error ? err.message : 'Failed to delete category';
+    }
   }
-
   // ---- Automations ----
   let newRuleName = '';
   let newRuleTrigger: EventType = 'issue.created';
@@ -245,9 +246,15 @@
       </form>
     {:else if activeTab === 'Workflow'}
       <div class="subsection-label">Status categories</div>
+      {#if categoryError}<p class="error">{categoryError}</p>{/if}
       <div class="list">
         {#each $statusCategories as cat (cat.id)}
-          <div class="row"><span class="row-name">{cat.name}</span><span class="row-tag">{cat.type}</span></div>
+          <div class="row">
+            <span class="row-name">{cat.name}</span><span class="row-tag">{cat.type}</span>
+            {#if cat.type === 'inProgress'}
+              <button class="icon-btn" on:click={() => removeCategory(cat.id)}><Icon name="trash" size={12} /></button>
+            {/if}
+          </div>
         {/each}
       </div>
       <form class="add-form" on:submit|preventDefault={addCategory}>
@@ -260,20 +267,8 @@
         <button type="submit">Add category</button>
       </form>
 
-      <div class="subsection-label">Statuses</div>
-      <div class="list">
-        {#each $workflow?.statuses ?? [] as s (s.id)}
-          {@const cat = $statusCategories.find((c) => c.id === s.categoryId)}
-          <div class="row"><span class="row-name">{s.name}</span><span class="row-tag">{cat?.name}</span></div>
-        {/each}
-      </div>
-      <form class="add-form" on:submit|preventDefault={addStatus}>
-        <input type="text" placeholder="Status name (e.g. In Review)" bind:value={newStatusName} />
-        <select bind:value={newStatusCategoryId}>
-          {#each $statusCategories as cat (cat.id)}<option value={cat.id}>{cat.name}</option>{/each}
-        </select>
-        <button type="submit">Add status</button>
-      </form>
+      <div class="subsection-label">Workflow</div>
+      <WorkflowDiagram />
     {:else if activeTab === 'Automations'}
       <div class="list">
         {#each $automationRules as rule (rule.id)}
@@ -362,6 +357,7 @@
   .icon-btn { color: var(--text-3); padding: 4px; border-radius: 6px; margin-left: auto; }
   .icon-btn:hover { background: var(--surface); color: var(--critical); }
   .text-btn { font-size: 12px; font-weight: 600; color: var(--accent-strong); }
+  .error { color: var(--critical); font-size: 12px; margin: 0 0 8px; }
   .text-btn.danger { color: var(--critical); }
   .row-actions { display: flex; gap: 12px; margin-top: 6px; }
   .rationale { font-size: 12px; color: var(--text-2); margin: 0; }

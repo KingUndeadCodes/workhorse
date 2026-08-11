@@ -91,7 +91,12 @@ async function json<T>(res: Response): Promise<T> {
     clearAuth();
     throw new AuthError();
   }
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  if (!res.ok) {
+    // Route handlers send `{ error: "..." }` for expected failures (e.g. "can't delete the
+    // Done category") — surface that instead of a bare status code whenever it's present.
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error ?? `${res.status} ${res.statusText}`);
+  }
   return res.json() as Promise<T>;
 }
 
@@ -226,8 +231,17 @@ export function completeSprint(id: string): Promise<{ sprint: Sprint; event: Eve
 export function createStatusCategory(name: string, type: StatusCategory['type'], color?: string): Promise<StatusCategory> {
   return post('/status-categories', { name, type, color });
 }
+export function deleteStatusCategory(id: string): Promise<{ ok: true }> {
+  return del(`/status-categories/${id}`);
+}
 export function createWorkflowStatus(name: string, categoryId: string, color?: string): Promise<WorkflowStatus> {
   return post('/workflow/statuses', { name, categoryId, color });
+}
+export function updateWorkflowStatus(id: string, changes: Partial<Pick<WorkflowStatus, 'name' | 'color'>>): Promise<WorkflowStatus> {
+  return patch(`/workflow/statuses/${id}`, changes);
+}
+export function deleteWorkflowStatus(id: string): Promise<{ ok: true }> {
+  return del(`/workflow/statuses/${id}`);
 }
 export function createWorkflowTransition(name: string, fromStatusId: string | '*', toStatusId: string): Promise<WorkflowTransition> {
   return post('/workflow/transitions', { name, fromStatusId, toStatusId });

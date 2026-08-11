@@ -432,7 +432,8 @@
   .field-value { font-size: 12.5px; font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 6px; text-transform: capitalize; }
   .field-select, .field-input {
     font: inherit; font-size: 12.5px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border);
-    border-radius: 6px; padding: 5px 6px; text-transform: capitalize;
+    border-radius: 6px; padding: 0 6px; text-transform: capitalize;
+    box-sizing: border-box; height: 30px; width: 100%; line-height: normal;
   }
   .section-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin: 0 0 8px; }
   .section { margin-bottom: 20px; }

@@ -44,6 +44,31 @@ export class PlanningRepository {
     return assembleBoard((await this.db.selectFrom('board').selectAll().executeTakeFirst())!);
   }
 
+  /**
+   * Adds `statusId` to whichever existing board column already holds another status from
+   * `categoryId` — so a new workflow status (e.g. a custom "In Review" under the
+   * In Progress category) actually shows up on the board instead of silently having
+   * nowhere to render. A status whose category has no column yet (a genuinely new
+   * category) is left alone; that's a real "add a column" decision, not something to guess at.
+   */
+  async addStatusToMatchingColumn(statusId: string, categoryId: string, statusCategoryById: Map<string, string>): Promise<void> {
+    const board = await this.getBoard();
+    const column = board.columns.find((col) => col.statusIds.some((id) => statusCategoryById.get(id) === categoryId));
+    if (!column || column.statusIds.includes(statusId)) return;
+    const columns = board.columns.map((col) => (col.id === column.id ? { ...col, statusIds: [...col.statusIds, statusId] } : col));
+    await this.db.updateTable('board').set({ columns: JSON.stringify(columns) }).where('id', '=', board.id).execute();
+    persistState();
+  }
+
+  /** Removes a deleted status from every board column's `statusIds` — the mirror of {@link addStatusToMatchingColumn}. */
+  async removeStatusFromColumns(statusId: string): Promise<void> {
+    const board = await this.getBoard();
+    if (!board.columns.some((col) => col.statusIds.includes(statusId))) return;
+    const columns = board.columns.map((col) => ({ ...col, statusIds: col.statusIds.filter((id) => id !== statusId) }));
+    await this.db.updateTable('board').set({ columns: JSON.stringify(columns) }).where('id', '=', board.id).execute();
+    persistState();
+  }
+
   // ---- Saved views ----
 
   async listSavedViews(): Promise<SavedView[]> {

@@ -19,6 +19,7 @@
     "vite": "^6.0.0"
   },
   "dependencies": {
+    "@xyflow/svelte": "^1.6.2",
     "dompurify": "^3.4.13",
     "marked": "^18.0.9"
   }

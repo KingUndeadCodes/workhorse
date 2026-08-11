@@ -1,7 +1,7 @@
 /** Entry point: boots both databases, wires the OO container, creates the minimal structural rows if `state.db` is brand new (see seed.ts — no sample content), then serves the Hono app (app.ts) on `PORT`, defaulting to 8787. */
 import { serve } from '@hono/node-server';
 import { app } from './app';
-import { initContainer, userRepo, workspaceRepo } from './container';
+import { initContainer, planningRepo, userRepo, workflowRepo, workspaceRepo } from './container';
 import { initDatabases, persistState } from './db/core';
 import { migrateEventsDb, migrateStateDb } from './db/schema';
 import { bootstrapDatabase } from './seed';
@@ -33,6 +33,21 @@ async function backfillWorkspaceMembers(): Promise<void> {
   persistState();
 }
 await backfillWorkspaceMembers();
+
+/**
+ * One-time catch-up for statuses created before {@link workflowRouter}'s status-creation
+ * route started placing new statuses into a matching board column — without this, a status
+ * like a custom "In Review" under In Progress exists and can be assigned to an issue, but
+ * that issue then has nowhere to render on the Board (see PlanningRepository.addStatusToMatchingColumn).
+ */
+async function backfillBoardColumns(): Promise<void> {
+  const workflow = await workflowRepo.getWorkflow();
+  const statusCategoryById = new Map(workflow.statuses.map((s) => [s.id, s.categoryId]));
+  for (const status of workflow.statuses) {
+    await planningRepo.addStatusToMatchingColumn(status.id, status.categoryId, statusCategoryById);
+  }
+}
+await backfillBoardColumns();
 
 const port = Number(process.env.PORT ?? 8787);
 
