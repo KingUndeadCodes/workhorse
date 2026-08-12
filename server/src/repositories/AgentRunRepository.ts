@@ -31,6 +31,7 @@ export class AgentRunRepository {
       started_at: run.startedAt,
       completed_at: run.completedAt ?? null,
       failure_reason: run.failureReason ?? null,
+      token_usage: run.tokenUsage ?? null,
     };
     await this.db
       .insertInto('agent_runs')
@@ -43,6 +44,7 @@ export class AgentRunRepository {
           reviewed_at: values.reviewed_at,
           completed_at: values.completed_at,
           failure_reason: values.failure_reason,
+          token_usage: values.token_usage,
         }),
       )
       .execute();

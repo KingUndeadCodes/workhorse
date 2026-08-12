@@ -49,6 +49,6 @@ export function initContainer(): void {
   issueRepo = new IssueRepository(db);
 
   projector = new EventProjector(issueRepo, agentRunRepo, planningRepo);
-  engine = new EventEngine(workspaceRepo, issueRepo, agentRepo, agentRunRepo, automationRepo, webhookRepo, catalogRepo, projector);
+  engine = new EventEngine(workspaceRepo, issueRepo, agentRepo, agentRunRepo, automationRepo, webhookRepo, catalogRepo, workflowRepo, userRepo, projector);
   auditService = new AuditService(workspaceRepo, issueRepo);
 }

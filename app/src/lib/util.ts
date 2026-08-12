@@ -40,6 +40,19 @@ export function avatarColor(userId: string): string {
   return AVATAR_COLORS[userId] ?? '#8A8FA3';
 }
 
+/** An AI agent's name is always shown with an "[AI]" prefix, everywhere a human would just see their name. */
+export function displayName(user: { kind: string; displayName: string }): string {
+  return user.kind === 'agent' ? `[AI] ${user.displayName}` : user.displayName;
+}
+
+/**
+ * Splits a user list into humans first, agents last — the grouping every people-picker
+ * (assignee list, etc.) uses so AI agents always sit in their own section at the bottom.
+ */
+export function splitHumansAndAgents<T extends { kind: string }>(users: T[]): { humans: T[]; agents: T[] } {
+  return { humans: users.filter((u) => u.kind !== 'agent'), agents: users.filter((u) => u.kind === 'agent') };
+}
+
 /** Maps an {@link IssuePriority} to the icon name that represents it (see public/icons.svg). */
 export function priorityIcon(priority: string): string {
   switch (priority) {

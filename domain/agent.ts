@@ -27,6 +27,8 @@ export interface Agent extends EventSubscription {
   name: string;
   description?: string;
   enabled: boolean;
+  /** Anthropic model id used for this agent's decision-making, e.g. `claude-haiku-4-5`. */
+  model: string;
   /**
    * Bounds what the agent may ever propose to the same action vocabulary `AutomationRule`
    * uses, rather than "whatever it decides" — caps blast radius and keeps agent-caused
@@ -88,4 +90,6 @@ export interface AgentRun {
   completedAt?: string;
   /** Set when `status === 'failed'`. */
   failureReason?: string;
+  /** Input+output tokens billed for the model call that produced this run, if any. */
+  tokenUsage?: number;
 }

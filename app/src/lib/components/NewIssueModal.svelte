@@ -1,23 +1,30 @@
 <script lang="ts">
   import { createIssue, issueTypes, users } from '../stores/workspace';
+  import { splitHumansAndAgents } from '../util';
 
   export let onClose: () => void;
 
   let title = '';
   let issueTypeId = '';
   let priority: 'highest' | 'high' | 'medium' | 'low' | 'lowest' = 'medium';
-  let assigneeId = '';
+  let assigneeIds: string[] = [];
   let submitting = false;
   let error = '';
 
   $: if (!issueTypeId && $issueTypes.length) issueTypeId = $issueTypes.find((t) => t.name === 'Story')?.id ?? $issueTypes[0].id;
+  // Agents can't be assignees — see IssueDrawer's "AI Agents" section, added after creation.
+  $: ({ humans: humanUsers } = splitHumansAndAgents($users));
+
+  function toggleAssignee(userId: string) {
+    assigneeIds = assigneeIds.includes(userId) ? assigneeIds.filter((id) => id !== userId) : [...assigneeIds, userId];
+  }
 
   async function submit() {
     if (!title.trim() || !issueTypeId || submitting) return;
     submitting = true;
     error = '';
     try {
-      await createIssue({ title: title.trim(), issueTypeId, priority, assigneeId: assigneeId || undefined });
+      await createIssue({ title: title.trim(), issueTypeId, priority, assigneeIds });
       onClose();
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to create issue';
@@ -56,11 +63,15 @@
         </label>
       </div>
       <label class="field">
-        <span>Assignee</span>
-        <select bind:value={assigneeId}>
-          <option value="">Unassigned</option>
-          {#each $users as u (u.id)}<option value={u.id}>{u.displayName}</option>{/each}
-        </select>
+        <span>Assignees</span>
+        <div class="assignee-checks">
+          {#each humanUsers as u (u.id)}
+            <label class="assignee-check">
+              <input type="checkbox" checked={assigneeIds.includes(u.id)} on:change={() => toggleAssignee(u.id)} />
+              {u.displayName}
+            </label>
+          {/each}
+        </div>
       </label>
       {#if error}<p class="error">{error}</p>{/if}
       <div class="actions">
@@ -84,6 +95,8 @@
     background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px;
   }
   .error { color: var(--critical); font-size: 12px; margin: 0; }
+  .assignee-checks { display: flex; flex-wrap: wrap; gap: 8px; max-height: 100px; overflow-y: auto; }
+  .assignee-check { display: flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 400; text-transform: none; color: var(--text); }
   .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
   .btn { font-size: 12.5px; font-weight: 600; padding: 8px 14px; border-radius: 7px; }
   .btn.ghost { color: var(--text-2); background: var(--surface-2); }

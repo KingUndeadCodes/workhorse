@@ -3,7 +3,7 @@
   import Icon from './Icon.svelte';
   import Avatar from './Avatar.svelte';
   import { issueTypes, users, labels } from '../stores/workspace';
-  import { priorityIcon, typeIcon } from '../util';
+  import { displayName, priorityIcon, typeIcon } from '../util';
 
   export let issue: Issue;
   export let selected = false;
@@ -15,7 +15,10 @@
   const TODAY = '2026-08-07';
 
   $: issueType = $issueTypes.find((t) => t.id === issue.issueTypeId);
-  $: assignee = issue.assigneeId ? $users.find((u) => u.id === issue.assigneeId) : undefined;
+  $: assignees = issue.assigneeIds.map((id) => $users.find((u) => u.id === id)).filter((u): u is (typeof $users)[number] => !!u);
+  $: attachedAgents = Object.keys(issue.agentAssignments ?? {})
+    .map((id) => $users.find((u) => u.id === id))
+    .filter((u): u is (typeof $users)[number] => !!u);
   $: isOverdue = !!issue.dueDate && issue.dueDate < TODAY && !doneStatusIds.has(issue.statusId);
   $: isDueToday = issue.dueDate === TODAY;
 
@@ -67,8 +70,19 @@
       {#if issue.storyPoints}
         <span class="points-badge mono">{issue.storyPoints}</span>
       {/if}
-      {#if assignee}
-        <Avatar userId={assignee.id} name={assignee.displayName} avatarUrl={assignee.avatarUrl} size={19} />
+      {#if attachedAgents.length}
+        <div class="assignee-stack agent-stack">
+          {#each attachedAgents as a (a.id)}
+            <Avatar userId={a.id} name={displayName(a)} kind={a.kind} size={17} />
+          {/each}
+        </div>
+      {/if}
+      {#if assignees.length}
+        <div class="assignee-stack">
+          {#each assignees as a (a.id)}
+            <Avatar userId={a.id} name={displayName(a)} avatarUrl={a.avatarUrl} kind={a.kind} size={19} />
+          {/each}
+        </div>
       {/if}
     </div>
   </div>
@@ -106,4 +120,8 @@
   }
   .due-chip { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 5px; }
   .due-chip.overdue { background: var(--critical-soft); color: var(--critical); }
+  .assignee-stack { display: flex; }
+  .assignee-stack :global(> *) { margin-left: -6px; border-radius: 50%; box-shadow: 0 0 0 2px var(--surface); }
+  .assignee-stack :global(> *:first-child) { margin-left: 0; }
+  .agent-stack { margin-right: 2px; }
 </style>

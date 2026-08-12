@@ -26,7 +26,7 @@
   }
   settingsJumpTab.set(null);
 
-  const commonEventTypes: EventType[] = ['issue.created', 'issue.statusChanged', 'issue.assigned', 'comment.created', 'issue.updated'];
+  const commonEventTypes: EventType[] = ['issue.created', 'issue.statusChanged', 'issue.assigneesChanged', 'comment.created', 'issue.updated'];
 
   // ---- Labels ----
   let newLabelName = '';
@@ -142,11 +142,14 @@
   // ---- Agents ----
   let newAgentName = '';
   let newAgentDescription = '';
+  let newAgentModel = 'claude-haiku-4-5';
+  const AGENT_MODELS = ['claude-haiku-4-5', 'claude-sonnet-5', 'claude-opus-5'];
   async function addAgent() {
     if (!newAgentName.trim()) return;
     const agent = await api.createAgent({
       name: newAgentName.trim(),
       description: newAgentDescription.trim() || undefined,
+      model: newAgentModel,
       eventFilter: ['issue.created'],
       allowedActionTypes: ['addComment', 'setField'],
       approvalPolicy: { mode: 'autoApplyAll' },
@@ -158,6 +161,10 @@
   }
   async function toggleAgent(userId: string, enabled: boolean) {
     const agent = await api.updateAgent(userId, { enabled });
+    agents.update((l) => l.map((a) => (a.userId === userId ? agent : a)));
+  }
+  async function changeAgentModel(userId: string, model: string) {
+    const agent = await api.updateAgent(userId, { model });
     agents.update((l) => l.map((a) => (a.userId === userId ? agent : a)));
   }
   async function approveRun(id: string) {
@@ -311,6 +318,9 @@
           <div class="row">
             <span class="row-name">{agent.name}</span>
             <span class="row-tag">{agent.description ?? ''}</span>
+            <select value={agent.model} on:change={(e) => changeAgentModel(agent.userId, (e.target as HTMLSelectElement).value)}>
+              {#each AGENT_MODELS as model}<option value={model}>{model}</option>{/each}
+            </select>
             <label class="toggle"><input type="checkbox" checked={agent.enabled} on:change={(e) => toggleAgent(agent.userId, (e.target as HTMLInputElement).checked)} />enabled</label>
           </div>
         {/each}
@@ -318,6 +328,9 @@
       <form class="add-form column" on:submit|preventDefault={addAgent}>
         <input type="text" placeholder="Agent name" bind:value={newAgentName} />
         <input type="text" placeholder="Description" bind:value={newAgentDescription} />
+        <select bind:value={newAgentModel}>
+          {#each AGENT_MODELS as model}<option value={model}>{model}</option>{/each}
+        </select>
         <button type="submit">Add agent</button>
       </form>
     {:else if activeTab === 'Webhooks'}

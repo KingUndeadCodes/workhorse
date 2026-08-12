@@ -42,6 +42,7 @@ export function migrateStateDb(): void {
       event_filter TEXT, allowed_action_types TEXT, approval_policy TEXT, budget TEXT, ignore_self_triggered_events INTEGER, created_at TEXT
     )`,
   );
+  addColumnIfMissing('agents', 'model', 'TEXT');
   run(
     stateDb,
     `CREATE TABLE IF NOT EXISTS agent_runs (
@@ -49,6 +50,7 @@ export function migrateStateDb(): void {
       applied_action_indexes TEXT, rationale TEXT, reviewed_by TEXT, reviewed_at TEXT, started_at TEXT, completed_at TEXT, failure_reason TEXT
     )`,
   );
+  addColumnIfMissing('agent_runs', 'token_usage', 'INTEGER');
   run(stateDb, `CREATE TABLE IF NOT EXISTS status_categories (id TEXT PRIMARY KEY, workspace_id TEXT, name TEXT, type TEXT, color TEXT, sort_order INTEGER)`);
   run(stateDb, `CREATE TABLE IF NOT EXISTS workflow (id TEXT PRIMARY KEY, name TEXT, initial_status_id TEXT)`);
   run(stateDb, `CREATE TABLE IF NOT EXISTS workflow_statuses (id TEXT PRIMARY KEY, workflow_id TEXT, name TEXT, category_id TEXT, color TEXT)`);
@@ -96,6 +98,9 @@ export function migrateStateDb(): void {
       field_values TEXT, due_date TEXT, created_at TEXT, updated_at TEXT, resolved_at TEXT
     )`,
   );
+  addColumnIfMissing('issues', 'assignee_ids', 'TEXT');
+  addColumnIfMissing('issues', 'assigned_by', 'TEXT');
+  addColumnIfMissing('issues', 'agent_assignments', 'TEXT');
   run(stateDb, `CREATE INDEX IF NOT EXISTS idx_issues_project ON issues(project_id)`);
   run(stateDb, `CREATE INDEX IF NOT EXISTS idx_issues_parent ON issues(parent_id)`);
   run(
@@ -105,6 +110,7 @@ export function migrateStateDb(): void {
   run(stateDb, `CREATE TABLE IF NOT EXISTS comments (id TEXT PRIMARY KEY, issue_id TEXT, author_id TEXT, body TEXT, created_at TEXT, edited_at TEXT, parent_comment_id TEXT)`);
   run(stateDb, `CREATE INDEX IF NOT EXISTS idx_comments_issue ON comments(issue_id)`);
   addColumnIfMissing('comments', 'parent_comment_id', 'TEXT');
+  addColumnIfMissing('comments', 'on_behalf_of_user_id', 'TEXT');
   run(stateDb, `CREATE TABLE IF NOT EXISTS watchers (issue_id TEXT, user_id TEXT, watching_since TEXT, PRIMARY KEY (issue_id, user_id))`);
   run(
     stateDb,
@@ -114,6 +120,44 @@ export function migrateStateDb(): void {
     stateDb,
     `CREATE TABLE IF NOT EXISTS attachments (id TEXT PRIMARY KEY, issue_id TEXT, uploaded_by TEXT, file_name TEXT, mime_type TEXT, size_bytes INTEGER, url TEXT, created_at TEXT)`,
   );
+}
+
+/**
+ * One-time catch-up for issues that predate the AI-Agents-are-not-assignees split: any
+ * agent-kind id still sitting in `assignee_ids` (from before `agent_assignments` existed) is
+ * moved there, using the old `assigned_by` entry for that agent as the human it acted on
+ * behalf of — that column already recorded exactly this relationship. An agent with no
+ * recoverable `assigned_by` entry is just dropped from `assignee_ids`, since an unattributed
+ * agent assignment can't be kept without breaking the "always on behalf of someone" invariant.
+ * Raw SQL, not the repository/mapper layer, since `assignedBy` no longer exists on the mapped
+ * `Issue` type by design — this is the one place still allowed to read the legacy column.
+ */
+export function backfillAgentAssignments(): void {
+  const agentIds = new Set(all<{ id: string }>(stateDb, `SELECT id FROM users WHERE kind = 'agent'`).map((r) => r.id));
+  if (agentIds.size === 0) return;
+
+  const rows = all<{ id: string; assignee_ids: string | null; assigned_by: string | null; agent_assignments: string | null }>(
+    stateDb,
+    `SELECT id, assignee_ids, assigned_by, agent_assignments FROM issues`,
+  );
+  for (const row of rows) {
+    const assigneeIds: string[] = row.assignee_ids ? JSON.parse(row.assignee_ids) : [];
+    const stray = assigneeIds.filter((id) => agentIds.has(id));
+    if (stray.length === 0) continue;
+
+    const assignedBy: Record<string, string> = row.assigned_by ? JSON.parse(row.assigned_by) : {};
+    const agentAssignments: Record<string, string> = row.agent_assignments ? JSON.parse(row.agent_assignments) : {};
+    for (const agentId of stray) {
+      const onBehalfOfUserId = assignedBy[agentId];
+      if (onBehalfOfUserId) agentAssignments[agentId] = onBehalfOfUserId;
+    }
+    const humanAssigneeIds = assigneeIds.filter((id) => !agentIds.has(id));
+    run(stateDb, `UPDATE issues SET assignee_ids = ?, agent_assignments = ? WHERE id = ?`, [
+      JSON.stringify(humanAssigneeIds),
+      JSON.stringify(agentAssignments),
+      row.id,
+    ]);
+  }
 }
 
 export function migrateEventsDb(): void {

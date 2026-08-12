@@ -48,6 +48,7 @@ export interface DB {
     name: string | null;
     description: string | null;
     enabled: number | null;
+    model: string | null;
     event_filter: string | null;
     allowed_action_types: string | null;
     approval_policy: string | null;
@@ -68,6 +69,7 @@ export interface DB {
     started_at: string | null;
     completed_at: string | null;
     failure_reason: string | null;
+    token_usage: number | null;
   };
   status_categories: {
     id: string;
@@ -194,6 +196,9 @@ export interface DB {
     priority: string | null;
     reporter_id: string | null;
     assignee_id: string | null;
+    assignee_ids: string | null;
+    assigned_by: string | null;
+    agent_assignments: string | null;
     parent_id: string | null;
     additional_parent_ids: string | null;
     label_ids: string | null;
@@ -222,6 +227,7 @@ export interface DB {
     id: string;
     issue_id: string | null;
     author_id: string | null;
+    on_behalf_of_user_id: string | null;
     body: string | null;
     created_at: string | null;
     edited_at: string | null;

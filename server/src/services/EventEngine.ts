@@ -1,4 +1,5 @@
 import { createHmac, randomUUID } from 'node:crypto';
+import Anthropic from '@anthropic-ai/sdk';
 import type {
   ActorRef,
   Agent,
@@ -18,9 +19,44 @@ import type { AgentRunRepository } from '../repositories/AgentRunRepository';
 import type { AutomationRepository } from '../repositories/AutomationRepository';
 import type { CatalogRepository } from '../repositories/CatalogRepository';
 import type { IssueRepository } from '../repositories/IssueRepository';
+import type { UserRepository } from '../repositories/UserRepository';
 import type { WebhookRepository } from '../repositories/WebhookRepository';
+import type { WorkflowRepository } from '../repositories/WorkflowRepository';
 import type { WorkspaceRepository } from '../repositories/WorkspaceRepository';
 import type { EventProjector } from './EventProjector';
+
+/** Lazily constructed — reads `ANTHROPIC_API_KEY` at call time, not at module load, so tests
+ * and environments without a key don't crash just by importing this file. */
+let anthropicClient: Anthropic | undefined;
+function anthropic(): Anthropic {
+  if (!anthropicClient) anthropicClient = new Anthropic();
+  return anthropicClient;
+}
+
+/** One Anthropic tool definition per {@link AutomationAction} variant — the agent's entire
+ * vocabulary for acting on an issue is this closed set, never an open-ended shell/code tool. */
+const ACTION_TOOLS: Record<AutomationAction['type'], Anthropic.Tool> = {
+  transitionStatus: {
+    name: 'transitionStatus',
+    description: "Move the issue to a different workflow status. Only use a status id from the list of valid statuses given below.",
+    input_schema: { type: 'object', properties: { toStatusId: { type: 'string' } }, required: ['toStatusId'] },
+  },
+  assignTo: {
+    name: 'assignTo',
+    description: 'Assign the issue to a user. Only use a user id from the list of workspace users given below.',
+    input_schema: { type: 'object', properties: { userId: { type: 'string' } }, required: ['userId'] },
+  },
+  addComment: {
+    name: 'addComment',
+    description: 'Post a comment on the issue, visible to everyone watching it.',
+    input_schema: { type: 'object', properties: { body: { type: 'string' } }, required: ['body'] },
+  },
+  setField: {
+    name: 'setField',
+    description: 'Set the value of a custom field on the issue. Only use a field id from the list of valid fields given below.',
+    input_schema: { type: 'object', properties: { fieldId: { type: 'string' }, value: {} }, required: ['fieldId', 'value'] },
+  },
+};
 
 function matchesFilter(filter: EventType[] | '*', type: EventType): boolean {
   return filter === '*' || filter.includes(type);
@@ -72,6 +108,8 @@ export class EventEngine {
     private readonly automations: AutomationRepository,
     private readonly webhooks: WebhookRepository,
     private readonly catalog: CatalogRepository,
+    private readonly workflow: WorkflowRepository,
+    private readonly users: UserRepository,
     private readonly projector: EventProjector,
   ) {}
 
@@ -129,6 +167,11 @@ export class EventEngine {
     const agent = await this.agents.get(agentUserId);
     if (!agent) throw new Error('Agent not found');
 
+    const issue = issueId ? await this.issues.get(issueId) : undefined;
+    if (issueId && issue && issue.agentAssignments?.[agentUserId] === undefined) {
+      throw new Error('Attach this agent to the issue (choose who it acts on behalf of) before triggering it');
+    }
+
     const subject: EntityRef = issueId ? { type: 'issue', id: issueId } : { type: 'agent', id: agentUserId };
     const event = await this.writeEvent({
       actor: { kind: 'user', userId: triggeredBy },
@@ -136,7 +179,6 @@ export class EventEngine {
       payload: { type: 'agent.manuallyTriggered', agentUserId, triggeredBy },
     });
 
-    const issue = issueId ? await this.issues.get(issueId) : undefined;
     let run: AgentRun | undefined;
     if (issue && (await this.withinBudget(agent))) run = await this.startAgentRun(agent, issue, event.id);
     return { event, run };
@@ -144,7 +186,7 @@ export class EventEngine {
 
   /** Executes every proposed action on a run and marks it applied. Public: also called after approval. */
   async executeAgentRun(run: AgentRun, issue: Issue): Promise<void> {
-    const actor: ActorRef = { kind: 'user', userId: run.agentUserId };
+    const actor: ActorRef = { kind: 'user', userId: run.agentUserId, onBehalfOfUserId: issue.agentAssignments?.[run.agentUserId] };
     run.appliedActionIndexes = [];
     for (let i = 0; i < run.proposedActions.length; i++) {
       await this.applyAction(run.proposedActions[i], issue, actor);
@@ -184,10 +226,16 @@ export class EventEngine {
         return;
       }
       case 'assignTo': {
+        if (issue.assigneeIds.includes(action.userId)) return;
+        // Assignees are humans only — an agent (or an automation rule) proposing this action
+        // may not assign another agent. Attaching an agent to an issue only happens through
+        // the explicit on-behalf-of flow (POST /issues/:id/agents), never through automation.
+        const target = await this.users.getById(action.userId);
+        if (!target || target.kind === 'agent') return;
         await this.writeEvent({
           actor,
           subject: { type: 'issue', id: issue.id },
-          payload: { type: 'issue.assigned', issueId: issue.id, fromUserId: issue.assigneeId, toUserId: action.userId },
+          payload: { type: 'issue.assigneesChanged', issueId: issue.id, fromUserIds: issue.assigneeIds, toUserIds: [...issue.assigneeIds, action.userId] },
         });
         return;
       }
@@ -198,11 +246,12 @@ export class EventEngine {
         // project has no lead assigned yet. Agent-authored comments don't hit this branch:
         // agents ARE users, so `actor.kind === 'user'` already holds for them.
         const authorId = actor.kind === 'user' ? actor.userId : ((await this.workspace.getProject()).leadId ?? 'system');
+        const onBehalfOfUserId = actor.kind === 'user' ? actor.onBehalfOfUserId : undefined;
         const commentId = `cmt_${randomUUID()}`;
         await this.writeEvent({
           actor,
           subject: { type: 'comment', id: commentId },
-          payload: { type: 'comment.created', commentId, issueId: issue.id, authorId, body: action.body },
+          payload: { type: 'comment.created', commentId, issueId: issue.id, authorId, onBehalfOfUserId, body: action.body },
         });
         return;
       }
@@ -251,31 +300,97 @@ export class EventEngine {
       const dayAgo = now - 24 * 60 * 60 * 1000;
       if (runsForAgent.filter((r) => new Date(r.startedAt).getTime() >= dayAgo).length >= budget.maxRunsPerDay) return false;
     }
+    if (budget.maxSpendPerDay !== undefined) {
+      const dayAgo = now - 24 * 60 * 60 * 1000;
+      const tokensToday = runsForAgent
+        .filter((r) => new Date(r.startedAt).getTime() >= dayAgo)
+        .reduce((sum, r) => sum + (r.tokenUsage ?? 0), 0);
+      if (tokensToday >= budget.maxSpendPerDay) return false;
+    }
     return true;
-    // maxSpendPerDay isn't enforced here — there's no real per-call cost to meter without an
-    // actual model behind decideAgentActions below.
   }
 
   /**
-   * Stands in for a real LLM call: a small deterministic heuristic so the whole agent
-   * pipeline (trigger -> proposed actions -> approval -> execution) can be exercised end to
-   * end without wiring up an actual model. A real agent implementation replaces only this
-   * method's body with a model call — budget, approval, and execution around it stay the same.
+   * Real decision-making: one non-streaming Anthropic Messages API call, tools restricted to
+   * `agent.allowedActionTypes`, single-shot (no tool-use loop — if the model doesn't call a
+   * tool on the first response, it proposed nothing this run). The model sees the issue's
+   * current state and the agent's own `description` as its only instructions; it never sees
+   * or touches anything outside the closed {@link AutomationAction} vocabulary.
    */
-  private async decideAgentActions(agent: Agent, issue: Issue): Promise<{ actions: AutomationAction[]; rationale: string }> {
-    const bugTypeId = (await this.catalog.listIssueTypes()).find((t) => t.name === 'Bug')?.id;
-    if (issue.issueTypeId === bugTypeId) {
-      return {
-        actions: [{ type: 'addComment', body: `Thanks for filing "${issue.title}" — flagged for triage.` }],
-        rationale: `New issue is a Bug ("${issue.title}"), matched the triage heuristic.`,
-      };
+  private async decideAgentActions(agent: Agent, issue: Issue): Promise<{ actions: AutomationAction[]; rationale: string; tokenUsage: number }> {
+    const tools = agent.allowedActionTypes.map((type) => ACTION_TOOLS[type]);
+    if (tools.length === 0) return { actions: [], rationale: 'This agent has no allowed action types.', tokenUsage: 0 };
+
+    const [statuses, users, fields] = await Promise.all([
+      this.workflow.getWorkflow().then((w) => w.statuses),
+      this.users.list(),
+      this.catalog.listFieldDefinitions(),
+    ]);
+
+    const system = [
+      `You are "${agent.name}", an AI agent embedded in an issue tracker. ${agent.description ?? ''}`.trim(),
+      'You are reacting to one triggering event about the issue described below. Decide whether to take any action on it.',
+      'Only propose actions using the tools provided — you have no other way to affect the system. If no action is warranted, do not call any tool.',
+      `Valid statuses (for transitionStatus): ${statuses.map((s) => `${s.id} ("${s.name}")`).join(', ') || 'none'}`,
+      `Valid users (for assignTo — humans only, agents can't be assignees): ${users.filter((u) => u.kind !== 'agent').map((u) => `${u.id} ("${u.displayName}")`).join(', ') || 'none'}`,
+      `Valid fields (for setField): ${fields.map((f) => `${f.id} ("${f.name}", type ${f.type})`).join(', ') || 'none'}`,
+    ].join('\n');
+
+    const userMessage = [
+      `Issue: ${issue.title}`,
+      issue.description ? `Description: ${issue.description}` : undefined,
+      `Current status: ${issue.statusId}`,
+      `Type: ${issue.issueTypeId}`,
+      `Assignees: ${issue.assigneeIds.length ? issue.assigneeIds.join(', ') : 'unassigned'}`,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    let response: Anthropic.Message;
+    try {
+      response = await anthropic().messages.create({
+        model: agent.model,
+        max_tokens: 1024,
+        system,
+        tools,
+        tool_choice: { type: 'auto' },
+        messages: [{ role: 'user', content: userMessage }],
+      });
+    } catch (err) {
+      throw new Error(`Agent model call failed: ${err instanceof Error ? err.message : String(err)}`);
     }
-    return { actions: [], rationale: 'No triage action applies to this issue type.' };
+
+    const tokenUsage = response.usage.input_tokens + response.usage.output_tokens;
+    const actions: AutomationAction[] = [];
+    let rationale = '';
+    for (const block of response.content) {
+      if (block.type === 'text') rationale += block.text;
+      else if (block.type === 'tool_use') actions.push({ type: block.name as AutomationAction['type'], ...(block.input as object) } as AutomationAction);
+    }
+    if (!rationale) rationale = actions.length > 0 ? `Proposed ${actions.length} action(s).` : 'No action proposed for this event.';
+    return { actions, rationale, tokenUsage };
   }
 
   /** Creates and (unless approval is required) immediately executes an {@link AgentRun}. */
   private async startAgentRun(agent: Agent, issue: Issue, triggeringEventId: string): Promise<AgentRun> {
-    const { actions, rationale } = await this.decideAgentActions(agent, issue);
+    let decided: { actions: AutomationAction[]; rationale: string; tokenUsage: number };
+    try {
+      decided = await this.decideAgentActions(agent, issue);
+    } catch (err) {
+      const run: AgentRun = {
+        id: `run_${randomUUID()}`,
+        agentUserId: agent.userId,
+        triggeringEventId,
+        status: 'failed',
+        proposedActions: [],
+        failureReason: err instanceof Error ? err.message : String(err),
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+      await this.projector.upsertAgentRun(run);
+      return run;
+    }
+    const { actions, rationale, tokenUsage } = decided;
     const bounded = actions.filter((a) => agent.allowedActionTypes.includes(a.type)).slice(0, agent.budget.maxActionsPerRun ?? actions.length);
 
     const policy = agent.approvalPolicy;
@@ -290,6 +405,7 @@ export class EventEngine {
       status: bounded.length === 0 ? 'applied' : requiresApproval ? 'awaitingApproval' : 'pending',
       proposedActions: bounded,
       rationale,
+      tokenUsage,
       startedAt: new Date().toISOString(),
       completedAt: bounded.length === 0 ? new Date().toISOString() : undefined,
     };
@@ -314,6 +430,11 @@ export class EventEngine {
     if (!issue) return;
     for (const agent of await this.agents.list()) {
       if (!agent.enabled) continue;
+      // An agent only reacts to an issue it's been explicitly attached to (on behalf of one
+      // of that issue's assignees) — this is what makes "always acts on behalf of an assigned
+      // user" an enforced invariant rather than best-effort: a broad `eventFilter` no longer
+      // lets an agent auto-react to issues nobody put it on.
+      if (issue.agentAssignments?.[agent.userId] === undefined) continue;
       if (agent.ignoreSelfTriggeredEvents && event.actor.kind === 'user' && event.actor.userId === agent.userId) continue;
       if (!matchesFilter(agent.eventFilter, event.payload.type)) continue;
       if (!(await this.withinBudget(agent))) continue;

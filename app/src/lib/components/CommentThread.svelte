@@ -5,7 +5,7 @@
   import Avatar from './Avatar.svelte';
   import Icon from './Icon.svelte';
   import MarkdownEditor from './MarkdownEditor.svelte';
-  import { formatRelativeDate, renderMarkdown } from '../util';
+  import { displayName, formatRelativeDate, renderMarkdown } from '../util';
   import type { Comment, User } from '$domain';
 
   export let comment: Comment;
@@ -22,6 +22,7 @@
   export let onEditComment: (commentId: string, body: string) => Promise<void>;
 
   $: author = users.find((u) => u.id === comment.authorId);
+  $: onBehalfOf = comment.onBehalfOfUserId ? users.find((u) => u.id === comment.onBehalfOfUserId) : undefined;
   $: children = allComments.filter((c) => c.parentCommentId === comment.id).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   // Indentation is capped, not unbounded — a very deep thread should still stay readable
   // rather than squeezing itself into a sliver on the right edge of the drawer.
@@ -54,10 +55,12 @@
 
 {#if author}
   <div class="comment" style="margin-left:{indent}px">
-    <Avatar userId={author.id} name={author.displayName} avatarUrl={author.avatarUrl} size={depth === 0 ? 26 : 22} />
+    <Avatar userId={author.id} name={displayName(author)} avatarUrl={author.avatarUrl} kind={author.kind} size={depth === 0 ? 26 : 22} />
     <div class="comment-body">
       <div class="comment-meta">
-        <span class="comment-name">{author.displayName}</span>
+        <span class="comment-name">
+          {displayName(author)}{#if onBehalfOf}<span class="on-behalf-of"> on behalf of {onBehalfOf.displayName}</span>{/if}
+        </span>
         <span class="comment-time">{formatRelativeDate(comment.createdAt)}</span>
         {#if comment.editedAt}<span class="comment-edited">(edited)</span>{/if}
       </div>
@@ -128,6 +131,7 @@
   .comment-body { flex: 1; min-width: 0; }
   .comment-meta { display: flex; align-items: baseline; gap: 7px; margin-bottom: 3px; }
   .comment-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
+  .on-behalf-of { font-weight: 400; color: var(--text-3); }
   .comment-time { font-size: 11px; color: var(--text-3); }
   .comment-text { margin: 0; }
   .comment-edited { font-size: 11px; color: var(--text-3); font-style: italic; }

@@ -35,7 +35,16 @@ import type {
  * user at all.
  */
 export type ActorRef =
-  | { kind: 'user'; userId: UserId }
+  | {
+      kind: 'user';
+      userId: UserId;
+      /**
+       * Set when this actor is an agent acting because a human assigned it to the issue —
+       * that human, not the agent, is who this action is "on behalf of". Never set for a
+       * human's own actions. Display as "{agent} on behalf of {onBehalfOfUserId}".
+       */
+      onBehalfOfUserId?: UserId;
+    }
   | { kind: 'automation'; ruleId: AutomationRuleId }
   /** Migrations, imports, scheduled jobs not attributable to one rule. */
   | { kind: 'system' };
@@ -63,7 +72,9 @@ export type EventPayload =
   | { type: 'issue.created'; issueId: IssueId; issue: Issue }
   | { type: 'issue.statusChanged'; issueId: IssueId; fromStatusId: StatusId; toStatusId: StatusId }
   | { type: 'issue.fieldChanged'; issueId: IssueId; fieldId: FieldId; fromValue: unknown; toValue: unknown }
-  | { type: 'issue.assigned'; issueId: IssueId; fromUserId?: UserId; toUserId?: UserId }
+  | { type: 'issue.assigneesChanged'; issueId: IssueId; fromUserIds: UserId[]; toUserIds: UserId[] }
+  | { type: 'issue.agentAssigned'; issueId: IssueId; agentUserId: UserId; onBehalfOfUserId: UserId }
+  | { type: 'issue.agentUnassigned'; issueId: IssueId; agentUserId: UserId }
   | { type: 'issue.linked'; issueId: IssueId; linkId: LinkId; linkedIssueId: IssueId; linkType: IssueLinkType }
   | { type: 'issue.unlinked'; issueId: IssueId; linkId: LinkId }
   | { type: 'issue.sprintChanged'; issueId: IssueId; fromSprintId?: SprintId; toSprintId?: SprintId }
@@ -88,7 +99,7 @@ export type EventPayload =
       mimeType: string;
       sizeBytes: number;
     }
-  | { type: 'comment.created'; commentId: CommentId; issueId: IssueId; authorId: UserId; body: string; parentCommentId?: CommentId }
+  | { type: 'comment.created'; commentId: CommentId; issueId: IssueId; authorId: UserId; onBehalfOfUserId?: UserId; body: string; parentCommentId?: CommentId }
   | { type: 'comment.edited'; commentId: CommentId; issueId: IssueId; body: string }
   | { type: 'sprint.started'; sprintId: SprintId }
   | { type: 'sprint.completed'; sprintId: SprintId }

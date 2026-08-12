@@ -21,7 +21,8 @@ export interface AuditReport {
 
 interface ExpectedIssueState {
   statusId?: string;
-  assigneeId?: string;
+  assigneeIds?: string[];
+  agentAssignments?: Partial<Record<string, string>>;
   sprintId?: string;
   loggedSeconds: number;
   watchers: Set<string>;
@@ -33,6 +34,14 @@ function setsEqual(a: Set<string>, b: Set<string>): boolean {
   if (a.size !== b.size) return false;
   for (const x of a) if (!b.has(x)) return false;
   return true;
+}
+
+/** Order-independent equality for string-keyed/valued records (JSON.stringify would false-positive on key order). */
+function recordsEqual(a: Partial<Record<string, string>>, b: Partial<Record<string, string>>): boolean {
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  return aKeys.every((k) => a[k] === b[k]);
 }
 
 /**
@@ -65,7 +74,7 @@ export class AuditService {
     const ensure = (issueId: string): ExpectedIssueState => {
       let e = expectedByIssue.get(issueId);
       if (!e) {
-        e = { loggedSeconds: 0, watchers: new Set(), commentIds: new Set(), deleted: false };
+        e = { loggedSeconds: 0, watchers: new Set(), commentIds: new Set(), deleted: false, agentAssignments: {} };
         expectedByIssue.set(issueId, e);
       }
       return e;
@@ -83,15 +92,22 @@ export class AuditService {
         case 'issue.created': {
           const e = ensure(p.issueId);
           e.statusId = p.issue.statusId;
-          e.assigneeId = p.issue.assigneeId;
+          e.assigneeIds = p.issue.assigneeIds;
+          e.agentAssignments = { ...(p.issue.agentAssignments ?? {}) };
           e.sprintId = p.issue.sprintId;
           break;
         }
         case 'issue.statusChanged':
           ensure(p.issueId).statusId = p.toStatusId;
           break;
-        case 'issue.assigned':
-          ensure(p.issueId).assigneeId = p.toUserId;
+        case 'issue.assigneesChanged':
+          ensure(p.issueId).assigneeIds = p.toUserIds;
+          break;
+        case 'issue.agentAssigned':
+          ensure(p.issueId).agentAssignments![p.agentUserId] = p.onBehalfOfUserId;
+          break;
+        case 'issue.agentUnassigned':
+          delete ensure(p.issueId).agentAssignments![p.agentUserId];
           break;
         case 'issue.sprintChanged':
           ensure(p.issueId).sprintId = p.toSprintId;
@@ -138,7 +154,12 @@ export class AuditService {
       }
 
       if (expected.statusId !== undefined && expected.statusId !== actual.statusId) findings.push({ issueId, field: 'statusId', expected: expected.statusId, actual: actual.statusId });
-      if ((expected.assigneeId ?? undefined) !== actual.assigneeId) findings.push({ issueId, field: 'assigneeId', expected: expected.assigneeId, actual: actual.assigneeId });
+      if (expected.assigneeIds !== undefined && setsEqual(new Set(expected.assigneeIds), new Set(actual.assigneeIds)) === false) {
+        findings.push({ issueId, field: 'assigneeIds', expected: expected.assigneeIds, actual: actual.assigneeIds });
+      }
+      if (!recordsEqual(expected.agentAssignments ?? {}, actual.agentAssignments ?? {})) {
+        findings.push({ issueId, field: 'agentAssignments', expected: expected.agentAssignments, actual: actual.agentAssignments });
+      }
       if ((expected.sprintId ?? undefined) !== actual.sprintId) findings.push({ issueId, field: 'sprintId', expected: expected.sprintId, actual: actual.sprintId });
       if (expected.loggedSeconds !== actual.loggedSeconds) findings.push({ issueId, field: 'loggedSeconds', expected: expected.loggedSeconds, actual: actual.loggedSeconds });
 

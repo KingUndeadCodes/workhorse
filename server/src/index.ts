@@ -3,7 +3,7 @@ import { serve } from '@hono/node-server';
 import { app } from './app';
 import { initContainer, planningRepo, userRepo, workflowRepo, workspaceRepo } from './container';
 import { initDatabases, persistState } from './db/core';
-import { migrateEventsDb, migrateStateDb } from './db/schema';
+import { backfillAgentAssignments, migrateEventsDb, migrateStateDb } from './db/schema';
 import { bootstrapDatabase } from './seed';
 
 const { isFreshState } = await initDatabases();
@@ -48,6 +48,8 @@ async function backfillBoardColumns(): Promise<void> {
   }
 }
 await backfillBoardColumns();
+backfillAgentAssignments();
+persistState();
 
 const port = Number(process.env.PORT ?? 8787);
 

@@ -34,6 +34,8 @@ import {
   addIssueLink as apiAddIssueLink,
   addWatcher as apiAddWatcher,
   addWorklog as apiAddWorklog,
+  assignAgentToIssue as apiAssignAgentToIssue,
+  unassignAgentFromIssue as apiUnassignAgentFromIssue,
   completeSprint as apiCompleteSprint,
   createIssue as apiCreateIssue,
   createSprint as apiCreateSprint,
@@ -150,6 +152,17 @@ export async function createIssue(fields: Partial<Issue> & { title: string; issu
 /** Edits built-in issue fields (not custom field values — see {@link setIssueField}). */
 export async function updateIssue(issueId: string, changes: Partial<Issue>): Promise<void> {
   const { issue } = await apiUpdateIssue(issueId, changes);
+  replaceIssue(issue);
+}
+
+/** Attaches an AI agent to an issue on behalf of one of its current human assignees. */
+export async function assignAgent(issueId: string, agentUserId: string, onBehalfOfUserId: string): Promise<void> {
+  const { issue } = await apiAssignAgentToIssue(issueId, agentUserId, onBehalfOfUserId);
+  replaceIssue(issue);
+}
+
+export async function unassignAgent(issueId: string, agentUserId: string): Promise<void> {
+  const { issue } = await apiUnassignAgentFromIssue(issueId, agentUserId);
   replaceIssue(issue);
 }
 

@@ -78,6 +78,7 @@ export function rowToAgent(r: Record<string, unknown>): Agent {
     name: r.name as string,
     description: nullish(r.description),
     enabled: bool(r.enabled),
+    model: (r.model as string | null) ?? 'claude-haiku-4-5',
     eventFilter: parse(r.event_filter, '*' as const),
     allowedActionTypes: parse(r.allowed_action_types, []),
     approvalPolicy: parse(r.approval_policy, { mode: 'autoApplyAll' as const }),
@@ -87,7 +88,7 @@ export function rowToAgent(r: Record<string, unknown>): Agent {
   };
 }
 export function agentParams(a: Agent): unknown[] {
-  return [a.userId, a.workspaceId, a.projectId, a.name, a.description ?? null, a.enabled ? 1 : 0, j(a.eventFilter), j(a.allowedActionTypes), j(a.approvalPolicy), j(a.budget), a.ignoreSelfTriggeredEvents ? 1 : 0, a.createdAt];
+  return [a.userId, a.workspaceId, a.projectId, a.name, a.description ?? null, a.enabled ? 1 : 0, a.model, j(a.eventFilter), j(a.allowedActionTypes), j(a.approvalPolicy), j(a.budget), a.ignoreSelfTriggeredEvents ? 1 : 0, a.createdAt];
 }
 
 export function rowToAgentRun(r: Record<string, unknown>): AgentRun {
@@ -104,6 +105,7 @@ export function rowToAgentRun(r: Record<string, unknown>): AgentRun {
     startedAt: r.started_at as string,
     completedAt: nullish(r.completed_at),
     failureReason: nullish(r.failure_reason),
+    tokenUsage: (r.token_usage as number | null) ?? undefined,
   };
 }
 export function agentRunParams(run: AgentRun): unknown[] {
@@ -120,6 +122,7 @@ export function agentRunParams(run: AgentRun): unknown[] {
     run.startedAt,
     run.completedAt ?? null,
     run.failureReason ?? null,
+    run.tokenUsage ?? null,
   ];
 }
 
@@ -264,7 +267,8 @@ export function rowToIssue(r: Record<string, unknown>): Issue {
     description: parse(r.description, undefined),
     priority: r.priority as Issue['priority'],
     reporterId: r.reporter_id as string,
-    assigneeId: nullish(r.assignee_id),
+    assigneeIds: parse(r.assignee_ids, []),
+    agentAssignments: parse(r.agent_assignments, undefined),
     parentId: nullish(r.parent_id),
     additionalParentIds: parse(r.additional_parent_ids, undefined),
     labelIds: parse(r.label_ids, []),
@@ -285,7 +289,7 @@ export function rowToIssue(r: Record<string, unknown>): Issue {
 
 /** Full column list for `issues`, in the order every INSERT/SELECT below uses. */
 export const ISSUE_COLUMNS = [
-  'id', 'key', 'project_id', 'issue_type_id', 'status_id', 'title', 'description', 'priority', 'reporter_id', 'assignee_id',
+  'id', 'key', 'project_id', 'issue_type_id', 'status_id', 'title', 'description', 'priority', 'reporter_id', 'assignee_ids', 'agent_assignments',
   'parent_id', 'additional_parent_ids', 'label_ids', 'component_ids', 'fix_version_ids', 'sprint_id', 'story_points',
   'original_estimate_seconds', 'remaining_estimate_seconds', 'logged_seconds', 'field_values', 'due_date', 'created_at', 'updated_at', 'resolved_at',
 ] as const;
@@ -301,7 +305,8 @@ export function issueParams(issue: Issue): unknown[] {
     j(issue.description ?? null),
     issue.priority,
     issue.reporterId,
-    issue.assigneeId ?? null,
+    j(issue.assigneeIds),
+    j(issue.agentAssignments ?? null),
     issue.parentId ?? null,
     j(issue.additionalParentIds ?? null),
     j(issue.labelIds),
@@ -329,6 +334,7 @@ export function rowToComment(r: Record<string, unknown>): Comment {
     id: r.id as string,
     issueId: r.issue_id as string,
     authorId: r.author_id as string,
+    onBehalfOfUserId: nullish(r.on_behalf_of_user_id),
     body: parse(r.body, { format: 'richtext-v1' as const, content: null, plainText: '' }),
     createdAt: r.created_at as string,
     editedAt: nullish(r.edited_at),

@@ -8,6 +8,7 @@
     addComment,
     editComment,
     addIssueLink,
+    assignAgent,
     comments,
     components,
     fieldDefinitions,
@@ -21,12 +22,14 @@
     sprints,
     statusCategories,
     toggleWatching,
+    unassignAgent,
     updateIssue,
     users,
     watchers,
     workflow,
   } from '../stores/workspace';
-  import { priorityIcon, renderMarkdown, typeIcon } from '../util';
+  import { triggerAgent } from '../api';
+  import { displayName, priorityIcon, renderMarkdown, splitHumansAndAgents, typeIcon } from '../util';
   import type { IssueLinkType } from '$domain';
 
   let draftComment = '';
@@ -51,6 +54,14 @@
   $: status = issue ? $workflow?.statuses.find((s) => s.id === issue.statusId) : undefined;
   $: category = status ? $statusCategories.find((c) => c.id === status.categoryId) : undefined;
   $: reporter = issue ? $users.find((u) => u.id === issue.reporterId) : undefined;
+  $: ({ humans: humanUsers, agents: agentUsers } = splitHumansAndAgents($users));
+  $: issueAssignees = issue ? issue.assigneeIds.map((id) => $users.find((u) => u.id === id)).filter((u): u is (typeof $users)[number] => !!u) : [];
+  $: attachedAgents = issue
+    ? Object.entries(issue.agentAssignments ?? {})
+        .map(([agentId, onBehalfOfId]) => ({ agent: $users.find((u) => u.id === agentId), onBehalfOf: $users.find((u) => u.id === onBehalfOfId) }))
+        .filter((e): e is { agent: (typeof $users)[number]; onBehalfOf: (typeof $users)[number] } => !!e.agent && !!e.onBehalfOf)
+    : [];
+  $: unattachedAgents = issue ? agentUsers.filter((a) => issue!.agentAssignments?.[a.id] === undefined) : agentUsers;
   $: issueComments = issue ? $comments.filter((c) => c.issueId === issue.id) : [];
   // Threading is one level deep (see domain/collaboration.ts) — top-level comments plus,
   // for each, the replies attached to it, both ordered oldest-first.
@@ -148,10 +159,51 @@
     updateIssue(issue.id, { priority: (e.target as HTMLSelectElement).value as typeof issue.priority });
   }
 
-  function handleAssigneeChange(e: Event) {
+  let showAssigneePicker = false;
+  /** Svelte action: closes the assignee popover on any click outside the node it's attached to. */
+  function closeOnClickOutside(node: HTMLElement, close: () => void) {
+    function handleClick(event: MouseEvent) {
+      if (!node.contains(event.target as Node)) close();
+    }
+    document.addEventListener('click', handleClick, true);
+    return { destroy: () => document.removeEventListener('click', handleClick, true) };
+  }
+  function toggleAssignee(userId: string) {
     if (!issue) return;
-    const value = (e.target as HTMLSelectElement).value;
-    updateIssue(issue.id, { assigneeId: value || undefined });
+    const current = issue.assigneeIds;
+    const next = current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId];
+    updateIssue(issue.id, { assigneeIds: next });
+  }
+
+  let showAgentPicker = false;
+  let pickedAgentId = '';
+  let pickedOnBehalfOfId = '';
+  let triggeringAgentId: string | null = null;
+
+  /** Opens the "attach an agent" popover, defaulting the on-behalf-of pick to the current user if they're an assignee. */
+  function openAgentPicker() {
+    if (!issue) return;
+    pickedAgentId = '';
+    pickedOnBehalfOfId = $currentUser && issue.assigneeIds.includes($currentUser.id) ? $currentUser.id : issue.assigneeIds[0] ?? '';
+    showAgentPicker = true;
+  }
+  async function confirmAttachAgent() {
+    if (!issue || !pickedAgentId || !pickedOnBehalfOfId) return;
+    await assignAgent(issue.id, pickedAgentId, pickedOnBehalfOfId);
+    showAgentPicker = false;
+  }
+  async function detachAgent(agentUserId: string) {
+    if (!issue) return;
+    await unassignAgent(issue.id, agentUserId);
+  }
+  async function runAgentNow(agentUserId: string) {
+    if (!issue) return;
+    triggeringAgentId = agentUserId;
+    try {
+      await triggerAgent(agentUserId, issue.id);
+    } finally {
+      triggeringAgentId = null;
+    }
   }
 
   function handleSprintChange(e: Event) {
@@ -246,18 +298,38 @@
       </div>
 
       <div class="field-grid">
-        <div class="field">
-          <span class="field-label">Assignee</span>
-          <select class="field-select" value={issue.assigneeId ?? ''} on:change={handleAssigneeChange}>
-            <option value="">Unassigned</option>
-            {#each $users as u (u.id)}<option value={u.id}>{u.displayName}</option>{/each}
-          </select>
+        <div class="field assignee-field" use:closeOnClickOutside={() => (showAssigneePicker = false)}>
+          <span class="field-label">Assignees</span>
+          <div class="assignee-control">
+            {#each issue.assigneeIds as uid (uid)}
+              {@const u = $users.find((usr) => usr.id === uid)}
+              {#if u}
+                <span class="assignee-chip">
+                  <Avatar userId={u.id} name={displayName(u)} avatarUrl={u.avatarUrl} kind={u.kind} size={16} />
+                  {displayName(u)}
+                  <button type="button" class="chip-remove" on:click={() => toggleAssignee(u.id)}><Icon name="x" size={10} /></button>
+                </span>
+              {/if}
+            {/each}
+            <button type="button" class="assignee-add" on:click={() => (showAssigneePicker = !showAssigneePicker)}>+ Add</button>
+            {#if showAssigneePicker}
+              <div class="assignee-popover">
+                {#each humanUsers as u (u.id)}
+                  <label class="assignee-option">
+                    <input type="checkbox" checked={issue.assigneeIds.includes(u.id)} on:change={() => toggleAssignee(u.id)} />
+                    <Avatar userId={u.id} name={u.displayName} avatarUrl={u.avatarUrl} size={16} />
+                    {u.displayName}
+                  </label>
+                {/each}
+              </div>
+            {/if}
+          </div>
         </div>
         <div class="field">
           <span class="field-label">Reporter</span>
           <span class="field-value">
             {#if reporter}
-              <Avatar userId={reporter.id} name={reporter.displayName} avatarUrl={reporter.avatarUrl} size={19} />{reporter.displayName}
+              <Avatar userId={reporter.id} name={displayName(reporter)} avatarUrl={reporter.avatarUrl} kind={reporter.kind} size={19} />{displayName(reporter)}
             {:else}
               Unassigned
             {/if}
@@ -298,12 +370,55 @@
         {/each}
       </div>
 
+      <div class="section agents-section" use:closeOnClickOutside={() => (showAgentPicker = false)}>
+        <div class="section-label">AI Agents</div>
+        <div class="agent-chips">
+          {#each attachedAgents as { agent, onBehalfOf } (agent.id)}
+            <span class="agent-chip">
+              <Avatar userId={agent.id} name={displayName(agent)} kind={agent.kind} size={16} />
+              {displayName(agent)} — on behalf of {onBehalfOf.displayName}
+              <button
+                type="button"
+                class="chip-run"
+                title="Run now"
+                disabled={triggeringAgentId === agent.id}
+                on:click={() => runAgentNow(agent.id)}
+              >{triggeringAgentId === agent.id ? '…' : 'Run'}</button>
+              <button type="button" class="chip-remove" on:click={() => detachAgent(agent.id)}><Icon name="x" size={10} /></button>
+            </span>
+          {/each}
+          {#if issueAssignees.length === 0}
+            <span class="agents-empty">Assign a person first</span>
+          {:else}
+            <button type="button" class="assignee-add" on:click={() => (showAgentPicker ? (showAgentPicker = false) : openAgentPicker())}>+ Add</button>
+            {#if showAgentPicker}
+              <div class="assignee-popover agent-popover">
+                {#if unattachedAgents.length === 0}
+                  <div class="agents-empty">No more agents to attach</div>
+                {:else}
+                  <label class="agent-field-label" for="agent-pick">Agent</label>
+                  <select id="agent-pick" bind:value={pickedAgentId}>
+                    <option value="" disabled>Choose an agent…</option>
+                    {#each unattachedAgents as a (a.id)}<option value={a.id}>{displayName(a)}</option>{/each}
+                  </select>
+                  <label class="agent-field-label" for="agent-on-behalf-of">On behalf of</label>
+                  <select id="agent-on-behalf-of" bind:value={pickedOnBehalfOfId}>
+                    {#each issueAssignees as u (u.id)}<option value={u.id}>{u.displayName}</option>{/each}
+                  </select>
+                  <button type="button" class="btn-attach" disabled={!pickedAgentId || !pickedOnBehalfOfId} on:click={confirmAttachAgent}>Attach</button>
+                {/if}
+              </div>
+            {/if}
+          {/if}
+        </div>
+      </div>
+
       <div class="section watchers-section">
         <div class="avatar-stack">
           {#each issueWatchers as w (w.userId)}
             {@const u = $users.find((usr) => usr.id === w.userId)}
             {#if u}
-              <div class="stack-item"><Avatar userId={u.id} name={u.displayName} avatarUrl={u.avatarUrl} size={22} /></div>
+              <div class="stack-item"><Avatar userId={u.id} name={displayName(u)} avatarUrl={u.avatarUrl} kind={u.kind} size={22} /></div>
             {/if}
           {/each}
         </div>
@@ -435,6 +550,52 @@
     border-radius: 6px; padding: 0 6px; text-transform: capitalize;
     box-sizing: border-box; height: 30px; width: 100%; line-height: normal;
   }
+  .field-input[type="date"] { text-transform: uppercase; }
+  .assignee-field { position: relative; }
+  .assignee-control { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .assignee-chip {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 3px 8px 3px 5px;
+  }
+  .chip-remove { display: flex; align-items: center; justify-content: center; background: none; border: none; color: var(--text-3); cursor: pointer; padding: 0; }
+  .chip-remove:hover { color: var(--text); }
+  .assignee-add {
+    font-size: 12px; color: var(--text-3); background: var(--surface-2); border: 1px dashed var(--border);
+    border-radius: 999px; padding: 3px 10px; cursor: pointer;
+  }
+  .assignee-add:hover { color: var(--text); border-color: var(--text-3); }
+  .assignee-popover {
+    position: absolute; top: calc(100% + 4px); left: 0; z-index: 10; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.25); max-height: 220px; overflow-y: auto; min-width: 200px;
+  }
+  .assignee-option { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text); padding: 5px 6px; border-radius: 5px; cursor: pointer; }
+  .assignee-option:hover { background: var(--surface-2); }
+  .agents-section { position: relative; }
+  .agent-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .agent-chip {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 3px 8px 3px 5px;
+  }
+  .chip-run {
+    font-size: 10.5px; font-weight: 600; color: var(--text-3); background: none; border: 1px solid var(--border);
+    border-radius: 999px; padding: 1px 7px; cursor: pointer;
+  }
+  .chip-run:hover:not(:disabled) { color: var(--text); border-color: var(--text-3); }
+  .chip-run:disabled { opacity: .5; cursor: default; }
+  .agents-empty { font-size: 12px; color: var(--text-3); font-style: italic; }
+  .agent-popover {
+    display: flex; flex-direction: column; gap: 4px; min-width: 220px; padding: 10px;
+  }
+  .agent-field-label { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-3); margin-top: 4px; }
+  .agent-popover select {
+    font: inherit; font-size: 12.5px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 5px 6px;
+  }
+  .btn-attach {
+    margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--accent-on); background: var(--accent);
+    border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer;
+  }
+  .btn-attach:disabled { opacity: .5; cursor: default; }
   .section-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin: 0 0 8px; }
   .section { margin-bottom: 20px; }
   .desc-view {

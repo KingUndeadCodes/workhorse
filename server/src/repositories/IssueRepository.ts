@@ -92,7 +92,8 @@ export class IssueRepository {
         description: JSON.stringify(issue.description ?? null),
         priority: issue.priority,
         reporter_id: issue.reporterId,
-        assignee_id: issue.assigneeId ?? null,
+        assignee_ids: JSON.stringify(issue.assigneeIds),
+        agent_assignments: JSON.stringify(issue.agentAssignments ?? null),
         parent_id: issue.parentId ?? null,
         additional_parent_ids: JSON.stringify(issue.additionalParentIds ?? null),
         label_ids: JSON.stringify(issue.labelIds),
@@ -116,8 +117,32 @@ export class IssueRepository {
     await this.db.updateTable('issues').set({ status_id: toStatusId, updated_at: occurredAt }).where('id', '=', issueId).execute();
   }
 
-  async updateAssignee(issueId: string, toUserId: string | undefined, occurredAt: string): Promise<void> {
-    await this.db.updateTable('issues').set({ assignee_id: toUserId ?? null, updated_at: occurredAt }).where('id', '=', issueId).execute();
+  /** Overwrites the full (human) assignee list. Agents are never in this list — see {@link assignAgent}. */
+  async updateAssignees(issueId: string, toUserIds: string[], occurredAt: string): Promise<void> {
+    await this.db.updateTable('issues').set({ assignee_ids: JSON.stringify(toUserIds), updated_at: occurredAt }).where('id', '=', issueId).execute();
+  }
+
+  /** Attaches an agent to an issue on behalf of one of its current human assignees, or replaces an existing attachment. */
+  async assignAgent(issueId: string, agentUserId: string, onBehalfOfUserId: string, occurredAt: string): Promise<void> {
+    const current = await this.get(issueId);
+    const agentAssignments = { ...(current?.agentAssignments ?? {}), [agentUserId]: onBehalfOfUserId };
+    await this.db
+      .updateTable('issues')
+      .set({ agent_assignments: JSON.stringify(agentAssignments), updated_at: occurredAt })
+      .where('id', '=', issueId)
+      .execute();
+  }
+
+  /** Detaches an agent from an issue — used both for explicit removal and the cascade when its on-behalf-of assignee is removed. */
+  async unassignAgent(issueId: string, agentUserId: string, occurredAt: string): Promise<void> {
+    const current = await this.get(issueId);
+    const agentAssignments = { ...(current?.agentAssignments ?? {}) };
+    delete agentAssignments[agentUserId];
+    await this.db
+      .updateTable('issues')
+      .set({ agent_assignments: JSON.stringify(agentAssignments), updated_at: occurredAt })
+      .where('id', '=', issueId)
+      .execute();
   }
 
   async updateSprint(issueId: string, toSprintId: string | undefined, occurredAt: string): Promise<void> {
@@ -234,6 +259,7 @@ export class IssueRepository {
         id: comment.id,
         issue_id: comment.issueId,
         author_id: comment.authorId,
+        on_behalf_of_user_id: comment.onBehalfOfUserId ?? null,
         body: JSON.stringify(comment.body),
         created_at: comment.createdAt,
         parent_comment_id: comment.parentCommentId ?? null,

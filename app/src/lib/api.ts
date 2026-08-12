@@ -169,6 +169,15 @@ export function removeWatcher(issueId: string): Promise<{ event: EventEnvelope }
   return del(`/issues/${issueId}/watchers`);
 }
 
+/** Attaches an AI agent to an issue on behalf of one of its current human assignees. */
+export function assignAgentToIssue(issueId: string, agentUserId: string, onBehalfOfUserId: string): Promise<{ issue: Issue; event: EventEnvelope }> {
+  return post(`/issues/${issueId}/agents`, { agentUserId, onBehalfOfUserId });
+}
+
+export function unassignAgentFromIssue(issueId: string, agentUserId: string): Promise<{ issue: Issue; event: EventEnvelope }> {
+  return del(`/issues/${issueId}/agents/${agentUserId}`);
+}
+
 export function addWorklog(issueId: string, timeSpentSeconds: number, note?: string): Promise<{ worklog: Worklog; issue: Issue; event: EventEnvelope }> {
   return post(`/issues/${issueId}/worklogs`, { timeSpentSeconds, note });
 }
@@ -267,6 +276,7 @@ export function deleteAutomationRule(id: string): Promise<{ ok: true }> {
 export function createAgent(agent: {
   name: string;
   description?: string;
+  model?: string;
   eventFilter: EventType[] | '*';
   allowedActionTypes: AutomationAction['type'][];
   approvalPolicy: AgentApprovalPolicy;

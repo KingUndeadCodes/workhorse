@@ -2,13 +2,20 @@ import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import type { ActorRef, FieldValue, Issue, IssueLinkType, User } from '../domain';
 import type { AuthVariables } from '../auth/middleware';
-import { engine, issueRepo, workflowRepo, workspaceRepo } from '../container';
+import { agentRepo, engine, issueRepo, userRepo, workflowRepo, workspaceRepo } from '../container';
 import { persistState } from '../db/core';
 
 export const issuesRouter = new Hono<{ Variables: AuthVariables }>();
 
 function actorFrom(user: User): ActorRef {
   return { kind: 'user', userId: user.id };
+}
+
+/** True if any of the given ids belongs to an AI agent — assignees must be human, see `Issue.agentAssignments`. */
+async function containsAgentId(userIds: string[]): Promise<boolean> {
+  if (userIds.length === 0) return false;
+  const agentIds = new Set((await userRepo.list()).filter((u) => u.kind === 'agent').map((u) => u.id));
+  return userIds.some((id) => agentIds.has(id));
 }
 
 /**
@@ -23,6 +30,9 @@ issuesRouter.post('/issues', async (c) => {
   const title = typeof body.title === 'string' ? body.title.trim() : '';
   const issueTypeId = typeof body.issueTypeId === 'string' ? body.issueTypeId : '';
   if (!title || !issueTypeId) return c.json({ error: 'title and issueTypeId are required' }, 400);
+  if (await containsAgentId((body.assigneeIds as string[]) ?? [])) {
+    return c.json({ error: "Agents can't be assignees — add them from the AI Agents section after creating the issue" }, 400);
+  }
 
   const project = await workspaceRepo.getProject();
   const workflow = await workflowRepo.getWorkflow();
@@ -37,7 +47,7 @@ issuesRouter.post('/issues', async (c) => {
     title,
     priority: (body.priority as Issue['priority']) ?? 'medium',
     reporterId: (body.reporterId as string) ?? user.id,
-    assigneeId: body.assigneeId as string | undefined,
+    assigneeIds: (body.assigneeIds as string[]) ?? [],
     parentId: body.parentId as string | undefined,
     labelIds: (body.labelIds as string[]) ?? [],
     componentIds: (body.componentIds as string[]) ?? [],
@@ -57,7 +67,7 @@ issuesRouter.post('/issues', async (c) => {
 /**
  * PATCH /api/issues/:id — edits built-in issue fields. Diffs the body against the current
  * issue so each kind of change emits the event it should: `statusId` -> `issue.statusChanged`,
- * `assigneeId` -> `issue.assigned`, `sprintId` -> `issue.sprintChanged`, everything else
+ * `assigneeIds` -> `issue.assigneesChanged`, `sprintId` -> `issue.sprintChanged`, everything else
  * (title, description, priority, labels, components, fix versions, points, due date,
  * estimates) -> a single `issue.updated` with a `changes` map. Custom field values are
  * handled by PATCH /api/issues/:id/fields/:fieldId instead.
@@ -73,8 +83,24 @@ issuesRouter.patch('/issues/:id', async (c) => {
   if ('statusId' in body && body.statusId !== issue.statusId) {
     await engine.emitEvent({ actor, subject: { type: 'issue', id }, payload: { type: 'issue.statusChanged', issueId: id, fromStatusId: issue.statusId, toStatusId: body.statusId as string } });
   }
-  if ('assigneeId' in body && body.assigneeId !== issue.assigneeId) {
-    await engine.emitEvent({ actor, subject: { type: 'issue', id }, payload: { type: 'issue.assigned', issueId: id, fromUserId: issue.assigneeId, toUserId: body.assigneeId as string | undefined } });
+  if ('assigneeIds' in body) {
+    const toUserIds = (body.assigneeIds as string[]) ?? [];
+    if (await containsAgentId(toUserIds)) {
+      return c.json({ error: "Agents can't be assignees — add them from the AI Agents section instead" }, 400);
+    }
+    if (JSON.stringify([...toUserIds].sort()) !== JSON.stringify([...issue.assigneeIds].sort())) {
+      await engine.emitEvent({ actor, subject: { type: 'issue', id }, payload: { type: 'issue.assigneesChanged', issueId: id, fromUserIds: issue.assigneeIds, toUserIds } });
+      // An agent may only ever be attached on behalf of a *current* assignee — if that
+      // assignee just got removed, the agent's attachment is removed with them, so the
+      // "always on behalf of an assigned user" invariant holds at every point, not just at
+      // attach time.
+      const removedUserIds = new Set(issue.assigneeIds.filter((uid) => !toUserIds.includes(uid)));
+      for (const [agentUserId, onBehalfOfUserId] of Object.entries(issue.agentAssignments ?? {})) {
+        if (onBehalfOfUserId && removedUserIds.has(onBehalfOfUserId)) {
+          await engine.emitEvent({ actor, subject: { type: 'issue', id }, payload: { type: 'issue.agentUnassigned', issueId: id, agentUserId } });
+        }
+      }
+    }
   }
   if ('sprintId' in body && body.sprintId !== issue.sprintId) {
     await engine.emitEvent({ actor, subject: { type: 'issue', id }, payload: { type: 'issue.sprintChanged', issueId: id, fromSprintId: issue.sprintId, toSprintId: body.sprintId as string | undefined } });
@@ -213,6 +239,41 @@ issuesRouter.delete('/issues/:id/watchers', async (c) => {
   const user = c.get('user');
   const event = await engine.emitEvent({ actor: actorFrom(user), subject: { type: 'issue', id }, payload: { type: 'issue.watcherRemoved', issueId: id, userId: user.id } });
   return c.json({ event });
+});
+
+/**
+ * POST /api/issues/:id/agents — attaches an AI agent to an issue on behalf of one of its
+ * current human assignees. Emits `issue.agentAssigned`. Body: `{ agentUserId, onBehalfOfUserId }`.
+ * 400 if `agentUserId` isn't a real agent, or `onBehalfOfUserId` isn't currently an assignee.
+ */
+issuesRouter.post('/issues/:id/agents', async (c) => {
+  const id = c.req.param('id');
+  const issue = await issueRepo.get(id);
+  if (!issue) return c.json({ error: 'Issue not found' }, 404);
+
+  const body = await c.req.json<{ agentUserId: string; onBehalfOfUserId: string }>();
+  if (!(await agentRepo.get(body.agentUserId))) return c.json({ error: 'Agent not found' }, 400);
+  if (!issue.assigneeIds.includes(body.onBehalfOfUserId)) {
+    return c.json({ error: 'An agent can only be attached on behalf of a current assignee' }, 400);
+  }
+
+  const event = await engine.emitEvent({
+    actor: actorFrom(c.get('user')),
+    subject: { type: 'issue', id },
+    payload: { type: 'issue.agentAssigned', issueId: id, agentUserId: body.agentUserId, onBehalfOfUserId: body.onBehalfOfUserId },
+  });
+  return c.json({ issue: await issueRepo.get(id), event }, 201);
+});
+
+/** DELETE /api/issues/:id/agents/:agentUserId — detaches an agent from the issue; emits `issue.agentUnassigned`. */
+issuesRouter.delete('/issues/:id/agents/:agentUserId', async (c) => {
+  const { id, agentUserId } = c.req.param();
+  const event = await engine.emitEvent({
+    actor: actorFrom(c.get('user')),
+    subject: { type: 'issue', id },
+    payload: { type: 'issue.agentUnassigned', issueId: id, agentUserId },
+  });
+  return c.json({ issue: await issueRepo.get(id), event });
 });
 
 /** POST /api/issues/:id/worklogs — logs time; bumps `issue.loggedSeconds`; emits `issue.worklogAdded`. */

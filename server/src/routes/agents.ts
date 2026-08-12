@@ -20,6 +20,7 @@ agentsRouter.post('/agents', async (c) => {
   const body = await c.req.json<{
     name: string;
     description?: string;
+    model?: string;
     eventFilter: EventType[] | '*';
     allowedActionTypes: AutomationAction['type'][];
     approvalPolicy: AgentApprovalPolicy;
@@ -39,6 +40,7 @@ agentsRouter.post('/agents', async (c) => {
     name: body.name.trim(),
     description: body.description,
     enabled: true,
+    model: body.model?.trim() || 'claude-haiku-4-5',
     eventFilter: body.eventFilter,
     allowedActionTypes: body.allowedActionTypes,
     approvalPolicy: body.approvalPolicy,
@@ -73,7 +75,8 @@ agentsRouter.post('/agents/:userId/trigger', async (c) => {
     const result = await engine.triggerAgentManually(userId, c.get('user').id, body.issueId);
     return c.json(result, 201);
   } catch (err) {
-    return c.json({ error: err instanceof Error ? err.message : 'Failed to trigger agent' }, 404);
+    const message = err instanceof Error ? err.message : 'Failed to trigger agent';
+    return c.json({ error: message }, message === 'Agent not found' ? 404 : 400);
   }
 });
 
