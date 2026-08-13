@@ -160,11 +160,18 @@
     }
   }
 
+  /** 'isEmpty' needs no value; every other operator does — mirrors actionIsComplete so a
+   * blank condition value blocks submission instead of being silently dropped. */
+  function conditionIsComplete(c: DraftCondition): boolean {
+    return c.op === 'isEmpty' || !!c.value.trim();
+  }
+
   function toCondition(c: DraftCondition): AutomationCondition {
     if (c.op === 'isEmpty') return { field: c.field, op: c.op, value: undefined };
-    if (c.op === 'in' || c.op === 'notIn' || c.op === 'contains') {
+    if (c.op === 'in' || c.op === 'notIn') {
       return { field: c.field, op: c.op, value: c.value.split(',').map((s) => s.trim()).filter(Boolean) };
     }
+    if (c.op === '>' || c.op === '<') return { field: c.field, op: c.op, value: Number(c.value) };
     return { field: c.field, op: c.op, value: c.value };
   }
 
@@ -178,13 +185,13 @@
   }
 
   async function addRule() {
-    if (!newRuleName.trim() || newRuleActions.length === 0 || !newRuleActions.every(actionIsComplete)) return;
+    if (!newRuleName.trim() || newRuleActions.length === 0 || !newRuleActions.every(actionIsComplete) || !newRuleConditions.every(conditionIsComplete)) return;
     const rule = await api.createAutomationRule({
       name: newRuleName.trim(),
       projectId: null,
       enabled: true,
       eventFilter: [newRuleTrigger],
-      conditions: newRuleConditions.filter((c) => c.op === 'isEmpty' || c.value.trim()).map(toCondition),
+      conditions: newRuleConditions.map(toCondition),
       actions: newRuleActions.map(toAction),
     });
     automationRules.update((l) => [...l, rule]);
@@ -434,7 +441,7 @@
         {/each}
         <button type="button" class="text-btn add-row-btn" on:click={addAction}>+ Add action</button>
 
-        <button type="submit" disabled={!newRuleName.trim() || !newRuleActions.every(actionIsComplete)}>Add rule</button>
+        <button type="submit" disabled={!newRuleName.trim() || !newRuleActions.every(actionIsComplete) || !newRuleConditions.every(conditionIsComplete)}>Add rule</button>
       </form>
     {:else if activeTab === 'Agents'}
       {#if pendingRuns.length}

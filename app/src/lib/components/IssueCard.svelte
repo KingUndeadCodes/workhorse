@@ -3,7 +3,7 @@
   import Icon from './Icon.svelte';
   import Avatar from './Avatar.svelte';
   import { issueTypes, users, labels } from '../stores/workspace';
-  import { displayName, priorityIcon, typeIcon } from '../util';
+  import { displayName, priorityIcon, storyPointColor, typeIcon } from '../util';
 
   export let issue: Issue;
   export let selected = false;
@@ -12,15 +12,18 @@
   /** Status ids whose category is 'done' — used so overdue styling doesn't apply to finished work. */
   export let doneStatusIds: Set<string> = new Set();
 
-  const TODAY = '2026-08-07';
+  const DAY_MS = 24 * 60 * 60 * 1000;
 
   $: issueType = $issueTypes.find((t) => t.id === issue.issueTypeId);
   $: assignees = issue.assigneeIds.map((id) => $users.find((u) => u.id === id)).filter((u): u is (typeof $users)[number] => !!u);
   $: attachedAgents = Object.keys(issue.agentAssignments ?? {})
     .map((id) => $users.find((u) => u.id === id))
     .filter((u): u is (typeof $users)[number] => !!u);
-  $: isOverdue = !!issue.dueDate && issue.dueDate < TODAY && !doneStatusIds.has(issue.statusId);
-  $: isDueToday = issue.dueDate === TODAY;
+  // Due dates have no time of day, so "due" means by the end of that day — gives real
+  // sub-day precision for "due soon" instead of just comparing whole-date strings.
+  $: dueTimestamp = issue.dueDate ? new Date(`${issue.dueDate}T23:59:59`).getTime() : null;
+  $: isOverdue = dueTimestamp !== null && dueTimestamp < Date.now() && !doneStatusIds.has(issue.statusId);
+  $: isDueSoon = !isOverdue && dueTimestamp !== null && dueTimestamp - Date.now() < DAY_MS && !doneStatusIds.has(issue.statusId);
 
   /** Stashes the issue id in the drag payload so the drop target (Board.svelte) can read it. */
   function handleDragStart(e: DragEvent) {
@@ -62,13 +65,13 @@
     <div class="bottom-left">
       {#if isOverdue}
         <span class="due-chip overdue mono">OVERDUE</span>
-      {:else if isDueToday}
-        <span class="due-chip overdue mono">TODAY</span>
+      {:else if isDueSoon}
+        <span class="due-chip due-soon mono">DUE SOON</span>
       {/if}
     </div>
     <div class="bottom-right">
       {#if issue.storyPoints}
-        <span class="points-badge mono">{issue.storyPoints}</span>
+        <span class="points-badge mono" style="background:{storyPointColor(issue.storyPoints).bg};color:{storyPointColor(issue.storyPoints).text}">{issue.storyPoints}</span>
       {/if}
       {#if attachedAgents.length}
         <div class="assignee-stack agent-stack">
@@ -115,11 +118,12 @@
   .bottom-left { display: flex; align-items: center; gap: 9px; color: var(--text-3); }
   .bottom-right { display: flex; align-items: center; gap: 6px; }
   .points-badge {
-    width: 19px; height: 19px; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--text-2);
+    width: 19px; height: 19px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700;
   }
   .due-chip { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 5px; }
   .due-chip.overdue { background: var(--critical-soft); color: var(--critical); }
+  .due-chip.due-soon { background: var(--warning-soft); color: var(--warning); }
   .assignee-stack { display: flex; }
   .assignee-stack :global(> *) { margin-left: -6px; border-radius: 50%; box-shadow: 0 0 0 2px var(--surface); }
   .assignee-stack :global(> *:first-child) { margin-left: 0; }

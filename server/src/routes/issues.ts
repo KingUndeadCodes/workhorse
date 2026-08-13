@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import type { ActorRef, FieldValue, Issue, IssueLinkType, User } from '../domain';
+import { STORY_POINT_VALUES } from '../domain';
 import type { AuthVariables } from '../auth/middleware';
 import { agentRepo, engine, issueRepo, userRepo, workflowRepo, workspaceRepo } from '../container';
 import { persistState } from '../db/core';
@@ -18,6 +19,11 @@ async function containsAgentId(userIds: string[]): Promise<boolean> {
   return userIds.some((id) => agentIds.has(id));
 }
 
+/** `undefined`/`null` clears the estimate and is always allowed; anything else must be one of {@link STORY_POINT_VALUES}. */
+function isValidStoryPoints(value: unknown): boolean {
+  return value === undefined || value === null || (STORY_POINT_VALUES as readonly number[]).includes(value as number);
+}
+
 /**
  * POST /api/issues — creates an issue.
  * Body: `{ title, issueTypeId, ...any other Issue field }`. The actor/reporter is the
@@ -32,6 +38,9 @@ issuesRouter.post('/issues', async (c) => {
   if (!title || !issueTypeId) return c.json({ error: 'title and issueTypeId are required' }, 400);
   if (await containsAgentId((body.assigneeIds as string[]) ?? [])) {
     return c.json({ error: "Agents can't be assignees — add them from the AI Agents section after creating the issue" }, 400);
+  }
+  if (!isValidStoryPoints(body.storyPoints)) {
+    return c.json({ error: `storyPoints must be one of ${STORY_POINT_VALUES.join(', ')}` }, 400);
   }
 
   const project = await workspaceRepo.getProject();
@@ -79,6 +88,10 @@ issuesRouter.patch('/issues/:id', async (c) => {
 
   const body = await c.req.json<Record<string, unknown>>();
   const actor = actorFrom(c.get('user'));
+
+  if ('storyPoints' in body && !isValidStoryPoints(body.storyPoints)) {
+    return c.json({ error: `storyPoints must be one of ${STORY_POINT_VALUES.join(', ')}` }, 400);
+  }
 
   if ('statusId' in body && body.statusId !== issue.statusId) {
     await engine.emitEvent({ actor, subject: { type: 'issue', id }, payload: { type: 'issue.statusChanged', issueId: id, fromStatusId: issue.statusId, toStatusId: body.statusId as string } });

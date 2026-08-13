@@ -77,10 +77,11 @@
             submitting={submittingEdit}
             onSubmit={submitEdit}
             onCancel={cancelEdit}
+            mentionUsers={users}
           />
         </div>
       {:else}
-        <div class="comment-text markdown">{@html renderMarkdown(comment.body.plainText)}</div>
+        <div class="comment-text markdown">{@html renderMarkdown(comment.body.plainText, users)}</div>
         <div class="comment-actions">
           <button class="reply-btn" on:click={() => onStartReply(comment.id)}><Icon name="reply" size={12} />Reply</button>
           {#if comment.authorId === currentUserId}
@@ -102,6 +103,7 @@
             submitting={submittingReply}
             onSubmit={onSubmitReply}
             onCancel={onCancelReply}
+            mentionUsers={users}
           />
         </div>
       {/if}
@@ -149,4 +151,8 @@
   .markdown :global(a) { color: var(--accent-strong); }
   .markdown :global(blockquote) { border-left: 2px solid var(--border); margin: 0 0 8px; padding-left: 10px; color: var(--text-3); }
   .markdown :global(img) { max-width: 100%; border-radius: 6px; }
+  .markdown :global(.mention) {
+    font-weight: 600; color: var(--accent-strong); background: var(--accent-soft); border-radius: 4px; padding: 0 3px;
+  }
+  .markdown :global(.mention-agent) { color: #cc785c; background: rgba(204, 120, 92, .14); }
 </style>

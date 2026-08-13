@@ -27,8 +27,8 @@
     workflow,
   } from '../stores/workspace';
   import { triggerAgent } from '../api';
-  import { displayName, priorityIcon, renderMarkdown, splitHumansAndAgents, typeIcon } from '../util';
-  import type { IssueLinkType } from '$domain';
+  import { displayName, priorityIcon, renderMarkdown, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
+  import { STORY_POINT_VALUES, type IssueLinkType } from '$domain';
 
   let draftComment = '';
   let submittingComment = false;
@@ -65,6 +65,7 @@
   // for each, the replies attached to it, both ordered oldest-first.
   $: topLevelComments = [...issueComments].filter((c) => !c.parentCommentId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   $: timePct = issue?.originalEstimateSeconds ? Math.min(100, (issue.loggedSeconds / issue.originalEstimateSeconds) * 100) : 0;
+  $: pointsDueDateWarning = issue?.storyPoints ? storyPointDueDateWarning(issue.storyPoints, issue.dueDate) : null;
   $: applicableFields = $fieldDefinitions.filter((f) => !f.scope.projectIds || (issue && f.scope.projectIds.includes(issue.projectId)));
   $: issueLinksForIssue = issue ? $issueLinks.filter((l) => l.sourceIssueId === issue.id || l.targetIssueId === issue.id) : [];
   $: otherIssues = issue ? $issuesStore.filter((i) => i.id !== issue.id) : [];
@@ -188,15 +189,25 @@
       showAgentPicker = false;
       return;
     }
+    // Always reseeded from scratch, not merged with any prior selection — the assignee set
+    // (and therefore what's valid) may have changed since the picker was last open.
     const fallback = defaultOnBehalfOf();
-    pendingOnBehalfOf = Object.fromEntries(unattachedAgents.map((a) => [a.id, pendingOnBehalfOf[a.id] ?? fallback]));
+    pendingOnBehalfOf = Object.fromEntries(unattachedAgents.map((a) => [a.id, fallback]));
     showAgentPicker = true;
   }
-  async function attachAgentChecked(agentUserId: string) {
+  async function attachAgentChecked(agentUserId: string, e: Event) {
+    const checkbox = e.currentTarget as HTMLInputElement;
     if (!issue) return;
     const onBehalfOfUserId = pendingOnBehalfOf[agentUserId];
     if (!onBehalfOfUserId) return;
-    await assignAgent(issue.id, agentUserId, onBehalfOfUserId);
+    try {
+      await assignAgent(issue.id, agentUserId, onBehalfOfUserId);
+    } catch (err) {
+      // Revert the checkbox — without this it stays checked even though the agent never
+      // actually got attached, silently disagreeing with attachedAgents.
+      checkbox.checked = false;
+      alert(err instanceof Error ? err.message : 'Failed to attach agent');
+    }
   }
   async function detachAgent(agentUserId: string) {
     if (!issue) return;
@@ -221,7 +232,7 @@
 
   function handlePointsChange(e: Event) {
     if (!issue) return;
-    const value = (e.target as HTMLInputElement).value;
+    const value = (e.target as HTMLSelectElement).value;
     updateIssue(issue.id, { storyPoints: value ? Number(value) : undefined });
   }
 
@@ -270,6 +281,7 @@
           class="status-select"
           class:done={category?.type === 'done'}
           class:inprogress={category?.type === 'inProgress'}
+          style="width: {(status?.name.length ?? 6) + 4}ch"
           value={issue.statusId}
           on:change={handleStatusChange}
         >
@@ -292,11 +304,12 @@
             submitting={savingDescription}
             onSubmit={submitDescription}
             onCancel={cancelEditingDescription}
+            mentionUsers={$users}
           />
         {:else}
           <button class="desc-view" on:click={startEditingDescription}>
             {#if issue.description?.plainText}
-              <div class="markdown">{@html renderMarkdown(issue.description.plainText)}</div>
+              <div class="markdown">{@html renderMarkdown(issue.description.plainText, $users)}</div>
             {:else}
               <span class="desc-placeholder">Add a description… (markdown supported)</span>
             {/if}
@@ -350,7 +363,15 @@
         </div>
         <div class="field">
           <span class="field-label">Story Points</span>
-          <input class="field-input" type="number" min="0" value={issue.storyPoints ?? ''} on:change={handlePointsChange} />
+          <select
+            class="field-select points-select"
+            style={issue.storyPoints ? `background:${storyPointColor(issue.storyPoints).bg};color:${storyPointColor(issue.storyPoints).text}` : ''}
+            value={issue.storyPoints ?? ''}
+            on:change={handlePointsChange}
+          >
+            <option value="">—</option>
+            {#each STORY_POINT_VALUES as p}<option value={p}>{p}</option>{/each}
+          </select>
         </div>
         <div class="field">
           <span class="field-label">Sprint</span>
@@ -376,6 +397,10 @@
           </div>
         {/each}
       </div>
+
+      {#if pointsDueDateWarning}
+        <p class="points-warning"><Icon name="clock" size={13} />{pointsDueDateWarning}</p>
+      {/if}
 
       <div class="section agents-section" use:closeOnClickOutside={() => (showAgentPicker = false)}>
         <div class="section-label">AI Agents</div>
@@ -408,7 +433,7 @@
                 {:else}
                   {#each unattachedAgents as a (a.id)}
                     <label class="assignee-option agent-picker-option">
-                      <input type="checkbox" on:change={() => attachAgentChecked(a.id)} />
+                      <input type="checkbox" on:change={(e) => attachAgentChecked(a.id, e)} />
                       <Avatar userId={a.id} name={displayName(a)} kind={a.kind} size={16} />
                       {displayName(a)}
                       {#if issueAssignees.length > 1}
@@ -504,6 +529,7 @@
             disabled={!draftComment.trim()}
             submitting={submittingComment}
             onSubmit={submitComment}
+            mentionUsers={$users}
           />
         </div>
       </div>
@@ -549,6 +575,11 @@
     box-sizing: border-box; height: 30px; width: 100%; line-height: normal;
   }
   .field-input[type="date"] { text-transform: uppercase; }
+  .points-select { font-weight: 700; border-color: transparent; }
+  .points-warning {
+    display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--warning);
+    background: var(--warning-soft); border-radius: 7px; padding: 8px 10px; margin: -8px 0 18px;
+  }
   .assignee-field { position: relative; }
   .assignee-control { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
   .assignee-chip {
@@ -605,6 +636,10 @@
   .markdown :global(a) { color: var(--accent-strong); }
   .markdown :global(blockquote) { border-left: 2px solid var(--border); margin: 0 0 8px; padding-left: 10px; color: var(--text-3); }
   .markdown :global(img) { max-width: 100%; border-radius: 6px; }
+  .markdown :global(.mention) {
+    font-weight: 600; color: var(--accent-strong); background: var(--accent-soft); border-radius: 4px; padding: 0 3px;
+  }
+  .markdown :global(.mention-agent) { color: #cc785c; background: rgba(204, 120, 92, .14); }
   .advanced-toggle { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); padding: 4px 0; }
   .advanced-toggle:hover { color: var(--text); }
   .advanced-body { margin-top: 14px; display: flex; flex-direction: column; gap: 20px; }

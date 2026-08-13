@@ -15,6 +15,9 @@ import type {
 
 export type IssuePriority = 'highest' | 'high' | 'medium' | 'low' | 'lowest';
 
+/** The only story point values an issue may be estimated at — a fixed Fibonacci-ish scale, not a free-form number. */
+export const STORY_POINT_VALUES = [1, 2, 3, 5, 8, 13] as const;
+
 /** A workspace- or project-defined kind of issue, e.g. "Story", "Bug", "Task", "Epic". */
 export interface IssueType {
   id: IssueTypeId;
@@ -96,6 +99,7 @@ export interface Issue {
   fixVersionIds: VersionId[];
   sprintId?: SprintId;
 
+  /** Must be one of {@link STORY_POINT_VALUES} — enforced wherever this is written, not just presented as options in the UI. */
   storyPoints?: number;
   originalEstimateSeconds?: number;
   remainingEstimateSeconds?: number;

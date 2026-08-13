@@ -1,16 +1,70 @@
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import { STORY_POINT_VALUES } from '$domain';
 
 marked.setOptions({ breaks: true, gfm: true });
+
+/** A user (or agent) mentionable via "@Name" in a comment or description. */
+export interface Mentionable {
+  id: string;
+  displayName: string;
+  kind: string;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Splits on fenced/inline code spans so mention highlighting never touches text inside `code`. */
+function splitOutsideCode(text: string): { text: string; isCode: boolean }[] {
+  const parts: { text: string; isCode: boolean }[] = [];
+  const re = /(```[\s\S]*?```|`[^`]*`)/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) {
+    if (m.index > last) parts.push({ text: text.slice(last, m.index), isCode: false });
+    parts.push({ text: m[0], isCode: true });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push({ text: text.slice(last), isCode: false });
+  return parts;
+}
+
+/**
+ * Wraps every "@Full Name" occurrence that matches a real workspace user in a `<span>`, so
+ * `renderMarkdown` can turn it into a styled mention pill. Matched against display names
+ * directly (no stored mention ids) — simple, but means a later rename won't retroactively
+ * relabel old mentions, and mentioning someone requires typing their name exactly (the
+ * editor's autocomplete is what makes that reliable in practice).
+ */
+function highlightMentions(text: string, users: Mentionable[]): string {
+  if (users.length === 0) return text;
+  // Longest name first, so multi-word names win over any shorter name that's a prefix of them.
+  const sorted = [...users].sort((a, b) => b.displayName.length - a.displayName.length);
+  const pattern = sorted.map((u) => escapeRegExp(u.displayName)).join('|');
+  const byName = new Map(sorted.map((u) => [u.displayName, u]));
+  const re = new RegExp(`@(${pattern})\\b`, 'g');
+  return splitOutsideCode(text)
+    .map(({ text: segment, isCode }) => {
+      if (isCode) return segment;
+      return segment.replace(re, (match, name: string) => {
+        const cls = byName.get(name)?.kind === 'agent' ? 'mention mention-agent' : 'mention';
+        return `<span class="${cls}">@${name}</span>`;
+      });
+    })
+    .join('');
+}
 
 /**
  * Renders user-authored markdown (comments, descriptions) to sanitized HTML for `{@html}`.
  * Sanitizing is not optional: markdown allows raw inline HTML, and comment bodies are other
  * users' input — skipping this would be a stored-XSS hole the moment a second person joins.
+ * `mentionUsers`, if given, turns any "@Full Name" match into a styled mention span.
  */
-export function renderMarkdown(text: string): string {
+export function renderMarkdown(text: string, mentionUsers: Mentionable[] = []): string {
   if (!text.trim()) return '';
-  const html = marked.parse(text, { async: false }) as string;
+  const withMentions = highlightMentions(text, mentionUsers);
+  const html = marked.parse(withMentions, { async: false }) as string;
   return DOMPurify.sanitize(html);
 }
 
@@ -93,4 +147,48 @@ export function formatRelativeDate(iso: string): string {
 export function formatDuration(seconds: number): string {
   const hours = seconds / 3600;
   return `${hours % 1 === 0 ? hours : hours.toFixed(1)}h`;
+}
+
+export type StoryPointValue = (typeof STORY_POINT_VALUES)[number];
+
+/** Background/text colors per story point value, matching the standard estimation cheat-sheet gradient (light → red as size grows). */
+const STORY_POINT_COLORS: Record<StoryPointValue, { bg: string; text: string }> = {
+  1: { bg: '#F5F1FC', text: '#4A4458' },
+  2: { bg: '#E4E4E8', text: '#3A3A42' },
+  3: { bg: '#D3D3D8', text: '#2E2E33' },
+  5: { bg: '#F0A94E', text: '#3A2400' },
+  8: { bg: '#EF8B62', text: '#3A1400' },
+  13: { bg: '#E85D5D', text: '#FFFFFF' },
+};
+
+export function storyPointColor(points: number): { bg: string; text: string } {
+  return STORY_POINT_COLORS[points as StoryPointValue] ?? { bg: 'var(--surface-2)', text: 'var(--text-2)' };
+}
+
+/** Rough upper bound, in calendar days, on how long a ticket of this size should realistically take — the same "work effort" bands the cheat sheet uses. */
+const STORY_POINT_MAX_DAYS: Record<StoryPointValue, number> = {
+  1: 0.25,
+  2: 0.5,
+  3: 2,
+  5: 4,
+  8: 7,
+  13: 14,
+};
+
+/**
+ * Non-blocking sanity check: does the due date leave enough runway for this many story
+ * points? Returns a warning string if the due date is sooner than the size's typical
+ * effort would need, else `null`. Purely advisory — never used to block saving.
+ */
+export function storyPointDueDateWarning(points: number, dueDate: string | undefined, today: Date = new Date()): string | null {
+  if (!dueDate) return null;
+  const maxDays = STORY_POINT_MAX_DAYS[points as StoryPointValue];
+  if (maxDays === undefined) return null;
+  const dayMs = 24 * 60 * 60 * 1000;
+  const daysUntilDue = (new Date(`${dueDate}T00:00:00`).getTime() - new Date(today.toDateString()).getTime()) / dayMs;
+  if (daysUntilDue < 0) return `This due date has already passed, but the issue is still estimated at ${points} points.`;
+  if (daysUntilDue < maxDays) {
+    return `${points} points typically takes up to ${maxDays < 1 ? `${maxDays * 24}h` : `${maxDays} day${maxDays === 1 ? '' : 's'}`}, but the due date is only ${Math.round(daysUntilDue)} day${Math.round(daysUntilDue) === 1 ? '' : 's'} away.`;
+  }
+  return null;
 }

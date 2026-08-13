@@ -7,6 +7,8 @@
   // Ctrl/Cmd+Z already works inside the textarea), heading levels, and text color (no
   // markdown equivalent without inventing an inline-HTML extension).
   import Icon from './Icon.svelte';
+  import Avatar from './Avatar.svelte';
+  import { displayName, type Mentionable } from '../util';
 
   export let value = '';
   export let placeholder = '';
@@ -18,8 +20,85 @@
   export let disabled = false;
   export let onSubmit: () => void = () => {};
   export let onCancel: () => void = () => {};
+  /** Users offered by the "@" mention autocomplete — omit to disable mentions entirely. */
+  export let mentionUsers: Mentionable[] = [];
 
   let textarea: HTMLTextAreaElement;
+  let dropdownEl: HTMLDivElement | undefined;
+
+  // --- @mention autocomplete ---
+  let mentionStart = -1;
+  let mentionQuery: string | null = null;
+  let mentionMatches: Mentionable[] = [];
+  let mentionActiveIndex = 0;
+
+  /** Looks for an in-progress "@word" run ending at the cursor and, if found, computes the matching suggestions. */
+  function updateMentionState() {
+    if (!textarea || mentionUsers.length === 0) {
+      mentionQuery = null;
+      return;
+    }
+    const cursor = textarea.selectionStart;
+    const before = value.slice(0, cursor);
+    const match = before.match(/(?:^|\s)@([^\s@]*)$/);
+    if (!match) {
+      mentionQuery = null;
+      return;
+    }
+    mentionQuery = match[1];
+    mentionStart = cursor - mentionQuery.length - 1;
+    const q = mentionQuery.toLowerCase();
+    mentionMatches = mentionUsers.filter((u) => u.displayName.toLowerCase().includes(q));
+    mentionActiveIndex = 0;
+  }
+
+  function selectMention(user: Mentionable) {
+    if (mentionQuery === null || !textarea) return;
+    const cursor = textarea.selectionStart;
+    const insertion = `@${user.displayName} `;
+    value = value.slice(0, mentionStart) + insertion + value.slice(cursor);
+    const newCursor = mentionStart + insertion.length;
+    mentionQuery = null;
+    requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newCursor, newCursor);
+    });
+  }
+
+  /** Keeps the highlighted option in view when arrowing past the edge of the scrollable dropdown. */
+  function scrollActiveMentionIntoView() {
+    requestAnimationFrame(() => {
+      dropdownEl?.querySelector('.mention-option.active')?.scrollIntoView({ block: 'nearest' });
+    });
+  }
+
+  /** Keys `handleMentionKeydown` fully handles itself — the keyup handler must not re-run
+      `updateMentionState()` for these, or it would immediately reset `mentionActiveIndex` back
+      to 0 and undo the navigation. */
+  const MENTION_NAV_KEYS = new Set(['ArrowDown', 'ArrowUp', 'Enter', 'Tab', 'Escape']);
+
+  function handleMentionKeyup(e: KeyboardEvent) {
+    if (mentionQuery !== null && MENTION_NAV_KEYS.has(e.key)) return;
+    updateMentionState();
+  }
+
+  function handleMentionKeydown(e: KeyboardEvent) {
+    if (mentionQuery === null || mentionMatches.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      mentionActiveIndex = (mentionActiveIndex + 1) % mentionMatches.length;
+      scrollActiveMentionIntoView();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      mentionActiveIndex = (mentionActiveIndex - 1 + mentionMatches.length) % mentionMatches.length;
+      scrollActiveMentionIntoView();
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      selectMention(mentionMatches[mentionActiveIndex]);
+    } else if (e.key === 'Escape') {
+      mentionQuery = null;
+    }
+  }
 
   interface FormatButton {
     key: string;
@@ -98,8 +177,36 @@
         <button type="button" title={b.title} on:mousedown|preventDefault on:click={() => applyFormat(b.key)}><Icon name={b.icon} size={13} /></button>
       {/each}
     </div>
-    <!-- svelte-ignore a11y-autofocus -->
-    <textarea bind:this={textarea} bind:value {rows} {placeholder} {autofocus} on:keydown></textarea>
+    <div class="textarea-wrap">
+      <!-- svelte-ignore a11y-autofocus -->
+      <textarea
+        bind:this={textarea}
+        bind:value
+        {rows}
+        {placeholder}
+        {autofocus}
+        on:input={updateMentionState}
+        on:keyup={handleMentionKeyup}
+        on:blur={() => (mentionQuery = null)}
+        on:keydown={handleMentionKeydown}
+        on:keydown
+      ></textarea>
+      {#if mentionQuery !== null && mentionMatches.length > 0}
+        <div class="mention-dropdown" bind:this={dropdownEl}>
+          {#each mentionMatches as u, i (u.id)}
+            <button
+              type="button"
+              class="mention-option"
+              class:active={i === mentionActiveIndex}
+              on:mousedown|preventDefault={() => selectMention(u)}
+            >
+              <Avatar userId={u.id} name={displayName(u)} kind={u.kind} size={16} />
+              {displayName(u)}
+            </button>
+          {/each}
+        </div>
+      {/if}
+    </div>
     <div class="footer">
       <span>Markdown supported</span>
       <span>{wordCount} {wordCount === 1 ? 'word' : 'words'}</span>
@@ -122,6 +229,17 @@
     background: none; border: none; padding: 10px; outline: none; display: block;
   }
   textarea::placeholder { color: var(--text-3); }
+  .textarea-wrap { position: relative; }
+  .mention-dropdown {
+    position: absolute; top: 4px; left: 10px; z-index: 15; min-width: 180px; max-width: 260px; max-height: 200px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 4px;
+    box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow-y: auto;
+  }
+  .mention-option {
+    display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; font-size: 12.5px;
+    color: var(--text); padding: 6px 8px; border-radius: 6px;
+  }
+  .mention-option:hover, .mention-option.active { background: var(--surface-2); }
   .footer { display: flex; justify-content: space-between; padding: 5px 10px; border-top: 1px solid var(--border); font-size: 10.5px; color: var(--text-3); }
   .actions { display: flex; gap: 8px; }
   .btn { font: inherit; font-size: 12.5px; font-weight: 600; padding: 7px 14px; border-radius: 7px; }
