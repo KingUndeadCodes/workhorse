@@ -142,7 +142,7 @@ issuesRouter.patch('/issues/:id/fields/:fieldId', async (c) => {
   return c.json({ issue: await issueRepo.get(id), event });
 });
 
-/** DELETE /api/issues/:id — deletes an issue and cascades to its comments/watchers/worklogs/attachments/links. */
+/** DELETE /api/issues/:id — deletes an issue and cascades to its comments/worklogs/attachments/links. */
 issuesRouter.delete('/issues/:id', async (c) => {
   const id = c.req.param('id');
   if (!(await issueRepo.get(id))) return c.json({ error: 'Issue not found' }, 404);
@@ -221,23 +221,6 @@ issuesRouter.post('/issues/:id/links', async (c) => {
 issuesRouter.delete('/issues/:issueId/links/:linkId', async (c) => {
   const { issueId, linkId } = c.req.param();
   const event = await engine.emitEvent({ actor: actorFrom(c.get('user')), subject: { type: 'issue', id: issueId }, payload: { type: 'issue.unlinked', issueId, linkId } });
-  return c.json({ event });
-});
-
-/** POST /api/issues/:id/watchers — the caller starts watching; emits `issue.watcherAdded`. Idempotent. */
-issuesRouter.post('/issues/:id/watchers', async (c) => {
-  const id = c.req.param('id');
-  if (!(await issueRepo.get(id))) return c.json({ error: 'Issue not found' }, 404);
-  const user = c.get('user');
-  const event = await engine.emitEvent({ actor: actorFrom(user), subject: { type: 'issue', id }, payload: { type: 'issue.watcherAdded', issueId: id, userId: user.id } });
-  return c.json({ event }, 201);
-});
-
-/** DELETE /api/issues/:id/watchers — the caller stops watching; emits `issue.watcherRemoved`. */
-issuesRouter.delete('/issues/:id/watchers', async (c) => {
-  const id = c.req.param('id');
-  const user = c.get('user');
-  const event = await engine.emitEvent({ actor: actorFrom(user), subject: { type: 'issue', id }, payload: { type: 'issue.watcherRemoved', issueId: id, userId: user.id } });
   return c.json({ event });
 });
 

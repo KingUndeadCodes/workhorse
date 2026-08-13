@@ -312,29 +312,46 @@ export class EventEngine {
 
   /**
    * Real decision-making: one non-streaming Anthropic Messages API call, tools restricted to
-   * `agent.allowedActionTypes`, single-shot (no tool-use loop — if the model doesn't call a
-   * tool on the first response, it proposed nothing this run). The model sees the issue's
-   * current state and the agent's own `description` as its only instructions; it never sees
-   * or touches anything outside the closed {@link AutomationAction} vocabulary.
+   * `agent.allowedActionTypes`, single-shot per call (no in-call tool-use loop — if the model
+   * doesn't call a tool on the first response, it proposed nothing this turn). Agents are
+   * meant to work a ticket over its whole life, not react once and vanish: an agent stays
+   * attached to an issue (via `agentAssignments`) across every matching event, and each call
+   * here is reminded of the comment thread and its own prior turns on this same issue, so it
+   * can pick up where it left off instead of re-deciding from a blank slate every time. The
+   * model sees that history plus the agent's own `description` as its only instructions; it
+   * never sees or touches anything outside the closed {@link AutomationAction} vocabulary.
    */
   private async decideAgentActions(agent: Agent, issue: Issue): Promise<{ actions: AutomationAction[]; rationale: string; tokenUsage: number }> {
     const tools = agent.allowedActionTypes.map((type) => ACTION_TOOLS[type]);
     if (tools.length === 0) return { actions: [], rationale: 'This agent has no allowed action types.', tokenUsage: 0 };
 
-    const [statuses, users, fields] = await Promise.all([
+    const [statuses, users, fields, comments, priorRuns] = await Promise.all([
       this.workflow.getWorkflow().then((w) => w.statuses),
       this.users.list(),
       this.catalog.listFieldDefinitions(),
+      this.issues.listCommentsFor(issue.id),
+      this.agentRuns.list().then((runs) => runs.filter((r) => r.issueId === issue.id && r.agentUserId === agent.userId)),
     ]);
 
     const system = [
       `You are "${agent.name}", an AI agent embedded in an issue tracker. ${agent.description ?? ''}`.trim(),
-      'You are reacting to one triggering event about the issue described below. Decide whether to take any action on it.',
-      'Only propose actions using the tools provided — you have no other way to affect the system. If no action is warranted, do not call any tool.',
+      "You're being triggered by one event on the issue below, but you stay attached to this issue for its whole life — " +
+        "you may be called again as it changes. Treat the comment thread and your own prior turns (given below) as work " +
+        "already in progress: build on it rather than starting over or repeating an action you've already taken.",
+      'Decide whether to take any action right now. Only propose actions using the tools provided — you have no other way to affect the system. If nothing is warranted this turn, do not call any tool.',
       `Valid statuses (for transitionStatus): ${statuses.map((s) => `${s.id} ("${s.name}")`).join(', ') || 'none'}`,
       `Valid users (for assignTo — humans only, agents can't be assignees): ${users.filter((u) => u.kind !== 'agent').map((u) => `${u.id} ("${u.displayName}")`).join(', ') || 'none'}`,
       `Valid fields (for setField): ${fields.map((f) => `${f.id} ("${f.name}", type ${f.type})`).join(', ') || 'none'}`,
     ].join('\n');
+
+    const recentComments = comments
+      .slice(-8)
+      .map((c) => `  - ${users.find((u) => u.id === c.authorId)?.displayName ?? c.authorId}: ${c.body.plainText}`)
+      .join('\n');
+    const recentTurns = priorRuns
+      .slice(-5)
+      .map((r) => `  - [${r.status}] ${r.rationale ?? '(no rationale recorded)'}`)
+      .join('\n');
 
     const userMessage = [
       `Issue: ${issue.title}`,
@@ -342,6 +359,8 @@ export class EventEngine {
       `Current status: ${issue.statusId}`,
       `Type: ${issue.issueTypeId}`,
       `Assignees: ${issue.assigneeIds.length ? issue.assigneeIds.join(', ') : 'unassigned'}`,
+      recentComments ? `Recent comments (oldest first):\n${recentComments}` : 'No comments yet.',
+      recentTurns ? `Your prior turns on this issue (oldest first):\n${recentTurns}` : "You haven't acted on this issue before.",
     ]
       .filter(Boolean)
       .join('\n');
@@ -381,6 +400,7 @@ export class EventEngine {
         id: `run_${randomUUID()}`,
         agentUserId: agent.userId,
         triggeringEventId,
+        issueId: issue.id,
         status: 'failed',
         proposedActions: [],
         failureReason: err instanceof Error ? err.message : String(err),
@@ -402,6 +422,7 @@ export class EventEngine {
       id: `run_${randomUUID()}`,
       agentUserId: agent.userId,
       triggeringEventId,
+      issueId: issue.id,
       status: bounded.length === 0 ? 'applied' : requiresApproval ? 'awaitingApproval' : 'pending',
       proposedActions: bounded,
       rationale,

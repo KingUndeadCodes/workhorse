@@ -104,6 +104,7 @@
               on:dragleave={() => (dragOverCell = null)}
               on:drop={(e) => handleDrop(e, col.statusIds)}
             >
+              <span class="cell-label">{col.name}</span>
               {#if cellIssues.length === 0}
                 <div class="cell-empty">No issues</div>
               {:else}
@@ -141,6 +142,7 @@
               on:dragleave={() => (dragOverCell = null)}
               on:drop={(e) => handleDrop(e, col.statusIds)}
             >
+              <span class="cell-label">{col.name}</span>
               {#if cellIssues.length === 0}
                 <div class="cell-empty">No issues</div>
               {:else}
@@ -188,4 +190,17 @@
   }
   .cell.drag-over { background: var(--accent-soft); outline: 2px dashed var(--accent); outline-offset: -2px; }
   .cell-empty { display: flex; align-items: center; justify-content: center; color: var(--text-3); font-size: 11.5px; min-height: 40px; border: 1px dashed var(--border); border-radius: 8px; }
+  .cell-label { display: none; }
+
+  /* Below this width, four side-by-side 200px-min columns simply can't fit — a horizontal-
+     scrolling kanban left you looking at slivers of two columns at once with the header
+     misaligned from what was actually on screen. Instead each swimlane becomes a single
+     vertical stack of columns, each labeled since the shared sticky header is gone. */
+  @media (max-width: 640px) {
+    .board-wrap { padding: 12px 10px 20px; }
+    .board-inner { min-width: 0; }
+    .board-head { display: none; }
+    .swimlane-body { grid-template-columns: 1fr; gap: 10px; }
+    .cell-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-3); }
+  }
 </style>

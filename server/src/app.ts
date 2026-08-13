@@ -47,19 +47,19 @@ app.get('/api/bootstrap', async (c) => {
   const [
     workspace, users, workspaceMembers, agents, agentRuns, statusCategories, workflow, project,
     components, versions, issueTypes, labels, fieldDefinitions, sprints, board, savedViews,
-    automationRules, webhookSubscriptions, issues, issueLinks, comments, watchers, worklogs, attachments,
+    automationRules, webhookSubscriptions, issues, issueLinks, comments, worklogs, attachments,
   ] = await Promise.all([
     workspaceRepo.getWorkspace(), userRepo.list(), workspaceRepo.listMembers(), agentRepo.list(), agentRunRepo.list(),
     workflowRepo.listStatusCategories(), workflowRepo.getWorkflow(), workspaceRepo.getProject(), catalogRepo.listComponents(),
     catalogRepo.listVersions(), catalogRepo.listIssueTypes(), catalogRepo.listLabels(), catalogRepo.listFieldDefinitions(),
     planningRepo.listSprints(), planningRepo.getBoard(), planningRepo.listSavedViews(), automationRepo.list(), webhookRepo.list(),
-    issueRepo.list(), issueRepo.listLinks(), issueRepo.listComments(), issueRepo.listWatchers(), issueRepo.listWorklogs(),
+    issueRepo.list(), issueRepo.listLinks(), issueRepo.listComments(), issueRepo.listWorklogs(),
     issueRepo.listAttachments(),
   ]);
   return c.json({
     workspace, users, workspaceMembers, agents, agentRuns, statusCategories, workflow, project,
     components, versions, issueTypes, labels, fieldDefinitions, sprints, board, savedViews,
-    automationRules, webhookSubscriptions, issues, issueLinks, comments, watchers, worklogs, attachments,
+    automationRules, webhookSubscriptions, issues, issueLinks, comments, worklogs, attachments,
   });
 });
 

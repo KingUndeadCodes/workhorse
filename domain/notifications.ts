@@ -7,9 +7,8 @@ import type { UserId, WebhookId, WorkspaceId } from './ids';
  * in-app, Slack, SMS, whatever) is one of these, undifferentiated. This domain doesn't
  * model "notification mediums," per-user delivery preferences, or how a target
  * address/channel is resolved — a subscriber owns all of that itself once it's receiving
- * events. A `Watcher` row on an issue (collaboration.ts) still exists as a
- * workspace-visible "who's watching this" list, but turning that into an actual delivered
- * notification is entirely the receiving service's job, not something this type prescribes.
+ * events. Turning an event into an actual delivered notification is entirely the
+ * receiving service's job, not something this type prescribes.
  *
  * It implements only the listening protocol ({@link EventSubscription}, shared with
  * `AutomationRule` and `Agent`) and nothing else — there is no acting protocol here,

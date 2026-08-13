@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
+  import Avatar from './Avatar.svelte';
   import WorkflowDiagram from './WorkflowDiagram.svelte';
   import {
     agentRuns,
@@ -7,15 +8,18 @@
     automationRules,
     components as componentsStore,
     fieldDefinitions,
+    issuesStore,
     labels,
     settingsJumpTab,
     statusCategories,
+    users,
     versions,
     webhookSubscriptions,
     workflow,
   } from '../stores/workspace';
   import * as api from '../api';
-  import type { EventType } from '$domain';
+  import { displayName, splitHumansAndAgents } from '../util';
+  import type { AutomationAction, AutomationCondition, EventType, FilterOp } from '$domain';
 
   const tabs = ['Labels', 'Components', 'Versions', 'Fields', 'Workflow', 'Automations', 'Agents', 'Webhooks'] as const;
   let activeTab: (typeof tabs)[number] = 'Labels';
@@ -113,22 +117,80 @@
     }
   }
   // ---- Automations ----
+  /** A condition/action mid-edit in the "add rule" form — string-valued so plain `<input>`s
+   * work; converted to the domain's typed shape only when the rule is actually submitted. */
+  interface DraftCondition { field: string; op: FilterOp; value: string }
+  interface DraftAction { type: AutomationAction['type']; toStatusId: string; userId: string; body: string; fieldId: string; value: string }
+
+  const CONDITION_FIELDS = ['statusId', 'priority', 'issueTypeId', 'assigneeIds', 'labelIds'];
+  const FILTER_OPS: FilterOp[] = ['=', '!=', 'in', 'notIn', '>', '<', 'contains', 'isEmpty'];
+  const AUTOMATION_ACTION_TYPES: AutomationAction['type'][] = ['transitionStatus', 'assignTo', 'addComment', 'setField'];
+
+  function blankAction(): DraftAction {
+    return { type: 'addComment', toStatusId: '', userId: '', body: '', fieldId: '', value: '' };
+  }
+
   let newRuleName = '';
   let newRuleTrigger: EventType = 'issue.created';
-  let newRuleComment = '';
+  let newRuleConditions: DraftCondition[] = [];
+  let newRuleActions: DraftAction[] = [blankAction()];
+  $: ({ humans: assignableUsers } = splitHumansAndAgents($users));
+
+  function addCondition() {
+    newRuleConditions = [...newRuleConditions, { field: CONDITION_FIELDS[0], op: '=', value: '' }];
+  }
+  function removeCondition(index: number) {
+    newRuleConditions = newRuleConditions.filter((_, i) => i !== index);
+  }
+  function addAction() {
+    newRuleActions = [...newRuleActions, blankAction()];
+  }
+  function removeAction(index: number) {
+    newRuleActions = newRuleActions.filter((_, i) => i !== index);
+  }
+
+  /** Actions that only require picking from a list are ready as soon as something's picked;
+   * text-entry actions (comment body, field value) need non-empty text too. */
+  function actionIsComplete(a: DraftAction): boolean {
+    switch (a.type) {
+      case 'transitionStatus': return !!a.toStatusId;
+      case 'assignTo': return !!a.userId;
+      case 'addComment': return !!a.body.trim();
+      case 'setField': return !!a.fieldId && !!a.value.trim();
+    }
+  }
+
+  function toCondition(c: DraftCondition): AutomationCondition {
+    if (c.op === 'isEmpty') return { field: c.field, op: c.op, value: undefined };
+    if (c.op === 'in' || c.op === 'notIn' || c.op === 'contains') {
+      return { field: c.field, op: c.op, value: c.value.split(',').map((s) => s.trim()).filter(Boolean) };
+    }
+    return { field: c.field, op: c.op, value: c.value };
+  }
+
+  function toAction(a: DraftAction): AutomationAction {
+    switch (a.type) {
+      case 'transitionStatus': return { type: 'transitionStatus', toStatusId: a.toStatusId };
+      case 'assignTo': return { type: 'assignTo', userId: a.userId };
+      case 'addComment': return { type: 'addComment', body: a.body.trim() };
+      case 'setField': return { type: 'setField', fieldId: a.fieldId, value: a.value };
+    }
+  }
+
   async function addRule() {
-    if (!newRuleName.trim() || !newRuleComment.trim()) return;
+    if (!newRuleName.trim() || newRuleActions.length === 0 || !newRuleActions.every(actionIsComplete)) return;
     const rule = await api.createAutomationRule({
       name: newRuleName.trim(),
       projectId: null,
       enabled: true,
       eventFilter: [newRuleTrigger],
-      conditions: [],
-      actions: [{ type: 'addComment', body: newRuleComment.trim() }],
+      conditions: newRuleConditions.filter((c) => c.op === 'isEmpty' || c.value.trim()).map(toCondition),
+      actions: newRuleActions.map(toAction),
     });
     automationRules.update((l) => [...l, rule]);
     newRuleName = '';
-    newRuleComment = '';
+    newRuleConditions = [];
+    newRuleActions = [blankAction()];
   }
   async function toggleRule(id: string, enabled: boolean) {
     const rule = await api.updateAutomationRule(id, { enabled });
@@ -139,25 +201,46 @@
     automationRules.update((l) => l.filter((x) => x.id !== id));
   }
 
+  /** One-line human-readable summary of an action, for the rule list row. */
+  function describeAction(a: AutomationAction): string {
+    switch (a.type) {
+      case 'transitionStatus': return `→ ${$workflow?.statuses.find((s) => s.id === a.toStatusId)?.name ?? a.toStatusId}`;
+      case 'assignTo': return `assign ${$users.find((u) => u.id === a.userId)?.displayName ?? a.userId}`;
+      case 'addComment': return `comment "${a.body.length > 30 ? `${a.body.slice(0, 30)}…` : a.body}"`;
+      case 'setField': return `set ${$fieldDefinitions.find((f) => f.id === a.fieldId)?.name ?? a.fieldId} = ${JSON.stringify(a.value)}`;
+    }
+  }
+
   // ---- Agents ----
   let newAgentName = '';
   let newAgentDescription = '';
   let newAgentModel = 'claude-haiku-4-5';
+  let newAgentTrigger: EventType = 'issue.created';
+  let newAgentActionTypes: AutomationAction['type'][] = ['addComment'];
+  let newAgentAutoApply = true;
+  let newAgentMaxRunsPerHour = 20;
   const AGENT_MODELS = ['claude-haiku-4-5', 'claude-sonnet-5', 'claude-opus-5'];
+  const AGENT_ACTION_TYPES: AutomationAction['type'][] = ['transitionStatus', 'assignTo', 'addComment', 'setField'];
+
+  function toggleAgentActionType(type: AutomationAction['type']) {
+    newAgentActionTypes = newAgentActionTypes.includes(type) ? newAgentActionTypes.filter((t) => t !== type) : [...newAgentActionTypes, type];
+  }
+
   async function addAgent() {
-    if (!newAgentName.trim()) return;
+    if (!newAgentName.trim() || !newAgentDescription.trim() || newAgentActionTypes.length === 0) return;
     const agent = await api.createAgent({
       name: newAgentName.trim(),
-      description: newAgentDescription.trim() || undefined,
+      description: newAgentDescription.trim(),
       model: newAgentModel,
-      eventFilter: ['issue.created'],
-      allowedActionTypes: ['addComment', 'setField'],
-      approvalPolicy: { mode: 'autoApplyAll' },
-      budget: { maxRunsPerHour: 20 },
+      eventFilter: [newAgentTrigger],
+      allowedActionTypes: newAgentActionTypes,
+      approvalPolicy: newAgentAutoApply ? { mode: 'autoApplyAll' } : { mode: 'requireApprovalForAll' },
+      budget: { maxRunsPerHour: newAgentMaxRunsPerHour },
     });
     agents.update((l) => [...l, agent]);
     newAgentName = '';
     newAgentDescription = '';
+    newAgentActionTypes = ['addComment'];
   }
   async function toggleAgent(userId: string, enabled: boolean) {
     const agent = await api.updateAgent(userId, { enabled });
@@ -279,21 +362,79 @@
     {:else if activeTab === 'Automations'}
       <div class="list">
         {#each $automationRules as rule (rule.id)}
-          <div class="row">
-            <span class="row-name">{rule.name}</span>
-            <span class="row-tag">{Array.isArray(rule.eventFilter) ? rule.eventFilter.join(', ') : 'all events'}</span>
-            <label class="toggle"><input type="checkbox" checked={rule.enabled} on:change={(e) => toggleRule(rule.id, (e.target as HTMLInputElement).checked)} />enabled</label>
-            <button class="icon-btn" on:click={() => removeRule(rule.id)}><Icon name="trash" size={13} /></button>
+          <div class="row column">
+            <div class="row">
+              <span class="row-name">{rule.name}</span>
+              <span class="row-tag">on {Array.isArray(rule.eventFilter) ? rule.eventFilter.join(', ') : 'all events'}</span>
+              <label class="toggle"><input type="checkbox" checked={rule.enabled} on:change={(e) => toggleRule(rule.id, (e.target as HTMLInputElement).checked)} />enabled</label>
+              <button class="icon-btn" on:click={() => removeRule(rule.id)}><Icon name="trash" size={13} /></button>
+            </div>
+            {#if rule.conditions.length}
+              <p class="rule-detail">if {rule.conditions.map((c) => `${c.field} ${c.op} ${JSON.stringify(c.value)}`).join(' and ')}</p>
+            {/if}
+            <p class="rule-detail">{rule.actions.map(describeAction).join('; ')}</p>
           </div>
         {/each}
       </div>
       <form class="add-form column" on:submit|preventDefault={addRule}>
         <input type="text" placeholder="Rule name" bind:value={newRuleName} />
-        <select bind:value={newRuleTrigger}>
-          {#each commonEventTypes as t}<option value={t}>{t}</option>{/each}
-        </select>
-        <input type="text" placeholder="Comment to post when triggered" bind:value={newRuleComment} />
-        <button type="submit">Add rule</button>
+        <label class="agent-form-label">
+          Trigger
+          <select bind:value={newRuleTrigger}>
+            {#each commonEventTypes as t}<option value={t}>{t}</option>{/each}
+          </select>
+        </label>
+
+        <span class="agent-form-label">Conditions (optional — runs unconditionally if none)</span>
+        {#each newRuleConditions as condition, i}
+          <div class="rule-row">
+            <select bind:value={condition.field}>
+              {#each CONDITION_FIELDS as f}<option value={f}>{f}</option>{/each}
+            </select>
+            <select bind:value={condition.op}>
+              {#each FILTER_OPS as op}<option value={op}>{op}</option>{/each}
+            </select>
+            {#if condition.op !== 'isEmpty'}
+              <input type="text" placeholder="value" bind:value={condition.value} />
+            {/if}
+            <button type="button" class="icon-btn" on:click={() => removeCondition(i)}><Icon name="x" size={13} /></button>
+          </div>
+        {/each}
+        <button type="button" class="text-btn add-row-btn" on:click={addCondition}>+ Add condition</button>
+
+        <span class="agent-form-label">Actions</span>
+        {#each newRuleActions as action, i}
+          <div class="rule-row">
+            <select bind:value={action.type}>
+              {#each AUTOMATION_ACTION_TYPES as t}<option value={t}>{t}</option>{/each}
+            </select>
+            {#if action.type === 'transitionStatus'}
+              <select bind:value={action.toStatusId}>
+                <option value="" disabled>status…</option>
+                {#each $workflow?.statuses ?? [] as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
+              </select>
+            {:else if action.type === 'assignTo'}
+              <select bind:value={action.userId}>
+                <option value="" disabled>user…</option>
+                {#each assignableUsers as u (u.id)}<option value={u.id}>{u.displayName}</option>{/each}
+              </select>
+            {:else if action.type === 'addComment'}
+              <input type="text" placeholder="Comment body" bind:value={action.body} />
+            {:else if action.type === 'setField'}
+              <select bind:value={action.fieldId}>
+                <option value="" disabled>field…</option>
+                {#each $fieldDefinitions as f (f.id)}<option value={f.id}>{f.name}</option>{/each}
+              </select>
+              <input type="text" placeholder="value" bind:value={action.value} />
+            {/if}
+            {#if newRuleActions.length > 1}
+              <button type="button" class="icon-btn" on:click={() => removeAction(i)}><Icon name="x" size={13} /></button>
+            {/if}
+          </div>
+        {/each}
+        <button type="button" class="text-btn add-row-btn" on:click={addAction}>+ Add action</button>
+
+        <button type="submit" disabled={!newRuleName.trim() || !newRuleActions.every(actionIsComplete)}>Add rule</button>
       </form>
     {:else if activeTab === 'Agents'}
       {#if pendingRuns.length}
@@ -301,8 +442,14 @@
         <div class="list">
           {#each pendingRuns as run (run.id)}
             {@const agent = $agents.find((a) => a.userId === run.agentUserId)}
+            {@const runIssue = $issuesStore.find((i) => i.id === run.issueId)}
+            {@const onBehalfOf = $users.find((u) => u.id === runIssue?.agentAssignments?.[run.agentUserId])}
             <div class="row column">
-              <div class="row"><span class="row-name">{agent?.name ?? run.agentUserId}</span><span class="row-tag">{run.status}</span></div>
+              <div class="row">
+                <Avatar userId={run.agentUserId} name={`[AI] ${agent?.name ?? run.agentUserId}`} kind="agent" size={18} />
+                <span class="row-name">[AI] {agent?.name ?? run.agentUserId}{#if onBehalfOf} <span class="on-behalf-of">on behalf of {onBehalfOf.displayName}</span>{/if}</span>
+                <span class="row-tag">{run.status}</span>
+              </div>
               {#if run.rationale}<p class="rationale">{run.rationale}</p>{/if}
               <div class="row-actions">
                 <button class="text-btn" on:click={() => approveRun(run.id)}>Approve</button>
@@ -313,10 +460,16 @@
         </div>
       {/if}
       <div class="subsection-label">Agents</div>
+      <p class="section-hint">
+        Agents work tickets on a teammate's behalf — attach one to an issue (from the issue's AI Agents section) and it can
+        comment, change status, reassign, or update fields as it makes progress, always attributed back to the human it's
+        acting for. Its Instructions below are what actually drive its decisions each time it's triggered.
+      </p>
       <div class="list">
         {#each $agents as agent (agent.userId)}
           <div class="row">
-            <span class="row-name">{agent.name}</span>
+            <Avatar userId={agent.userId} name={`[AI] ${agent.name}`} kind="agent" size={18} />
+            <span class="row-name">[AI] {agent.name}</span>
             <span class="row-tag">{agent.description ?? ''}</span>
             <select value={agent.model} on:change={(e) => changeAgentModel(agent.userId, (e.target as HTMLSelectElement).value)}>
               {#each AGENT_MODELS as model}<option value={model}>{model}</option>{/each}
@@ -327,11 +480,31 @@
       </div>
       <form class="add-form column" on:submit|preventDefault={addAgent}>
         <input type="text" placeholder="Agent name" bind:value={newAgentName} />
-        <input type="text" placeholder="Description" bind:value={newAgentDescription} />
+        <input type="text" placeholder="Instructions — what should this agent do with a ticket?" bind:value={newAgentDescription} />
         <select bind:value={newAgentModel}>
           {#each AGENT_MODELS as model}<option value={model}>{model}</option>{/each}
         </select>
-        <button type="submit">Add agent</button>
+        <label class="agent-form-label">
+          Reacts to
+          <select bind:value={newAgentTrigger}>
+            {#each commonEventTypes as t}<option value={t}>{t}</option>{/each}
+          </select>
+        </label>
+        <span class="agent-form-label">Allowed actions</span>
+        <div class="agent-action-checks">
+          {#each AGENT_ACTION_TYPES as type}
+            <label class="agent-action-check">
+              <input type="checkbox" checked={newAgentActionTypes.includes(type)} on:change={() => toggleAgentActionType(type)} />
+              {type}
+            </label>
+          {/each}
+        </div>
+        <label class="toggle agent-form-toggle"><input type="checkbox" bind:checked={newAgentAutoApply} />auto-apply actions (unchecked = require approval)</label>
+        <label class="agent-form-label">
+          Max runs / hour
+          <input type="number" min="1" bind:value={newAgentMaxRunsPerHour} />
+        </label>
+        <button type="submit" disabled={!newAgentName.trim() || !newAgentDescription.trim() || newAgentActionTypes.length === 0}>Add agent</button>
       </form>
     {:else if activeTab === 'Webhooks'}
       <div class="list">
@@ -358,8 +531,19 @@
   .tab:hover { background: var(--surface-sunken); }
   .tab.active { background: var(--accent-soft); color: var(--accent-strong); font-weight: 600; }
   .panel { flex: 1; overflow-y: auto; padding: 20px 24px; }
+
+  @media (max-width: 768px) {
+    .settings { flex-direction: column; overflow: auto; }
+    .tabs {
+      flex: 0 0 auto; flex-direction: row; overflow-x: auto; overflow-y: visible;
+      border-right: none; border-bottom: 1px solid var(--border); padding: 10px;
+    }
+    .tab { white-space: nowrap; }
+    .panel { padding: 16px; }
+  }
   .subsection-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin: 18px 0 8px; }
   .subsection-label:first-child { margin-top: 0; }
+  .section-hint { font-size: 12px; line-height: 1.5; color: var(--text-3); margin: 0 0 12px; max-width: 520px; }
   .list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
   .row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; font-size: 12.5px; }
   .row.column { flex-direction: column; align-items: stretch; }
@@ -374,6 +558,13 @@
   .text-btn.danger { color: var(--critical); }
   .row-actions { display: flex; gap: 12px; margin-top: 6px; }
   .rationale { font-size: 12px; color: var(--text-2); margin: 0; }
+  .rule-detail { font-size: 12px; color: var(--text-2); margin: 0; }
+  .rule-row { display: flex; align-items: center; gap: 6px; }
+  .rule-row select, .rule-row input {
+    font: inherit; font-size: 12.5px; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+    border-radius: 7px; padding: 6px 8px; flex: 1; min-width: 0;
+  }
+  .add-row-btn { text-align: left; align-self: flex-start; }
   .toggle { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-3); white-space: nowrap; }
   .add-form { display: flex; gap: 8px; }
   .add-form.column { flex-direction: column; align-items: stretch; max-width: 360px; }
@@ -382,4 +573,17 @@
     border-radius: 7px; padding: 7px 9px; flex: 1;
   }
   .add-form button { font-size: 12px; font-weight: 600; color: var(--accent-on); background: var(--accent); padding: 7px 12px; border-radius: 7px; white-space: nowrap; }
+  .add-form button:disabled { opacity: .5; cursor: default; }
+  .on-behalf-of { font-weight: 400; color: var(--text-3); font-size: 11.5px; }
+  .agent-form-label {
+    display: flex; flex-direction: column; gap: 4px; font-size: 10.5px; font-weight: 600;
+    letter-spacing: .04em; text-transform: uppercase; color: var(--text-3); margin-top: 4px;
+  }
+  .agent-form-label select, .agent-form-label input {
+    font: inherit; font-size: 12.5px; text-transform: none; font-weight: 400; color: var(--text);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px;
+  }
+  .agent-action-checks { display: flex; flex-wrap: wrap; gap: 8px; }
+  .agent-action-check { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text); }
+  .agent-form-toggle { margin-top: 2px; }
 </style>

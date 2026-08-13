@@ -62,6 +62,10 @@
 
 <style>
   .workspace-view { flex: 1; overflow-y: auto; padding: 28px 32px; max-width: 640px; }
+
+  @media (max-width: 640px) {
+    .workspace-view { padding: 18px; }
+  }
   .header { margin-bottom: 22px; }
   h1 { font-size: 19px; font-weight: 700; color: var(--text); margin: 0 0 4px; }
   .sub { font-size: 12.5px; color: var(--text-2); margin: 0; }

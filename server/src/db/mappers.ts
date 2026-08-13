@@ -17,7 +17,6 @@ import type {
   Sprint,
   StatusCategory,
   User,
-  Watcher,
   WebhookSubscription,
   Workflow,
   WorkflowStatus,
@@ -96,6 +95,7 @@ export function rowToAgentRun(r: Record<string, unknown>): AgentRun {
     id: r.id as string,
     agentUserId: r.agent_user_id as string,
     triggeringEventId: r.triggering_event_id as string,
+    issueId: r.issue_id as string,
     status: r.status as AgentRun['status'],
     proposedActions: parse(r.proposed_actions, []),
     appliedActionIndexes: parse(r.applied_action_indexes, undefined),
@@ -113,6 +113,7 @@ export function agentRunParams(run: AgentRun): unknown[] {
     run.id,
     run.agentUserId,
     run.triggeringEventId,
+    run.issueId,
     run.status,
     j(run.proposedActions),
     j(run.appliedActionIndexes ?? null),
@@ -340,10 +341,6 @@ export function rowToComment(r: Record<string, unknown>): Comment {
     editedAt: nullish(r.edited_at),
     parentCommentId: nullish(r.parent_comment_id),
   };
-}
-
-export function rowToWatcher(r: Record<string, unknown>): Watcher {
-  return { issueId: r.issue_id as string, userId: r.user_id as string, watchingSince: r.watching_since as string };
 }
 
 export function rowToWorklog(r: Record<string, unknown>): Worklog {

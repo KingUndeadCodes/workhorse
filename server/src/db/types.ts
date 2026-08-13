@@ -70,6 +70,7 @@ export interface DB {
     completed_at: string | null;
     failure_reason: string | null;
     token_usage: number | null;
+    issue_id: string | null;
   };
   status_categories: {
     id: string;
@@ -195,7 +196,6 @@ export interface DB {
     description: string | null;
     priority: string | null;
     reporter_id: string | null;
-    assignee_id: string | null;
     assignee_ids: string | null;
     assigned_by: string | null;
     agent_assignments: string | null;
@@ -232,11 +232,6 @@ export interface DB {
     created_at: string | null;
     edited_at: string | null;
     parent_comment_id: string | null;
-  };
-  watchers: {
-    issue_id: string;
-    user_id: string;
-    watching_since: string | null;
   };
   worklogs: {
     id: string;

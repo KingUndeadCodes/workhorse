@@ -21,11 +21,9 @@
     setIssueField,
     sprints,
     statusCategories,
-    toggleWatching,
     unassignAgent,
     updateIssue,
     users,
-    watchers,
     workflow,
   } from '../stores/workspace';
   import { triggerAgent } from '../api';
@@ -66,8 +64,6 @@
   // Threading is one level deep (see domain/collaboration.ts) — top-level comments plus,
   // for each, the replies attached to it, both ordered oldest-first.
   $: topLevelComments = [...issueComments].filter((c) => !c.parentCommentId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-  $: issueWatchers = issue ? $watchers.filter((w) => w.issueId === issue.id) : [];
-  $: isWatching = issue ? issueWatchers.some((w) => w.userId === $currentUser?.id) : false;
   $: timePct = issue?.originalEstimateSeconds ? Math.min(100, (issue.loggedSeconds / issue.originalEstimateSeconds) * 100) : 0;
   $: applicableFields = $fieldDefinitions.filter((f) => !f.scope.projectIds || (issue && f.scope.projectIds.includes(issue.projectId)));
   $: issueLinksForIssue = issue ? $issueLinks.filter((l) => l.sourceIssueId === issue.id || l.targetIssueId === issue.id) : [];
@@ -176,28 +172,39 @@
   }
 
   let showAgentPicker = false;
-  let pickedAgentId = '';
-  let pickedOnBehalfOfId = '';
+  /** Per-unattached-agent "on behalf of" pick — same checkbox-toggle interaction the Assignees
+   * popover uses (check to attach immediately), pre-seeded with a default so a single click is
+   * usually enough. */
+  let pendingOnBehalfOf: Record<string, string> = {};
   let triggeringAgentId: string | null = null;
 
-  /** Opens the "attach an agent" popover, defaulting the on-behalf-of pick to the current user if they're an assignee. */
-  function openAgentPicker() {
-    if (!issue) return;
-    pickedAgentId = '';
-    pickedOnBehalfOfId = $currentUser && issue.assigneeIds.includes($currentUser.id) ? $currentUser.id : issue.assigneeIds[0] ?? '';
+  /** Defaults the on-behalf-of pick to the current user if they're an assignee, else the first assignee. */
+  function defaultOnBehalfOf(): string {
+    if (!issue) return '';
+    return $currentUser && issue.assigneeIds.includes($currentUser.id) ? $currentUser.id : (issue.assigneeIds[0] ?? '');
+  }
+  function toggleAgentPicker() {
+    if (showAgentPicker) {
+      showAgentPicker = false;
+      return;
+    }
+    const fallback = defaultOnBehalfOf();
+    pendingOnBehalfOf = Object.fromEntries(unattachedAgents.map((a) => [a.id, pendingOnBehalfOf[a.id] ?? fallback]));
     showAgentPicker = true;
   }
-  async function confirmAttachAgent() {
-    if (!issue || !pickedAgentId || !pickedOnBehalfOfId) return;
-    await assignAgent(issue.id, pickedAgentId, pickedOnBehalfOfId);
-    showAgentPicker = false;
+  async function attachAgentChecked(agentUserId: string) {
+    if (!issue) return;
+    const onBehalfOfUserId = pendingOnBehalfOf[agentUserId];
+    if (!onBehalfOfUserId) return;
+    await assignAgent(issue.id, agentUserId, onBehalfOfUserId);
   }
   async function detachAgent(agentUserId: string) {
     if (!issue) return;
     await unassignAgent(issue.id, agentUserId);
   }
-  async function runAgentNow(agentUserId: string) {
+  async function runAgentNow(agentUserId: string, agentName: string) {
     if (!issue) return;
+    if (!confirm(`Run "${agentName}" on this issue now?`)) return;
     triggeringAgentId = agentUserId;
     try {
       await triggerAgent(agentUserId, issue.id);
@@ -372,6 +379,9 @@
 
       <div class="section agents-section" use:closeOnClickOutside={() => (showAgentPicker = false)}>
         <div class="section-label">AI Agents</div>
+        {#if attachedAgents.length === 0 && issueAssignees.length > 0}
+          <p class="agents-hint">Attach an agent to have it work this ticket on behalf of an assignee.</p>
+        {/if}
         <div class="agent-chips">
           {#each attachedAgents as { agent, onBehalfOf } (agent.id)}
             <span class="agent-chip">
@@ -382,7 +392,7 @@
                 class="chip-run"
                 title="Run now"
                 disabled={triggeringAgentId === agent.id}
-                on:click={() => runAgentNow(agent.id)}
+                on:click={() => runAgentNow(agent.id, displayName(agent))}
               >{triggeringAgentId === agent.id ? '…' : 'Run'}</button>
               <button type="button" class="chip-remove" on:click={() => detachAgent(agent.id)}><Icon name="x" size={10} /></button>
             </span>
@@ -390,41 +400,29 @@
           {#if issueAssignees.length === 0}
             <span class="agents-empty">Assign a person first</span>
           {:else}
-            <button type="button" class="assignee-add" on:click={() => (showAgentPicker ? (showAgentPicker = false) : openAgentPicker())}>+ Add</button>
+            <button type="button" class="assignee-add" on:click={toggleAgentPicker}>+ Add</button>
             {#if showAgentPicker}
-              <div class="assignee-popover agent-popover">
+              <div class="assignee-popover">
                 {#if unattachedAgents.length === 0}
                   <div class="agents-empty">No more agents to attach</div>
                 {:else}
-                  <label class="agent-field-label" for="agent-pick">Agent</label>
-                  <select id="agent-pick" bind:value={pickedAgentId}>
-                    <option value="" disabled>Choose an agent…</option>
-                    {#each unattachedAgents as a (a.id)}<option value={a.id}>{displayName(a)}</option>{/each}
-                  </select>
-                  <label class="agent-field-label" for="agent-on-behalf-of">On behalf of</label>
-                  <select id="agent-on-behalf-of" bind:value={pickedOnBehalfOfId}>
-                    {#each issueAssignees as u (u.id)}<option value={u.id}>{u.displayName}</option>{/each}
-                  </select>
-                  <button type="button" class="btn-attach" disabled={!pickedAgentId || !pickedOnBehalfOfId} on:click={confirmAttachAgent}>Attach</button>
+                  {#each unattachedAgents as a (a.id)}
+                    <label class="assignee-option agent-picker-option">
+                      <input type="checkbox" on:change={() => attachAgentChecked(a.id)} />
+                      <Avatar userId={a.id} name={displayName(a)} kind={a.kind} size={16} />
+                      {displayName(a)}
+                      {#if issueAssignees.length > 1}
+                        <select class="on-behalf-of-select" bind:value={pendingOnBehalfOf[a.id]} on:click|stopPropagation>
+                          {#each issueAssignees as u (u.id)}<option value={u.id}>{u.displayName}</option>{/each}
+                        </select>
+                      {/if}
+                    </label>
+                  {/each}
                 {/if}
               </div>
             {/if}
           {/if}
         </div>
-      </div>
-
-      <div class="section watchers-section">
-        <div class="avatar-stack">
-          {#each issueWatchers as w (w.userId)}
-            {@const u = $users.find((usr) => usr.id === w.userId)}
-            {#if u}
-              <div class="stack-item"><Avatar userId={u.id} name={displayName(u)} avatarUrl={u.avatarUrl} kind={u.kind} size={22} /></div>
-            {/if}
-          {/each}
-        </div>
-        <button class="watch-toggle" class:active={isWatching} on:click={() => issue && toggleWatching(issue.id, isWatching)}>
-          <Icon name="eye" size={13} />{isWatching ? 'Watching' : 'Watch'}
-        </button>
       </div>
 
       <div class="section">
@@ -583,19 +581,12 @@
   .chip-run:hover:not(:disabled) { color: var(--text); border-color: var(--text-3); }
   .chip-run:disabled { opacity: .5; cursor: default; }
   .agents-empty { font-size: 12px; color: var(--text-3); font-style: italic; }
-  .agent-popover {
-    display: flex; flex-direction: column; gap: 4px; min-width: 220px; padding: 10px;
+  .agents-hint { font-size: 12px; color: var(--text-3); margin: 0 0 8px; }
+  .agent-picker-option { gap: 6px; }
+  .on-behalf-of-select {
+    margin-left: auto; font: inherit; font-size: 11px; color: var(--text-2); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 5px; padding: 2px 4px;
   }
-  .agent-field-label { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-3); margin-top: 4px; }
-  .agent-popover select {
-    font: inherit; font-size: 12.5px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border);
-    border-radius: 6px; padding: 5px 6px;
-  }
-  .btn-attach {
-    margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--accent-on); background: var(--accent);
-    border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer;
-  }
-  .btn-attach:disabled { opacity: .5; cursor: default; }
   .section-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin: 0 0 8px; }
   .section { margin-bottom: 20px; }
   .desc-view {
@@ -623,12 +614,6 @@
   .time-bar > span { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
   .time-label { font-size: 11px; color: var(--text-3); white-space: nowrap; }
   .new-comment { margin-top: 4px; }
-  .watchers-section { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-  .avatar-stack { display: flex; align-items: center; }
-  .stack-item { margin-left: -6px; border-radius: 50%; border: 2px solid var(--surface); }
-  .stack-item:first-child { margin-left: 0; }
-  .watch-toggle { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--text-2); background: var(--surface-2); border: 1px solid var(--border); padding: 5px 10px; border-radius: 7px; }
-  .watch-toggle.active { color: var(--accent-strong); background: var(--accent-soft); border-color: transparent; }
   .inline-form { display: flex; gap: 6px; margin-top: 6px; }
   .inline-input, .inline-select {
     font: inherit; font-size: 12px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border);
@@ -639,4 +624,10 @@
   .link-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 12px; }
   .link-type { color: var(--text-3); text-transform: capitalize; flex: 0 0 auto; }
   .link-title { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+
+  @media (max-width: 640px) {
+    .drawer-body { padding: 14px 14px 24px; }
+    .field-grid { grid-template-columns: 1fr; }
+    .assignee-field { grid-column: auto; }
+  }
 </style>

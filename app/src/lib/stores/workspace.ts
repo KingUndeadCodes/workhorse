@@ -1,5 +1,4 @@
-import { get, writable } from 'svelte/store';
-import { currentUser } from './auth';
+import { writable } from 'svelte/store';
 import type {
   Agent,
   AgentRun,
@@ -21,7 +20,6 @@ import type {
   Sprint,
   StatusCategory,
   User,
-  Watcher,
   WebhookSubscription,
   Workflow,
   Worklog,
@@ -32,7 +30,6 @@ import type {
 import {
   addAttachment as apiAddAttachment,
   addIssueLink as apiAddIssueLink,
-  addWatcher as apiAddWatcher,
   addWorklog as apiAddWorklog,
   assignAgentToIssue as apiAssignAgentToIssue,
   unassignAgentFromIssue as apiUnassignAgentFromIssue,
@@ -46,7 +43,6 @@ import {
   updateComment as apiUpdateComment,
   removeAttachment as apiRemoveAttachment,
   removeIssueLink as apiRemoveIssueLink,
-  removeWatcher as apiRemoveWatcher,
   setIssueField as apiSetIssueField,
   startSprint as apiStartSprint,
   updateIssue as apiUpdateIssue,
@@ -61,6 +57,9 @@ export const loadError = writable<string | null>(null);
 /** Which top-level screen is showing: the board, sprint planning, admin settings, or the workspace view. */
 export const currentView = writable<'board' | 'backlog' | 'settings' | 'workspace'>('board');
 
+/** Whether the off-canvas sidebar is open on narrow (mobile) viewports — irrelevant above the responsive breakpoint, where the sidebar is always visible. */
+export const mobileNavOpen = writable(false);
+
 /**
  * Settings tab to land on next time Settings mounts — set by the TopBar "New…" menu (e.g.
  * "New Label" should open Settings already on the Labels tab). Settings.svelte reads and
@@ -68,7 +67,7 @@ export const currentView = writable<'board' | 'backlog' | 'settings' | 'workspac
  */
 export const settingsJumpTab = writable<string | null>(null);
 
-// Reference data plus mutable issue/comment/watcher state, all populated from the API by
+// Reference data plus mutable issue/comment state, all populated from the API by
 // initWorkspace and otherwise treated as read-only by components — every write goes
 // through one of the functions below so it's reflected on the server too.
 export const workspace = writable<Workspace | null>(null);
@@ -92,7 +91,6 @@ export const webhookSubscriptions = writable<WebhookSubscription[]>([]);
 export const issuesStore = writable<Issue[]>([]);
 export const issueLinks = writable<IssueLink[]>([]);
 export const comments = writable<Comment[]>([]);
-export const watchers = writable<Watcher[]>([]);
 export const worklogs = writable<Worklog[]>([]);
 export const attachments = writable<Attachment[]>([]);
 
@@ -128,7 +126,6 @@ export async function initWorkspace(): Promise<void> {
     issuesStore.set(data.issues);
     issueLinks.set(data.issueLinks);
     comments.set(data.comments);
-    watchers.set(data.watchers);
     worklogs.set(data.worklogs);
     attachments.set(data.attachments);
     selectedIssueId.set(data.comments[0]?.issueId ?? null);
@@ -207,18 +204,6 @@ export async function addIssueLink(issueId: string, type: IssueLinkType, targetI
 export async function removeIssueLink(issueId: string, linkId: string): Promise<void> {
   await apiRemoveIssueLink(issueId, linkId);
   issueLinks.update((list) => list.filter((l) => l.id !== linkId));
-}
-
-/** Toggles the current user's watch state on an issue. */
-export async function toggleWatching(issueId: string, isWatching: boolean): Promise<void> {
-  const userId = get(currentUser)?.id;
-  if (isWatching) {
-    await apiRemoveWatcher(issueId);
-    watchers.update((list) => list.filter((w) => !(w.issueId === issueId && w.userId === userId)));
-  } else {
-    await apiAddWatcher(issueId);
-    watchers.update((list) => [...list, { issueId, userId: userId!, watchingSince: new Date().toISOString() }]);
-  }
 }
 
 export async function logWork(issueId: string, timeSpentSeconds: number, note?: string): Promise<void> {

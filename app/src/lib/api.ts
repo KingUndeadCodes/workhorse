@@ -25,7 +25,6 @@ import type {
   Sprint,
   StatusCategory,
   User,
-  Watcher,
   WebhookSubscription,
   Workflow,
   WorkflowStatus,
@@ -64,7 +63,6 @@ export interface Bootstrap {
   issues: Issue[];
   issueLinks: IssueLink[];
   comments: Comment[];
-  watchers: Watcher[];
   worklogs: Worklog[];
   attachments: Attachment[];
   events: EventEnvelope[];
@@ -158,15 +156,6 @@ export function addIssueLink(issueId: string, type: IssueLinkType, targetIssueId
 
 export function removeIssueLink(issueId: string, linkId: string): Promise<{ event: EventEnvelope }> {
   return del(`/issues/${issueId}/links/${linkId}`);
-}
-
-/** Watches/unwatches always act as the authenticated caller — the server no longer accepts a target user id. */
-export function addWatcher(issueId: string): Promise<{ event: EventEnvelope }> {
-  return post(`/issues/${issueId}/watchers`, {});
-}
-
-export function removeWatcher(issueId: string): Promise<{ event: EventEnvelope }> {
-  return del(`/issues/${issueId}/watchers`);
 }
 
 /** Attaches an AI agent to an issue on behalf of one of its current human assignees. */

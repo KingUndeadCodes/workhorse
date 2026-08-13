@@ -86,8 +86,6 @@ export type EventPayload =
    * ({@link FieldValue}) — this is for the fixed {@link Issue} shape instead.
    */
   | { type: 'issue.updated'; issueId: IssueId; changes: Record<string, unknown> }
-  | { type: 'issue.watcherAdded'; issueId: IssueId; userId: UserId }
-  | { type: 'issue.watcherRemoved'; issueId: IssueId; userId: UserId }
   | { type: 'issue.worklogAdded'; issueId: IssueId; worklogId: WorklogId; authorId: UserId; timeSpentSeconds: number; note?: string }
   | {
       type: 'issue.attachmentAdded';

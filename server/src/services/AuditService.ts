@@ -25,7 +25,6 @@ interface ExpectedIssueState {
   agentAssignments?: Partial<Record<string, string>>;
   sprintId?: string;
   loggedSeconds: number;
-  watchers: Set<string>;
   commentIds: Set<string>;
   deleted: boolean;
 }
@@ -46,8 +45,8 @@ function recordsEqual(a: Partial<Record<string, string>>, b: Partial<Record<stri
 
 /**
  * Replays the durable event log and checks it against the operational tables for every
- * issue the log actually describes — status, assignee, sprint, logged time, watchers,
- * links, and comment set, each reconstructed purely from the events that track that field.
+ * issue the log actually describes — status, assignee, sprint, logged time, links, and
+ * comment set, each reconstructed purely from the events that track that field.
  * If these ever disagree, either the projector missed something or a route mutated state
  * outside the event path — both are bugs this is meant to catch.
  *
@@ -74,7 +73,7 @@ export class AuditService {
     const ensure = (issueId: string): ExpectedIssueState => {
       let e = expectedByIssue.get(issueId);
       if (!e) {
-        e = { loggedSeconds: 0, watchers: new Set(), commentIds: new Set(), deleted: false, agentAssignments: {} };
+        e = { loggedSeconds: 0, commentIds: new Set(), deleted: false, agentAssignments: {} };
         expectedByIssue.set(issueId, e);
       }
       return e;
@@ -111,12 +110,6 @@ export class AuditService {
           break;
         case 'issue.sprintChanged':
           ensure(p.issueId).sprintId = p.toSprintId;
-          break;
-        case 'issue.watcherAdded':
-          ensure(p.issueId).watchers.add(p.userId);
-          break;
-        case 'issue.watcherRemoved':
-          ensure(p.issueId).watchers.delete(p.userId);
           break;
         case 'issue.worklogAdded':
           ensure(p.issueId).loggedSeconds += p.timeSpentSeconds;
@@ -162,9 +155,6 @@ export class AuditService {
       }
       if ((expected.sprintId ?? undefined) !== actual.sprintId) findings.push({ issueId, field: 'sprintId', expected: expected.sprintId, actual: actual.sprintId });
       if (expected.loggedSeconds !== actual.loggedSeconds) findings.push({ issueId, field: 'loggedSeconds', expected: expected.loggedSeconds, actual: actual.loggedSeconds });
-
-      const actualWatchers = new Set((await this.issues.listWatchersFor(issueId)).map((w) => w.userId));
-      if (!setsEqual(expected.watchers, actualWatchers)) findings.push({ issueId, field: 'watchers', expected: [...expected.watchers], actual: [...actualWatchers] });
 
       const expectedLinkIds = new Set([...activeLinks.entries()].filter(([, l]) => l.source === issueId || l.target === issueId).map(([linkId]) => linkId));
       const actualLinkIds = new Set((await this.issues.listLinksFor(issueId)).map((l) => l.id));

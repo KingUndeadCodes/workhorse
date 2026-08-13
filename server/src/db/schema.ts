@@ -51,6 +51,7 @@ export function migrateStateDb(): void {
     )`,
   );
   addColumnIfMissing('agent_runs', 'token_usage', 'INTEGER');
+  addColumnIfMissing('agent_runs', 'issue_id', 'TEXT');
   run(stateDb, `CREATE TABLE IF NOT EXISTS status_categories (id TEXT PRIMARY KEY, workspace_id TEXT, name TEXT, type TEXT, color TEXT, sort_order INTEGER)`);
   run(stateDb, `CREATE TABLE IF NOT EXISTS workflow (id TEXT PRIMARY KEY, name TEXT, initial_status_id TEXT)`);
   run(stateDb, `CREATE TABLE IF NOT EXISTS workflow_statuses (id TEXT PRIMARY KEY, workflow_id TEXT, name TEXT, category_id TEXT, color TEXT)`);
@@ -92,7 +93,7 @@ export function migrateStateDb(): void {
     stateDb,
     `CREATE TABLE IF NOT EXISTS issues (
       id TEXT PRIMARY KEY, key TEXT, project_id TEXT, issue_type_id TEXT, status_id TEXT, title TEXT, description TEXT,
-      priority TEXT, reporter_id TEXT, assignee_id TEXT, parent_id TEXT, additional_parent_ids TEXT,
+      priority TEXT, reporter_id TEXT, parent_id TEXT, additional_parent_ids TEXT,
       label_ids TEXT, component_ids TEXT, fix_version_ids TEXT, sprint_id TEXT, story_points REAL,
       original_estimate_seconds INTEGER, remaining_estimate_seconds INTEGER, logged_seconds INTEGER,
       field_values TEXT, due_date TEXT, created_at TEXT, updated_at TEXT, resolved_at TEXT
@@ -111,7 +112,6 @@ export function migrateStateDb(): void {
   run(stateDb, `CREATE INDEX IF NOT EXISTS idx_comments_issue ON comments(issue_id)`);
   addColumnIfMissing('comments', 'parent_comment_id', 'TEXT');
   addColumnIfMissing('comments', 'on_behalf_of_user_id', 'TEXT');
-  run(stateDb, `CREATE TABLE IF NOT EXISTS watchers (issue_id TEXT, user_id TEXT, watching_since TEXT, PRIMARY KEY (issue_id, user_id))`);
   run(
     stateDb,
     `CREATE TABLE IF NOT EXISTS worklogs (id TEXT PRIMARY KEY, issue_id TEXT, author_id TEXT, time_spent_seconds INTEGER, started_at TEXT, note TEXT)`,

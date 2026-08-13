@@ -4,10 +4,9 @@ import type { UserId, WorkspaceId } from './ids';
  * Distinguishes a human account from an AI agent's.
  *
  * 'agent' users are backed by an {@link Agent} record (agent.ts) sharing the same id —
- * that's the whole trick that makes agents assignable, @mentionable, and watchable for
- * free: every place a {@link UserId} is already accepted (`Issue.assigneeId`,
- * `Comment.authorId`, `Watcher`) just works, with zero special-casing for the fact that a
- * "user" might be an AI.
+ * that's the whole trick that makes agents assignable and @mentionable for free: every
+ * place a {@link UserId} is already accepted (`Issue.assigneeIds`, `Comment.authorId`)
+ * just works, with zero special-casing for the fact that a "user" might be an AI.
  */
 export type UserKind = 'human' | 'agent';
 

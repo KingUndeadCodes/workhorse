@@ -4,7 +4,7 @@
   import NewIssueModal from './NewIssueModal.svelte';
   import AccountSettingsModal from './AccountSettingsModal.svelte';
   import { currentUser, logout } from '../stores/auth';
-  import { currentView, issuesStore, selectedIssueId, settingsJumpTab, sprints } from '../stores/workspace';
+  import { currentView, issuesStore, mobileNavOpen, selectedIssueId, settingsJumpTab, sprints } from '../stores/workspace';
 
   const tabs: { label: string; view: 'board' | 'backlog' }[] = [
     { label: 'Board', view: 'board' },
@@ -77,6 +77,7 @@
 
 <header class="topbar">
   <div class="crumb-tabs">
+    <button class="icon-btn menu-btn" title="Menu" on:click={() => ($mobileNavOpen = !$mobileNavOpen)}><Icon name="lines" /></button>
     <div class="crumb"><b>Anvil</b><span>/</span><span>{activeSprint?.name ?? 'No active sprint'}</span></div>
     <div class="view-tabs">
       {#each tabs as tab}
@@ -89,7 +90,7 @@
   </div>
   <div class="topbar-right">
     <div class="new-menu-wrap" bind:this={newMenuWrap}>
-      <button class="new-issue-btn" on:click={toggleNewMenu}><Icon name="plus" size={13} />New…</button>
+      <button class="new-issue-btn" on:click={toggleNewMenu}><Icon name="plus" size={13} /><span class="new-issue-label">New…</span></button>
       {#if showNewMenu}
         <div class="dropdown">
           <button class="dropdown-item" on:click={newIssue}>Issue</button>
@@ -169,4 +170,20 @@
   .user-menu-email { font-size: 11px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .dropdown-item { width: 100%; text-align: left; font-size: 12.5px; color: var(--text-2); padding: 7px 10px; border-radius: 6px; }
   .dropdown-item:hover { background: var(--surface-sunken); color: var(--text); }
+  .menu-btn { display: none; flex: 0 0 auto; }
+
+  @media (max-width: 768px) {
+    .topbar { padding: 0 10px; gap: 8px; }
+    .menu-btn { display: flex; }
+    .crumb { display: none; }
+    .crumb-tabs { min-width: 0; overflow: hidden; }
+    /* The sidebar's own nav already covers Board/Backlog on mobile — drop the duplicate
+       tabs here so the space goes to the issue-key pill instead, which can't go anywhere else. */
+    .view-tabs { display: none; }
+    .issue-pill { overflow: hidden; text-overflow: ellipsis; }
+  }
+  @media (max-width: 480px) {
+    .new-issue-label { display: none; }
+    .new-issue-btn { padding: 7px 9px; }
+  }
 </style>

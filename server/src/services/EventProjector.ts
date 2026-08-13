@@ -57,12 +57,6 @@ export class EventProjector {
       case 'issue.unlinked':
         await this.issues.deleteLink(payload.linkId);
         break;
-      case 'issue.watcherAdded':
-        await this.issues.addWatcher(payload.issueId, payload.userId, event.occurredAt);
-        break;
-      case 'issue.watcherRemoved':
-        await this.issues.removeWatcher(payload.issueId, payload.userId);
-        break;
       case 'issue.worklogAdded':
         await this.issues.insertWorklog(
           { id: payload.worklogId, issueId: payload.issueId, authorId: payload.authorId, timeSpentSeconds: payload.timeSpentSeconds, startedAt: event.occurredAt, note: payload.note },

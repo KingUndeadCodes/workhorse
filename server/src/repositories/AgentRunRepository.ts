@@ -22,6 +22,7 @@ export class AgentRunRepository {
       id: run.id,
       agent_user_id: run.agentUserId,
       triggering_event_id: run.triggeringEventId,
+      issue_id: run.issueId,
       status: run.status,
       proposed_actions: JSON.stringify(run.proposedActions),
       applied_action_indexes: JSON.stringify(run.appliedActionIndexes ?? null),

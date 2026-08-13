@@ -1,11 +1,11 @@
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/types';
-import { rowToAttachment, rowToComment, rowToIssue, rowToIssueLink, rowToWatcher, rowToWorklog } from '../db/mappers';
-import type { Attachment, Comment, FieldValue, Issue, IssueLink, IssueLinkType, Watcher, Worklog } from '../domain';
+import { rowToAttachment, rowToComment, rowToIssue, rowToIssueLink, rowToWorklog } from '../db/mappers';
+import type { Attachment, Comment, FieldValue, Issue, IssueLink, IssueLinkType, Worklog } from '../domain';
 
 /**
  * The only repository with INSERT/UPDATE/DELETE access to the operational tables: issues
- * and everything hung off one (comments, watchers, worklogs, attachments, links). Every
+ * and everything hung off one (comments, worklogs, attachments, links). Every
  * write here is driven either by {@link EventProjector} (from a payload already appended to
  * the durable log) or, for attachments, directly from a route (attachment removal isn't
  * event-worthy — see issues.ts's original comment). None of these methods call
@@ -51,14 +51,6 @@ export class IssueRepository {
   async getComment(commentId: string): Promise<Comment | undefined> {
     const row = await this.db.selectFrom('comments').selectAll().where('id', '=', commentId).executeTakeFirst();
     return row ? rowToComment(row) : undefined;
-  }
-
-  async listWatchers(): Promise<Watcher[]> {
-    return (await this.db.selectFrom('watchers').selectAll().execute()).map(rowToWatcher);
-  }
-
-  async listWatchersFor(issueId: string): Promise<Watcher[]> {
-    return (await this.db.selectFrom('watchers').selectAll().where('issue_id', '=', issueId).execute()).map(rowToWatcher);
   }
 
   async listWorklogs(): Promise<Worklog[]> {
@@ -188,7 +180,6 @@ export class IssueRepository {
   async deleteCascade(issueId: string): Promise<void> {
     await this.db.deleteFrom('issues').where('id', '=', issueId).execute();
     await this.db.deleteFrom('comments').where('issue_id', '=', issueId).execute();
-    await this.db.deleteFrom('watchers').where('issue_id', '=', issueId).execute();
     await this.db.deleteFrom('worklogs').where('issue_id', '=', issueId).execute();
     await this.db.deleteFrom('attachments').where('issue_id', '=', issueId).execute();
     await this.db
@@ -210,14 +201,6 @@ export class IssueRepository {
 
   async deleteLink(linkId: string): Promise<void> {
     await this.db.deleteFrom('issue_links').where('id', '=', linkId).execute();
-  }
-
-  async addWatcher(issueId: string, userId: string, watchingSince: string): Promise<void> {
-    await this.db.insertInto('watchers').values({ issue_id: issueId, user_id: userId, watching_since: watchingSince }).onConflict((oc) => oc.doNothing()).execute();
-  }
-
-  async removeWatcher(issueId: string, userId: string): Promise<void> {
-    await this.db.deleteFrom('watchers').where('issue_id', '=', issueId).where('user_id', '=', userId).execute();
   }
 
   async insertWorklog(worklog: Worklog, occurredAt: string): Promise<void> {

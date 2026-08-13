@@ -25,13 +25,6 @@ export interface Attachment {
   createdAt: string;
 }
 
-/** Marks a user as wanting to be notified about an issue. */
-export interface Watcher {
-  issueId: IssueId;
-  userId: UserId;
-  watchingSince: string;
-}
-
 /**
  * There is deliberately no `ActivityEvent` type here — an issue's Activity tab is a query
  * over the global event log (see events.ts):

@@ -1,23 +1,29 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { currentView, selectedIssueId, workspace, project, users } from '../stores/workspace';
+  import { currentView, mobileNavOpen, selectedIssueId, workspace, project, users } from '../stores/workspace';
 
   const navItems: { icon: string; label: string; view: 'board' | 'backlog' }[] = [
     { icon: 'list', label: 'Backlog', view: 'backlog' },
     { icon: 'columns', label: 'Board', view: 'board' },
   ];
 
-  /** Switching views always leaves the current ticket — Board/Backlog should show the list, not a stale drawer. */
+  /** Switching views always leaves the current ticket — Board/Backlog should show the list, not a stale drawer.
+   * Also closes the off-canvas sidebar, since on mobile a nav tap should return to content. */
   function goToView(view: 'board' | 'backlog') {
     $currentView = view;
     $selectedIssueId = null;
+    $mobileNavOpen = false;
   }
 </script>
 
-<aside class="sidebar">
+{#if $mobileNavOpen}
+  <button class="backdrop" aria-label="Close menu" on:click={() => ($mobileNavOpen = false)}></button>
+{/if}
+
+<aside class="sidebar" class:open={$mobileNavOpen}>
   <div class="brand"><Icon name="anvil" size={22} />Anvil</div>
 
-  <button class="workspace" class:active={$currentView === 'workspace'} on:click={() => ($currentView = 'workspace')}>
+  <button class="workspace" class:active={$currentView === 'workspace'} on:click={() => (($currentView = 'workspace'), ($mobileNavOpen = false))}>
     <div class="workspace-dot"></div>
     <div class="workspace-text">
       <div class="workspace-name">{$workspace?.name ?? ''}</div>
@@ -95,4 +101,17 @@
   .proj-item.active { background: var(--sidebar-active-bg); color: #F1F2F5; font-weight: 600; }
   .proj-dot { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 8px; }
   .proj-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .backdrop { display: none; }
+
+  @media (max-width: 768px) {
+    .backdrop {
+      display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, .45); border: none; padding: 0;
+      z-index: 39; cursor: default;
+    }
+    .sidebar {
+      position: fixed; inset: 0 auto 0 0; z-index: 40; transform: translateX(-100%);
+      transition: transform .18s ease; box-shadow: var(--shadow-lg);
+    }
+    .sidebar.open { transform: translateX(0); }
+  }
 </style>

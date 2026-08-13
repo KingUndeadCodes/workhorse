@@ -1,6 +1,6 @@
 import type { AutomationAction } from './automation';
 import type { EventSubscription } from './subscription';
-import type { AgentRunId, EventId, ProjectId, UserId, WorkspaceId } from './ids';
+import type { AgentRunId, EventId, IssueId, ProjectId, UserId, WorkspaceId } from './ids';
 
 /**
  * An AI Agent is a {@link User} (`kind: 'agent'` in user.ts) plus this record of what
@@ -78,6 +78,8 @@ export interface AgentRun {
   agentUserId: UserId;
   /** Includes a manual `agent.manuallyTriggered` event. */
   triggeringEventId: EventId;
+  /** The issue this run reacted to — lets the UI show which human the agent was acting on behalf of (via that issue's `agentAssignments`) without re-resolving the triggering event. */
+  issueId: IssueId;
   status: AgentRunStatus;
   proposedActions: AutomationAction[];
   /** Subset of {@link proposedActions} actually executed, once resolved. */
