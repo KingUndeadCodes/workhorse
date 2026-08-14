@@ -69,7 +69,8 @@
   function newCatalogItem(tab: string) {
     showNewMenu = false;
     $settingsJumpTab = tab;
-    $currentView = 'settings';
+    // Components/Versions live in project settings now; Labels stays in workspace settings.
+    $currentView = tab === 'Components' || tab === 'Versions' ? 'projectSettings' : 'settings';
   }
 </script>
 
@@ -78,7 +79,7 @@
 <header class="topbar">
   <div class="crumb-tabs">
     <button class="icon-btn menu-btn" title="Menu" on:click={() => ($mobileNavOpen = !$mobileNavOpen)}><Icon name="lines" /></button>
-    <div class="crumb"><b>Anvil</b><span>/</span><span>{activeSprint?.name ?? 'No active sprint'}</span></div>
+    <div class="crumb"><b>Workhorse</b><span>/</span><span>{activeSprint?.name ?? 'No active sprint'}</span></div>
     <div class="view-tabs">
       {#each tabs as tab}
         <button class="view-tab" class:active={tab.view === $currentView && !selectedIssue} on:click={() => goToView(tab.view)}>{tab.label}</button>
@@ -102,7 +103,8 @@
         </div>
       {/if}
     </div>
-    <button class="icon-btn" title="Settings" on:click={() => ($currentView = 'settings')}><Icon name="gear" /></button>
+    <button class="icon-btn" title="Project settings" on:click={() => ($currentView = 'projectSettings')}><Icon name="grid" /></button>
+    <button class="icon-btn" title="Workspace settings" on:click={() => ($currentView = 'settings')}><Icon name="gear" /></button>
     {#if $currentUser}
       <div class="user-menu-wrap" bind:this={userMenuWrap}>
         <button class="avatar-btn" on:click={toggleUserMenu}>

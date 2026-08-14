@@ -251,6 +251,26 @@ export interface DB {
     url: string | null;
     created_at: string | null;
   };
+  git_repo_links: {
+    id: string;
+    project_id: string | null;
+    provider: string | null;
+    owner: string | null;
+    repo: string | null;
+    default_branch: string | null;
+    token: string | null;
+    created_at: string | null;
+    created_by: string | null;
+  };
+  branches: {
+    id: string;
+    issue_id: string | null;
+    git_repo_link_id: string | null;
+    name: string | null;
+    url: string | null;
+    created_at: string | null;
+    created_by: string | null;
+  };
 }
 
 export interface EventsDB {

@@ -1,5 +1,5 @@
 /**
- * The domain package: plain TypeScript interfaces describing the data model for Anvil.
+ * The domain package: plain TypeScript interfaces describing the data model for Workhorse.
  * No behavior, no I/O — every consumer (the API server, the frontend) imports its types
  * from here rather than redefining them.
  */
@@ -19,3 +19,4 @@ export * from './subscription';
 export * from './agent';
 export * from './notifications';
 export * from './automation';
+export * from './integrations';

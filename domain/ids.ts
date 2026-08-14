@@ -27,3 +27,5 @@ export type EventId = string;
 export type WebhookId = string;
 export type AgentRunId = string;
 export type WorklogId = string;
+export type GitRepoLinkId = string;
+export type BranchId = string;

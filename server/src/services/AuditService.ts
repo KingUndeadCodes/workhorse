@@ -132,7 +132,7 @@ export class AuditService {
     }
 
     const findings: AuditFinding[] = [];
-    const actualIssues = await this.issues.list();
+    const actualIssues = await this.issues.listAll();
     const actualIssueIds = new Set(actualIssues.map((i) => i.id));
 
     for (const [issueId, expected] of expectedByIssue) {

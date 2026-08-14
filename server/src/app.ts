@@ -9,6 +9,7 @@ import {
   catalogRepo,
   issueRepo,
   planningRepo,
+  projectRepo,
   userRepo,
   webhookRepo,
   workflowRepo,
@@ -21,6 +22,7 @@ import { catalogRouter } from './routes/catalog';
 import { meRouter, publicAuthRouter } from './routes/auth';
 import { issuesRouter } from './routes/issues';
 import { planningRouter } from './routes/planning';
+import { projectsRouter } from './routes/projects';
 import { webhooksRouter } from './routes/webhooks';
 import { workflowRouter } from './routes/workflow';
 import { workspaceRouter } from './routes/workspace';
@@ -38,28 +40,39 @@ app.use('/api/*', requireAuth); // everything below this line requires a valid b
 app.route('/api', meRouter); // /api/auth/me
 
 /**
- * GET /api/bootstrap — the entire read model in one call, assembled from the repositories
- * in container.ts. A single-workspace prototype doesn't need a bootstrap endpoint per entity
- * type yet. Splitting this up is the natural move once there's more than one workspace or
- * the payload gets too large to ship on every load.
+ * GET /api/bootstrap?projectId= — the read model for one project, plus every workspace-global
+ * list (users, workflow, labels, agents, automations, webhooks — none of which vary per
+ * project; see the multi-project plan's decisions #1/#2 for why workflow and issue types stay
+ * shared). `projectId` defaults to the first project if omitted, which covers first-ever load
+ * with nothing persisted client-side yet, and keeps pre-existing single-project deployments
+ * working unchanged. 404 if the resolved project doesn't exist.
  */
 app.get('/api/bootstrap', async (c) => {
+  const projects = await projectRepo.listProjects();
+  const requestedId = c.req.query('projectId');
+  const activeProject = requestedId ? projects.find((p) => p.id === requestedId) : projects[0];
+  if (!activeProject) return c.json({ error: 'No project found' }, 404);
+
   const [
-    workspace, users, workspaceMembers, agents, agentRuns, statusCategories, workflow, project,
-    components, versions, issueTypes, labels, fieldDefinitions, sprints, board, savedViews,
-    automationRules, webhookSubscriptions, issues, issueLinks, comments, worklogs, attachments,
+    workspace, users, workspaceMembers, agents, agentRuns, statusCategories, workflow,
+    labels, fieldDefinitions, automationRules, webhookSubscriptions,
+    components, versions, issueTypes, sprints, board, savedViews,
+    issues, issueLinks, comments, worklogs, attachments,
   ] = await Promise.all([
     workspaceRepo.getWorkspace(), userRepo.list(), workspaceRepo.listMembers(), agentRepo.list(), agentRunRepo.list(),
-    workflowRepo.listStatusCategories(), workflowRepo.getWorkflow(), workspaceRepo.getProject(), catalogRepo.listComponents(),
-    catalogRepo.listVersions(), catalogRepo.listIssueTypes(), catalogRepo.listLabels(), catalogRepo.listFieldDefinitions(),
-    planningRepo.listSprints(), planningRepo.getBoard(), planningRepo.listSavedViews(), automationRepo.list(), webhookRepo.list(),
-    issueRepo.list(), issueRepo.listLinks(), issueRepo.listComments(), issueRepo.listWorklogs(),
-    issueRepo.listAttachments(),
+    workflowRepo.listStatusCategories(), workflowRepo.getWorkflow(),
+    catalogRepo.listLabels(), catalogRepo.listFieldDefinitions(), automationRepo.list(), webhookRepo.list(),
+    catalogRepo.listComponents(activeProject.id), catalogRepo.listVersions(activeProject.id), catalogRepo.listIssueTypes(),
+    planningRepo.listSprints(activeProject.id), planningRepo.getBoard(activeProject.id), planningRepo.listSavedViews(),
+    issueRepo.list(activeProject.id), issueRepo.listLinks(activeProject.id), issueRepo.listComments(activeProject.id),
+    issueRepo.listWorklogs(activeProject.id), issueRepo.listAttachments(activeProject.id),
   ]);
   return c.json({
-    workspace, users, workspaceMembers, agents, agentRuns, statusCategories, workflow, project,
-    components, versions, issueTypes, labels, fieldDefinitions, sprints, board, savedViews,
-    automationRules, webhookSubscriptions, issues, issueLinks, comments, worklogs, attachments,
+    workspace, users, workspaceMembers, agents, agentRuns, statusCategories, workflow,
+    labels, fieldDefinitions, automationRules, webhookSubscriptions,
+    projects, currentProjectId: activeProject.id,
+    components, versions, issueTypes, sprints, board, savedViews,
+    issues, issueLinks, comments, worklogs, attachments,
   });
 });
 
@@ -88,3 +101,4 @@ app.route('/api', automationsRouter);
 app.route('/api', agentsRouter);
 app.route('/api', webhooksRouter);
 app.route('/api', workspaceRouter);
+app.route('/api', projectsRouter);

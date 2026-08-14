@@ -34,8 +34,8 @@ export class CatalogRepository {
 
   // ---- Components ----
 
-  async listComponents(): Promise<Component[]> {
-    return (await this.db.selectFrom('components').selectAll().execute()).map(rowToComponent);
+  async listComponents(projectId: string): Promise<Component[]> {
+    return (await this.db.selectFrom('components').selectAll().where('project_id', '=', projectId).execute()).map(rowToComponent);
   }
 
   async createComponent(projectId: string, name: string, description?: string, leadId?: string): Promise<Component> {
@@ -53,8 +53,8 @@ export class CatalogRepository {
 
   // ---- Versions ----
 
-  async listVersions(): Promise<ProjectVersion[]> {
-    return (await this.db.selectFrom('versions').selectAll().execute()).map(rowToVersion);
+  async listVersions(projectId: string): Promise<ProjectVersion[]> {
+    return (await this.db.selectFrom('versions').selectAll().where('project_id', '=', projectId).execute()).map(rowToVersion);
   }
 
   async createVersion(projectId: string, name: string, description?: string, releaseDate?: string): Promise<ProjectVersion> {
@@ -67,7 +67,8 @@ export class CatalogRepository {
   async releaseVersion(id: string): Promise<ProjectVersion | undefined> {
     await this.db.updateTable('versions').set({ released_at: new Date().toISOString() }).where('id', '=', id).execute();
     persistState();
-    return (await this.listVersions()).find((v) => v.id === id);
+    const row = await this.db.selectFrom('versions').selectAll().where('id', '=', id).executeTakeFirst();
+    return row ? rowToVersion(row) : undefined;
   }
 
   async deleteVersion(id: string): Promise<void> {
@@ -78,6 +79,7 @@ export class CatalogRepository {
 
   // ---- Issue types ----
 
+  /** Deliberately unfiltered — issue types are a shared catalog across every project (see seed.ts's `project_id = NULL`), not project-scoped like components/versions. */
   async listIssueTypes(): Promise<IssueType[]> {
     return (await this.db.selectFrom('issue_types').selectAll().execute()).map(rowToIssueType);
   }

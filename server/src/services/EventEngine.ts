@@ -19,6 +19,7 @@ import type { AgentRunRepository } from '../repositories/AgentRunRepository';
 import type { AutomationRepository } from '../repositories/AutomationRepository';
 import type { CatalogRepository } from '../repositories/CatalogRepository';
 import type { IssueRepository } from '../repositories/IssueRepository';
+import type { ProjectRepository } from '../repositories/ProjectRepository';
 import type { UserRepository } from '../repositories/UserRepository';
 import type { WebhookRepository } from '../repositories/WebhookRepository';
 import type { WorkflowRepository } from '../repositories/WorkflowRepository';
@@ -111,6 +112,7 @@ export class EventEngine {
     private readonly workflow: WorkflowRepository,
     private readonly users: UserRepository,
     private readonly projector: EventProjector,
+    private readonly projects: ProjectRepository,
   ) {}
 
   /** The entry point every route should use to record something that happened. */
@@ -245,7 +247,7 @@ export class EventEngine {
         // this happening" without inventing a fake account. Falls back to 'system' if the
         // project has no lead assigned yet. Agent-authored comments don't hit this branch:
         // agents ARE users, so `actor.kind === 'user'` already holds for them.
-        const authorId = actor.kind === 'user' ? actor.userId : ((await this.workspace.getProject()).leadId ?? 'system');
+        const authorId = actor.kind === 'user' ? actor.userId : ((await this.projects.getProjectById(issue.projectId))?.leadId ?? 'system');
         const onBehalfOfUserId = actor.kind === 'user' ? actor.onBehalfOfUserId : undefined;
         const commentId = `cmt_${randomUUID()}`;
         await this.writeEvent({

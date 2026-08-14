@@ -10,10 +10,12 @@ import type {
   Board,
   Comment,
   Component,
+  Branch,
   EventEnvelope,
   EventType,
   FieldDefinition,
   FieldValue,
+  GitRepoLinkPublic,
   Issue,
   IssueLink,
   IssueLinkType,
@@ -49,7 +51,8 @@ export interface Bootstrap {
   agentRuns: AgentRun[];
   statusCategories: StatusCategory[];
   workflow: Workflow;
-  project: Project;
+  projects: Project[];
+  currentProjectId: string;
   components: Component[];
   versions: ProjectVersion[];
   issueTypes: IssueType[];
@@ -111,9 +114,9 @@ function get<T>(path: string): Promise<T> {
   return fetch(`${BASE}${path}`, { headers: { ...authHeaders() } }).then((r) => json<T>(r));
 }
 
-/** Loads the full read model — called once on app start. */
-export function fetchBootstrap(): Promise<Bootstrap> {
-  return get<Bootstrap>('/bootstrap');
+/** Loads the read model for one project (plus every workspace-global list) — called on app start and whenever the active project switches. `projectId` omitted defaults to the server's first project. */
+export function fetchBootstrap(projectId?: string): Promise<Bootstrap> {
+  return get<Bootstrap>(projectId ? `/bootstrap?projectId=${encodeURIComponent(projectId)}` : '/bootstrap');
 }
 
 /** Fetches every event with `sequence` greater than the given one. */
@@ -188,15 +191,15 @@ export function deleteLabel(id: string): Promise<{ ok: true }> {
   return del(`/labels/${id}`);
 }
 
-export function createComponent(name: string, description?: string): Promise<Component> {
-  return post('/components', { name, description });
+export function createComponent(projectId: string, name: string, description?: string): Promise<Component> {
+  return post('/components', { projectId, name, description });
 }
 export function deleteComponent(id: string): Promise<{ ok: true }> {
   return del(`/components/${id}`);
 }
 
-export function createVersion(name: string, description?: string, releaseDate?: string): Promise<ProjectVersion> {
-  return post('/versions', { name, description, releaseDate });
+export function createVersion(projectId: string, name: string, description?: string, releaseDate?: string): Promise<ProjectVersion> {
+  return post('/versions', { projectId, name, description, releaseDate });
 }
 export function releaseVersion(id: string): Promise<ProjectVersion> {
   return post(`/versions/${id}/release`, {});
@@ -214,8 +217,8 @@ export function deleteField(id: string): Promise<{ ok: true }> {
 
 // ---- Planning: sprints, saved views ---------------------------------------
 
-export function createSprint(name: string, goal?: string, startDate?: string, endDate?: string): Promise<Sprint> {
-  return post('/sprints', { name, goal, startDate, endDate });
+export function createSprint(projectId: string, name: string, goal?: string, startDate?: string, endDate?: string): Promise<Sprint> {
+  return post('/sprints', { projectId, name, goal, startDate, endDate });
 }
 export function startSprint(id: string): Promise<{ sprint: Sprint; event: EventEnvelope }> {
   return post(`/sprints/${id}/start`, {});
@@ -296,6 +299,39 @@ export function updateWebhook(id: string, changes: Partial<Pick<WebhookSubscript
 }
 export function deleteWebhook(id: string): Promise<{ ok: true }> {
   return del(`/webhooks/${id}`);
+}
+
+// ---- Projects -----------------------------------------------------------------
+
+export function listProjects(): Promise<Project[]> {
+  return get('/projects');
+}
+export function createProject(body: { name: string; key: string; leadId?: string }): Promise<{ project: Project; board: Board }> {
+  return post('/projects', body);
+}
+export function updateProject(id: string, changes: Partial<Pick<Project, 'name' | 'leadId' | 'archivedAt'>>): Promise<Project> {
+  return patch(`/projects/${id}`, changes);
+}
+
+// ---- Git Integration ----------------------------------------------------------
+
+export function getGitRepoLink(projectId: string): Promise<GitRepoLinkPublic | null> {
+  return get(`/projects/${projectId}/git-repo-link`);
+}
+export function linkGitRepo(projectId: string, body: { owner: string; repo: string; defaultBranch?: string; token: string }): Promise<GitRepoLinkPublic> {
+  return post(`/projects/${projectId}/git-repo-link`, body);
+}
+export function unlinkGitRepo(projectId: string): Promise<{ ok: true }> {
+  return del(`/projects/${projectId}/git-repo-link`);
+}
+export function getBranch(issueId: string): Promise<{ branch: Branch | null }> {
+  return get(`/issues/${issueId}/branch`);
+}
+export function createBranch(issueId: string, name?: string): Promise<{ branch: Branch; event: EventEnvelope }> {
+  return post(`/issues/${issueId}/branch`, { name });
+}
+export function deleteBranch(issueId: string): Promise<{ ok: true }> {
+  return del(`/issues/${issueId}/branch`);
 }
 
 // ---- Workspace membership ---------------------------------------------------

@@ -23,6 +23,9 @@ export function migrateStateDb(): void {
     stateDb,
     `CREATE TABLE IF NOT EXISTS project (id TEXT PRIMARY KEY, workspace_id TEXT, key TEXT, name TEXT, lead_id TEXT, default_workflow_id TEXT, created_at TEXT, archived_at TEXT)`,
   );
+  // Issue keys are `${project.key}-${suffix}` — two projects sharing a prefix would make keys
+  // ambiguous. Safe/idempotent against the single pre-existing seeded project.
+  run(stateDb, `CREATE UNIQUE INDEX IF NOT EXISTS idx_project_key ON project(key)`);
   run(
     stateDb,
     `CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, kind TEXT, email TEXT, display_name TEXT, avatar_url TEXT, status TEXT, created_at TEXT)`,
@@ -120,6 +123,21 @@ export function migrateStateDb(): void {
     stateDb,
     `CREATE TABLE IF NOT EXISTS attachments (id TEXT PRIMARY KEY, issue_id TEXT, uploaded_by TEXT, file_name TEXT, mime_type TEXT, size_bytes INTEGER, url TEXT, created_at TEXT)`,
   );
+  run(
+    stateDb,
+    `CREATE TABLE IF NOT EXISTS git_repo_links (
+      id TEXT PRIMARY KEY, project_id TEXT, provider TEXT, owner TEXT, repo TEXT, default_branch TEXT, token TEXT, created_at TEXT, created_by TEXT
+    )`,
+  );
+  run(
+    stateDb,
+    `CREATE TABLE IF NOT EXISTS branches (id TEXT PRIMARY KEY, issue_id TEXT, git_repo_link_id TEXT, name TEXT, url TEXT, created_at TEXT, created_by TEXT)`,
+  );
+  // Enforces "at most one active branch per issue" at the DB level — without this, two
+  // concurrent POST /issues/:id/branch requests could both pass the route's check-then-act
+  // read and each insert a row, leaving `getBranchFor`'s unordered `executeTakeFirst()` to
+  // arbitrarily pick between them.
+  run(stateDb, `CREATE UNIQUE INDEX IF NOT EXISTS idx_branches_issue ON branches(issue_id)`);
 }
 
 /**

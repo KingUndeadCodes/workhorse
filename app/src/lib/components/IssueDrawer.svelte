@@ -12,6 +12,7 @@
     comments,
     components,
     fieldDefinitions,
+    gitRepoLink,
     issueLinks,
     issueTypes,
     issuesStore,
@@ -26,9 +27,9 @@
     users,
     workflow,
   } from '../stores/workspace';
-  import { triggerAgent } from '../api';
+  import { createBranch as apiCreateBranch, deleteBranch as apiDeleteBranch, getBranch, triggerAgent } from '../api';
   import { displayName, priorityIcon, renderMarkdown, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
-  import { STORY_POINT_VALUES, type IssueLinkType } from '$domain';
+  import { STORY_POINT_VALUES, slugifyBranchName, type Branch, type IssueLinkType } from '$domain';
 
   let draftComment = '';
   let submittingComment = false;
@@ -222,6 +223,61 @@
     } finally {
       triggeringAgentId = null;
     }
+  }
+
+  // ---- Branch ----
+  let branch: Branch | null = null;
+  let branchLoadedForIssueId: string | null = null;
+  let showBranchForm = false;
+  let branchNameDraft = '';
+  let creatingBranch = false;
+  let branchError = '';
+
+  // Reloads the issue's branch whenever the drawer switches to a different issue — there's no
+  // global branches store (see gitRepoLink's doc comment), so this is fetched per issue-open.
+  $: if (issue && issue.id !== branchLoadedForIssueId) {
+    branchLoadedForIssueId = issue.id;
+    branch = null;
+    showBranchForm = false;
+    branchError = '';
+    const issueId = issue.id;
+    getBranch(issueId)
+      .then(({ branch: b }) => {
+        if (branchLoadedForIssueId === issueId) branch = b;
+      })
+      .catch((err) => {
+        // Left `branch` at `null` on failure too (nothing better to show), but surfaced as an
+        // error rather than silently — without this, a failed fetch looked identical to "no
+        // branch exists yet", and clicking "+ Create Branch" produced a confusing 400 if one
+        // actually did.
+        if (branchLoadedForIssueId === issueId) branchError = err instanceof Error ? err.message : 'Failed to load branch';
+      });
+  }
+
+  function openBranchForm() {
+    if (!issue) return;
+    branchNameDraft = slugifyBranchName(issue.key, issue.title);
+    branchError = '';
+    showBranchForm = true;
+  }
+  async function confirmCreateBranch() {
+    if (!issue || !branchNameDraft.trim()) return;
+    creatingBranch = true;
+    branchError = '';
+    try {
+      const { branch: created } = await apiCreateBranch(issue.id, branchNameDraft.trim());
+      branch = created;
+      showBranchForm = false;
+    } catch (err) {
+      branchError = err instanceof Error ? err.message : 'Failed to create branch';
+    } finally {
+      creatingBranch = false;
+    }
+  }
+  async function removeBranch() {
+    if (!issue) return;
+    await apiDeleteBranch(issue.id);
+    branch = null;
   }
 
   function handleSprintChange(e: Event) {
@@ -450,6 +506,30 @@
         </div>
       </div>
 
+      {#if $gitRepoLink}
+        <div class="section">
+          <div class="section-label">Branch</div>
+          {#if branch}
+            <span class="branch-row">
+              <a class="branch-link" href={branch.url} target="_blank" rel="noopener">
+                <Icon name="branch" size={13} />{branch.name}
+              </a>
+              <button type="button" class="chip-remove" on:click={removeBranch}><Icon name="x" size={10} /></button>
+            </span>
+          {:else if showBranchForm}
+            <form class="inline-form" on:submit|preventDefault={confirmCreateBranch}>
+              <input class="inline-input" type="text" bind:value={branchNameDraft} />
+              <button class="inline-btn" type="submit" disabled={creatingBranch}>{creatingBranch ? '…' : 'Create'}</button>
+            </form>
+          {:else}
+            <button type="button" class="assignee-add" on:click={openBranchForm}>+ Create Branch</button>
+          {/if}
+          {#if branchError}
+            <p class="points-warning">{branchError}</p>
+          {/if}
+        </div>
+      {/if}
+
       <div class="section">
         <button class="advanced-toggle" on:click={() => (showAdvanced = !showAdvanced)}>
           <Icon name={showAdvanced ? 'chevup' : 'chevdown'} size={11} />Advanced
@@ -600,6 +680,12 @@
   .assignee-option { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text); padding: 5px 6px; border-radius: 5px; cursor: pointer; }
   .assignee-option:hover { background: var(--surface-2); }
   .agents-section { position: relative; }
+  .branch-row { display: inline-flex; align-items: center; gap: 6px; }
+  .branch-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--accent-strong);
+    background: var(--accent-soft); border-radius: 7px; padding: 5px 10px;
+  }
+  .branch-link:hover { text-decoration: underline; }
   .agent-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
   .agent-chip {
     display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text);

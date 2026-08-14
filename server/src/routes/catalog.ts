@@ -29,13 +29,17 @@ catalogRouter.delete('/labels/:id', async (c) => {
 
 // ---- Components -------------------------------------------------------------
 
-catalogRouter.get('/components', async (c) => c.json(await catalogRepo.listComponents()));
+catalogRouter.get('/components', async (c) => {
+  const projectId = c.req.query('projectId');
+  if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+  return c.json(await catalogRepo.listComponents(projectId));
+});
 
 catalogRouter.post('/components', async (c) => {
-  const body = await c.req.json<{ name: string; description?: string; leadId?: string }>();
+  const body = await c.req.json<{ name: string; description?: string; leadId?: string; projectId: string }>();
   if (!body.name?.trim()) return c.json({ error: 'name is required' }, 400);
-  const project = await workspaceRepo.getProject();
-  return c.json(await catalogRepo.createComponent(project.id, body.name.trim(), body.description, body.leadId), 201);
+  if (!body.projectId?.trim()) return c.json({ error: 'projectId is required' }, 400);
+  return c.json(await catalogRepo.createComponent(body.projectId, body.name.trim(), body.description, body.leadId), 201);
 });
 
 catalogRouter.delete('/components/:id', async (c) => {
@@ -45,13 +49,17 @@ catalogRouter.delete('/components/:id', async (c) => {
 
 // ---- Versions / releases ----------------------------------------------------
 
-catalogRouter.get('/versions', async (c) => c.json(await catalogRepo.listVersions()));
+catalogRouter.get('/versions', async (c) => {
+  const projectId = c.req.query('projectId');
+  if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+  return c.json(await catalogRepo.listVersions(projectId));
+});
 
 catalogRouter.post('/versions', async (c) => {
-  const body = await c.req.json<{ name: string; description?: string; releaseDate?: string }>();
+  const body = await c.req.json<{ name: string; description?: string; releaseDate?: string; projectId: string }>();
   if (!body.name?.trim()) return c.json({ error: 'name is required' }, 400);
-  const project = await workspaceRepo.getProject();
-  return c.json(await catalogRepo.createVersion(project.id, body.name.trim(), body.description, body.releaseDate), 201);
+  if (!body.projectId?.trim()) return c.json({ error: 'projectId is required' }, 400);
+  return c.json(await catalogRepo.createVersion(body.projectId, body.name.trim(), body.description, body.releaseDate), 201);
 });
 
 /** POST /api/versions/:id/release — marks a version as actually shipped. */
@@ -69,8 +77,8 @@ catalogRouter.get('/fields', async (c) => c.json(await catalogRepo.listFieldDefi
 catalogRouter.post('/fields', async (c) => {
   const body = await c.req.json<Omit<FieldDefinition, 'id' | 'workspaceId'>>();
   if (!body.key?.trim() || !body.name?.trim()) return c.json({ error: 'key and name are required' }, 400);
-  const project = await workspaceRepo.getProject();
-  const field: FieldDefinition = { id: `field_${randomUUID()}`, workspaceId: project.workspaceId, ...body };
+  const workspace = await workspaceRepo.getWorkspace();
+  const field: FieldDefinition = { id: `field_${randomUUID()}`, workspaceId: workspace.id, ...body };
   return c.json(await catalogRepo.createField(field), 201);
 });
 

@@ -4,9 +4,12 @@ import type {
   Attachment,
   AutomationRule,
   Board,
+  Branch,
   Comment,
   Component,
   FieldDefinition,
+  GitRepoLink,
+  GitRepoLinkPublic,
   Issue,
   IssueLink,
   IssueType,
@@ -349,4 +352,36 @@ export function rowToWorklog(r: Record<string, unknown>): Worklog {
 
 export function rowToAttachment(r: Record<string, unknown>): Attachment {
   return { id: r.id as string, issueId: r.issue_id as string, uploadedBy: r.uploaded_by as string, fileName: r.file_name as string, mimeType: r.mime_type as string, sizeBytes: r.size_bytes as number, url: r.url as string, createdAt: r.created_at as string };
+}
+
+export function rowToGitRepoLink(r: Record<string, unknown>): GitRepoLink {
+  return {
+    id: r.id as string,
+    projectId: r.project_id as string,
+    provider: r.provider as GitRepoLink['provider'],
+    owner: r.owner as string,
+    repo: r.repo as string,
+    defaultBranch: r.default_branch as string,
+    token: r.token as string,
+    createdAt: r.created_at as string,
+    createdBy: r.created_by as string,
+  };
+}
+
+/** Enforcement point: every route returning a `GitRepoLink` must go through this — the token never reaches a client response, not even on creation. */
+export function toGitRepoLinkPublic(link: GitRepoLink): GitRepoLinkPublic {
+  const { token: _token, ...pub } = link;
+  return pub;
+}
+
+export function rowToBranch(r: Record<string, unknown>): Branch {
+  return {
+    id: r.id as string,
+    issueId: r.issue_id as string,
+    gitRepoLinkId: r.git_repo_link_id as string,
+    name: r.name as string,
+    url: r.url as string,
+    createdAt: r.created_at as string,
+    createdBy: r.created_by as string,
+  };
 }

@@ -89,6 +89,20 @@ export class EventProjector {
       case 'comment.edited':
         await this.issues.updateComment(payload.commentId, payload.body, event.occurredAt);
         break;
+      case 'issue.branchCreated':
+        await this.issues.insertBranch({
+          id: payload.branchId,
+          issueId: payload.issueId,
+          gitRepoLinkId: payload.gitRepoLinkId,
+          name: payload.name,
+          url: payload.url,
+          createdAt: event.occurredAt,
+          createdBy: event.actor.kind === 'user' ? event.actor.userId : 'u_leon',
+        });
+        break;
+      case 'issue.branchDeleted':
+        await this.issues.deleteBranchFor(payload.issueId);
+        break;
       case 'sprint.started':
         await this.planning.startSprint(payload.sprintId);
         break;

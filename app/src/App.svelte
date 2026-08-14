@@ -4,6 +4,7 @@
   import Board from './lib/components/Board.svelte';
   import Backlog from './lib/components/Backlog.svelte';
   import Settings from './lib/components/Settings.svelte';
+  import ProjectSettings from './lib/components/ProjectSettings.svelte';
   import WorkspaceView from './lib/components/WorkspaceView.svelte';
   import IssueDrawer from './lib/components/IssueDrawer.svelte';
   import Login from './lib/components/Login.svelte';
@@ -27,7 +28,7 @@
 {:else if $loadError}
   <div class="status-screen">
     <div class="status-card">
-      <div class="status-title">Couldn't reach the Anvil API</div>
+      <div class="status-title">Couldn't reach the Workhorse API</div>
       <p class="status-body">{$loadError}</p>
       <p class="status-body">Is the server running? <code>npm run dev --prefix server</code></p>
     </div>
@@ -51,6 +52,8 @@
         <Backlog />
       {:else if $currentView === 'workspace'}
         <WorkspaceView />
+      {:else if $currentView === 'projectSettings'}
+        <ProjectSettings />
       {:else}
         <Settings />
       {/if}

@@ -54,5 +54,5 @@ persistState();
 const port = Number(process.env.PORT ?? 8787);
 
 serve({ fetch: app.fetch, port }, (info) => {
-  console.log(`Anvil API listening on http://localhost:${info.port}`);
+  console.log(`Workhorse API listening on http://localhost:${info.port}`);
 });

@@ -3,9 +3,11 @@ import type {
   AgentRunId,
   AttachmentId,
   AutomationRuleId,
+  BranchId,
   CommentId,
   EventId,
   FieldId,
+  GitRepoLinkId,
   IssueId,
   LinkId,
   ProjectId,
@@ -102,6 +104,11 @@ export type EventPayload =
   | { type: 'sprint.started'; sprintId: SprintId }
   | { type: 'sprint.completed'; sprintId: SprintId }
   | { type: 'project.created'; projectId: ProjectId }
+  /** Never carries the PAT — see {@link GitRepoLinkPublic} in integrations.ts; the event log, automations, and webhooks must never see the token either. */
+  | { type: 'project.gitRepoLinked'; projectId: ProjectId; gitRepoLinkId: GitRepoLinkId; owner: string; repo: string }
+  | { type: 'project.gitRepoUnlinked'; projectId: ProjectId; gitRepoLinkId: GitRepoLinkId }
+  | { type: 'issue.branchCreated'; issueId: IssueId; branchId: BranchId; gitRepoLinkId: GitRepoLinkId; name: string; url: string }
+  | { type: 'issue.branchDeleted'; issueId: IssueId; branchId: BranchId }
   /**
    * Automation actions themselves emit events, carrying the event that triggered them —
    * so a chain of automations reacting to each other stays traceable instead of opaque,

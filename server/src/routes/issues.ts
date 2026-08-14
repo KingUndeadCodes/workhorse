@@ -3,8 +3,9 @@ import { Hono } from 'hono';
 import type { ActorRef, FieldValue, Issue, IssueLinkType, User } from '../domain';
 import { STORY_POINT_VALUES } from '../domain';
 import type { AuthVariables } from '../auth/middleware';
-import { agentRepo, engine, issueRepo, userRepo, workflowRepo, workspaceRepo } from '../container';
+import { agentRepo, engine, gitRepoLinkRepo, gitHubService, issueRepo, projectRepo, userRepo, workflowRepo } from '../container';
 import { persistState } from '../db/core';
+import { slugifyBranchName } from '../services/GitHubService';
 
 export const issuesRouter = new Hono<{ Variables: AuthVariables }>();
 
@@ -35,7 +36,8 @@ issuesRouter.post('/issues', async (c) => {
   const body = await c.req.json<Record<string, unknown>>();
   const title = typeof body.title === 'string' ? body.title.trim() : '';
   const issueTypeId = typeof body.issueTypeId === 'string' ? body.issueTypeId : '';
-  if (!title || !issueTypeId) return c.json({ error: 'title and issueTypeId are required' }, 400);
+  const projectId = typeof body.projectId === 'string' ? body.projectId : '';
+  if (!title || !issueTypeId || !projectId) return c.json({ error: 'title, issueTypeId, and projectId are required' }, 400);
   if (await containsAgentId((body.assigneeIds as string[]) ?? [])) {
     return c.json({ error: "Agents can't be assignees — add them from the AI Agents section after creating the issue" }, 400);
   }
@@ -43,7 +45,8 @@ issuesRouter.post('/issues', async (c) => {
     return c.json({ error: `storyPoints must be one of ${STORY_POINT_VALUES.join(', ')}` }, 400);
   }
 
-  const project = await workspaceRepo.getProject();
+  const project = await projectRepo.getProjectById(projectId);
+  if (!project) return c.json({ error: 'Unknown projectId' }, 400);
   const workflow = await workflowRepo.getWorkflow();
   const now = new Date().toISOString();
   const id = `issue_${randomUUID()}`;
@@ -327,5 +330,69 @@ issuesRouter.delete('/attachments/:id', async (c) => {
   const id = c.req.param('id');
   await issueRepo.deleteAttachment(id);
   persistState();
+  return c.json({ ok: true });
+});
+
+/** GET /api/issues/:id/branch -> `{ branch: Branch | null }`. */
+issuesRouter.get('/issues/:id/branch', async (c) => {
+  const branch = await issueRepo.getBranchFor(c.req.param('id'));
+  return c.json({ branch: branch ?? null });
+});
+
+/**
+ * POST /api/issues/:id/branch — creates a live branch on the issue's project's linked repo
+ * via the GitHub API (no local git — just a ref lookup + create). Body: `{ name? }`, defaults
+ * to a slug derived from the issue key/title. 404 if the issue doesn't exist, 400 if the
+ * issue already has a branch or the project has no linked repo, 502 if the GitHub call
+ * fails (its error message is surfaced, since this is a synchronous user action, not a
+ * fire-and-forget dispatch like webhooks). Emits `issue.branchCreated` on success.
+ */
+issuesRouter.post('/issues/:id/branch', async (c) => {
+  const id = c.req.param('id');
+  const issue = await issueRepo.get(id);
+  if (!issue) return c.json({ error: 'Issue not found' }, 404);
+  if (await issueRepo.getBranchFor(id)) return c.json({ error: 'Issue already has a branch' }, 400);
+  const link = await gitRepoLinkRepo.getForProject(issue.projectId);
+  if (!link) return c.json({ error: 'This project has no linked git repository' }, 400);
+
+  const body = await c.req.json<{ name?: string }>().catch(() => ({}) as { name?: string });
+  const name = body.name?.trim() || slugifyBranchName(issue.key, issue.title);
+
+  let result: { url: string };
+  try {
+    result = await gitHubService.createBranch({ owner: link.owner, repo: link.repo, token: link.token, fromBranch: link.defaultBranch, newBranchName: name });
+  } catch (err) {
+    return c.json({ error: `GitHub branch creation failed: ${err instanceof Error ? err.message : String(err)}` }, 502);
+  }
+
+  const branchId = `branch_${randomUUID()}`;
+  let event;
+  try {
+    event = await engine.emitEvent({
+      actor: actorFrom(c.get('user')),
+      subject: { type: 'issue', id },
+      payload: { type: 'issue.branchCreated', issueId: id, branchId, gitRepoLinkId: link.id, name, url: result.url },
+    });
+  } catch (err) {
+    // The unique index on branches(issue_id) is what actually enforces "at most one branch
+    // per issue" — the check above is only a fast path, not a lock, so a concurrent request
+    // can still lose the race here. Surface that as the same 400 the fast path returns,
+    // rather than a raw constraint-violation 500 — the GitHub ref this request just created
+    // is orphaned in that case, but no duplicate row is written.
+    if (err instanceof Error && /unique/i.test(err.message)) {
+      return c.json({ error: 'Issue already has a branch' }, 400);
+    }
+    throw err;
+  }
+  const branch = await issueRepo.getBranchFor(id);
+  return c.json({ branch, event }, 201);
+});
+
+/** DELETE /api/issues/:id/branch — removes the branch record only (no GitHub call — this app only ever creates refs, never deletes them remotely). Emits `issue.branchDeleted`. */
+issuesRouter.delete('/issues/:id/branch', async (c) => {
+  const id = c.req.param('id');
+  const branch = await issueRepo.getBranchFor(id);
+  if (!branch) return c.json({ error: 'Not found' }, 404);
+  await engine.emitEvent({ actor: actorFrom(c.get('user')), subject: { type: 'issue', id }, payload: { type: 'issue.branchDeleted', issueId: id, branchId: branch.id } });
   return c.json({ ok: true });
 });

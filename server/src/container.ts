@@ -11,8 +11,10 @@ import { AgentRepository } from './repositories/AgentRepository';
 import { AgentRunRepository } from './repositories/AgentRunRepository';
 import { AutomationRepository } from './repositories/AutomationRepository';
 import { CatalogRepository } from './repositories/CatalogRepository';
+import { GitRepoLinkRepository } from './repositories/GitRepoLinkRepository';
 import { IssueRepository } from './repositories/IssueRepository';
 import { PlanningRepository } from './repositories/PlanningRepository';
+import { ProjectRepository } from './repositories/ProjectRepository';
 import { UserRepository } from './repositories/UserRepository';
 import { WebhookRepository } from './repositories/WebhookRepository';
 import { WorkflowRepository } from './repositories/WorkflowRepository';
@@ -20,6 +22,7 @@ import { WorkspaceRepository } from './repositories/WorkspaceRepository';
 import { AuditService } from './services/AuditService';
 import { EventEngine } from './services/EventEngine';
 import { EventProjector } from './services/EventProjector';
+import { GitHubService } from './services/GitHubService';
 
 export let workspaceRepo: WorkspaceRepository;
 export let userRepo: UserRepository;
@@ -31,10 +34,13 @@ export let planningRepo: PlanningRepository;
 export let automationRepo: AutomationRepository;
 export let webhookRepo: WebhookRepository;
 export let issueRepo: IssueRepository;
+export let gitRepoLinkRepo: GitRepoLinkRepository;
+export let projectRepo: ProjectRepository;
 
 export let projector: EventProjector;
 export let engine: EventEngine;
 export let auditService: AuditService;
+export let gitHubService: GitHubService;
 
 export function initContainer(): void {
   workspaceRepo = new WorkspaceRepository(db);
@@ -47,8 +53,11 @@ export function initContainer(): void {
   automationRepo = new AutomationRepository(db);
   webhookRepo = new WebhookRepository(db);
   issueRepo = new IssueRepository(db);
+  gitRepoLinkRepo = new GitRepoLinkRepository(db);
+  projectRepo = new ProjectRepository(db);
 
   projector = new EventProjector(issueRepo, agentRunRepo, planningRepo);
-  engine = new EventEngine(workspaceRepo, issueRepo, agentRepo, agentRunRepo, automationRepo, webhookRepo, catalogRepo, workflowRepo, userRepo, projector);
+  engine = new EventEngine(workspaceRepo, issueRepo, agentRepo, agentRunRepo, automationRepo, webhookRepo, catalogRepo, workflowRepo, userRepo, projector, projectRepo);
   auditService = new AuditService(workspaceRepo, issueRepo);
+  gitHubService = new GitHubService();
 }

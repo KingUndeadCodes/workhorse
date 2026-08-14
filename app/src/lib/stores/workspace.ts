@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { derived, get, writable } from 'svelte/store';
 import type {
   Agent,
   AgentRun,
@@ -9,6 +9,7 @@ import type {
   Component,
   FieldDefinition,
   FieldValue,
+  GitRepoLinkPublic,
   Issue,
   IssueLink,
   IssueLinkType,
@@ -37,7 +38,11 @@ import {
   createIssue as apiCreateIssue,
   createSprint as apiCreateSprint,
   deleteIssue as apiDeleteIssue,
+  createProject as apiCreateProject,
   fetchBootstrap,
+  getGitRepoLink,
+  linkGitRepo as apiLinkGitRepo,
+  unlinkGitRepo as apiUnlinkGitRepo,
   patchIssueStatus,
   postComment,
   updateComment as apiUpdateComment,
@@ -46,8 +51,12 @@ import {
   setIssueField as apiSetIssueField,
   startSprint as apiStartSprint,
   updateIssue as apiUpdateIssue,
+  updateProject as apiUpdateProject,
   updateWorkspaceMemberRole as apiUpdateWorkspaceMemberRole,
 } from '../api';
+
+/** Key used to persist which project was last active, so a reload lands back on it. */
+const CURRENT_PROJECT_STORAGE_KEY = 'anvil.currentProjectId';
 
 /** Whether {@link initWorkspace} has completed successfully. */
 export const loaded = writable(false);
@@ -55,7 +64,7 @@ export const loaded = writable(false);
 export const loadError = writable<string | null>(null);
 
 /** Which top-level screen is showing: the board, sprint planning, admin settings, or the workspace view. */
-export const currentView = writable<'board' | 'backlog' | 'settings' | 'workspace'>('board');
+export const currentView = writable<'board' | 'backlog' | 'settings' | 'projectSettings' | 'workspace'>('board');
 
 /** Whether the off-canvas sidebar is open on narrow (mobile) viewports — irrelevant above the responsive breakpoint, where the sidebar is always visible. */
 export const mobileNavOpen = writable(false);
@@ -77,7 +86,10 @@ export const agents = writable<Agent[]>([]);
 export const agentRuns = writable<AgentRun[]>([]);
 export const statusCategories = writable<StatusCategory[]>([]);
 export const workflow = writable<Workflow | null>(null);
-export const project = writable<Project | null>(null);
+export const projects = writable<Project[]>([]);
+export const currentProjectId = writable<string | null>(null);
+/** The currently active project, derived from {@link projects}/{@link currentProjectId} — the replacement for the old singular `project` store now that a workspace can hold many. */
+export const currentProject = derived([projects, currentProjectId], ([$projects, $id]) => $projects.find((p) => p.id === $id) ?? null);
 export const components = writable<Component[]>([]);
 export const versions = writable<ProjectVersion[]>([]);
 export const issueTypes = writable<IssueType[]>([]);
@@ -93,6 +105,8 @@ export const issueLinks = writable<IssueLink[]>([]);
 export const comments = writable<Comment[]>([]);
 export const worklogs = writable<Worklog[]>([]);
 export const attachments = writable<Attachment[]>([]);
+/** The current project's linked git repo, if any — set/cleared from Settings' Git tab, never bootstrapped (scoped, lazily-loaded, and it must never carry the PAT). */
+export const gitRepoLink = writable<GitRepoLinkPublic | null>(null);
 
 /** Which issue the drawer is showing, if any. */
 export const selectedIssueId = writable<string | null>(null);
@@ -104,7 +118,8 @@ export const selectedIssueId = writable<string | null>(null);
  */
 export async function initWorkspace(): Promise<void> {
   try {
-    const data = await fetchBootstrap();
+    const persistedProjectId = localStorage.getItem(CURRENT_PROJECT_STORAGE_KEY) ?? undefined;
+    const data = await fetchBootstrap(persistedProjectId);
     workspace.set(data.workspace);
     users.set(data.users);
     workspaceMembers.set(data.workspaceMembers);
@@ -112,36 +127,71 @@ export async function initWorkspace(): Promise<void> {
     agentRuns.set(data.agentRuns);
     statusCategories.set(data.statusCategories);
     workflow.set(data.workflow);
-    project.set(data.project);
-    components.set(data.components);
-    versions.set(data.versions);
-    issueTypes.set(data.issueTypes);
+    projects.set(data.projects);
+    currentProjectId.set(data.currentProjectId);
+    localStorage.setItem(CURRENT_PROJECT_STORAGE_KEY, data.currentProjectId);
     labels.set(data.labels);
     fieldDefinitions.set(data.fieldDefinitions);
-    sprints.set(data.sprints);
-    board.set(data.board);
-    savedViews.set(data.savedViews);
     automationRules.set(data.automationRules);
     webhookSubscriptions.set(data.webhookSubscriptions);
-    issuesStore.set(data.issues);
-    issueLinks.set(data.issueLinks);
-    comments.set(data.comments);
-    worklogs.set(data.worklogs);
-    attachments.set(data.attachments);
-    selectedIssueId.set(data.comments[0]?.issueId ?? null);
+    applyProjectScopedBootstrap(data);
+    // Not part of Bootstrap (see gitRepoLink's own doc comment) but still loaded eagerly here,
+    // not lazily per-drawer-open, since it's small (never carries the token) and every
+    // IssueDrawer needs to know synchronously whether to show its Branch section.
+    gitRepoLink.set(await getGitRepoLink(data.currentProjectId).catch(() => null));
     loaded.set(true);
   } catch (err) {
     loadError.set(err instanceof Error ? err.message : 'Failed to load workspace');
   }
 }
 
+/** The subset of a bootstrap response that varies per project — shared by {@link initWorkspace} and {@link switchProject}. */
+function applyProjectScopedBootstrap(data: Awaited<ReturnType<typeof fetchBootstrap>>): void {
+  components.set(data.components);
+  versions.set(data.versions);
+  issueTypes.set(data.issueTypes);
+  sprints.set(data.sprints);
+  board.set(data.board);
+  savedViews.set(data.savedViews);
+  issuesStore.set(data.issues);
+  issueLinks.set(data.issueLinks);
+  comments.set(data.comments);
+  worklogs.set(data.worklogs);
+  attachments.set(data.attachments);
+  selectedIssueId.set(data.comments[0]?.issueId ?? null);
+}
+
+/** Switches the active project: re-fetches its bootstrap slice and applies it, without touching workspace-global stores (users, workflow, labels, agents, etc. — re-setting them would be harmless but pointless). */
+export async function switchProject(id: string): Promise<void> {
+  const data = await fetchBootstrap(id);
+  currentProjectId.set(id);
+  localStorage.setItem(CURRENT_PROJECT_STORAGE_KEY, id);
+  applyProjectScopedBootstrap(data);
+  gitRepoLink.set(await getGitRepoLink(id).catch(() => null));
+}
+
+/** Creates a new project, adds it to {@link projects}, and switches to it. */
+export async function createNewProject(name: string, key: string, leadId?: string): Promise<void> {
+  const { project } = await apiCreateProject({ name, key, leadId });
+  projects.update((list) => [...list, project]);
+  await switchProject(project.id);
+}
+
+/** Edits the currently active project (name/lead, or archives via `archivedAt`). */
+export async function updateCurrentProject(changes: Partial<Pick<Project, 'name' | 'leadId' | 'archivedAt'>>): Promise<void> {
+  const id = get(currentProjectId);
+  if (!id) return;
+  const updated = await apiUpdateProject(id, changes);
+  projects.update((list) => list.map((p) => (p.id === id ? updated : p)));
+}
+
 function replaceIssue(issue: Issue): void {
   issuesStore.update((list) => list.map((i) => (i.id === issue.id ? issue : i)));
 }
 
-/** Creates a new issue and adds it to {@link issuesStore}. */
+/** Creates a new issue and adds it to {@link issuesStore}. Defaults `projectId` to the active project when the caller doesn't supply one. */
 export async function createIssue(fields: Partial<Issue> & { title: string; issueTypeId: string }): Promise<Issue> {
-  const { issue } = await apiCreateIssue(fields);
+  const { issue } = await apiCreateIssue({ projectId: get(currentProjectId) ?? undefined, ...fields });
   issuesStore.update((list) => [...list, issue]);
   return issue;
 }
@@ -161,6 +211,16 @@ export async function assignAgent(issueId: string, agentUserId: string, onBehalf
 export async function unassignAgent(issueId: string, agentUserId: string): Promise<void> {
   const { issue } = await apiUnassignAgentFromIssue(issueId, agentUserId);
   replaceIssue(issue);
+}
+
+/** Links (or replaces) the current project's git repo, from Settings' Git tab. */
+export async function linkGitRepo(projectId: string, body: { owner: string; repo: string; defaultBranch?: string; token: string }): Promise<void> {
+  gitRepoLink.set(await apiLinkGitRepo(projectId, body));
+}
+
+export async function unlinkGitRepo(projectId: string): Promise<void> {
+  await apiUnlinkGitRepo(projectId);
+  gitRepoLink.set(null);
 }
 
 /**
@@ -223,7 +283,9 @@ export async function removeAttachment(attachmentId: string): Promise<void> {
 }
 
 export async function createSprint(name: string, goal?: string, startDate?: string, endDate?: string): Promise<void> {
-  const sprint = await apiCreateSprint(name, goal, startDate, endDate);
+  const id = get(currentProjectId);
+  if (!id) return;
+  const sprint = await apiCreateSprint(id, name, goal, startDate, endDate);
   sprints.update((list) => [...list, sprint]);
 }
 

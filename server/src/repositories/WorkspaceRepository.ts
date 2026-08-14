@@ -1,19 +1,15 @@
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/types';
 import { persistState } from '../db/core';
-import { rowToProject, rowToWorkspace, rowToWorkspaceMember } from '../db/mappers';
-import type { Project, Workspace, WorkspaceMember, WorkspaceRole } from '../domain';
+import { rowToWorkspace, rowToWorkspaceMember } from '../db/mappers';
+import type { Workspace, WorkspaceMember, WorkspaceRole } from '../domain';
 
-/** Reads/writes for the single workspace and project this prototype serves, plus workspace membership/roles. */
+/** Reads/writes for the single workspace this prototype serves, plus workspace membership/roles. Project CRUD lives in {@link ProjectRepository} — a workspace can hold many projects. */
 export class WorkspaceRepository {
   constructor(private readonly db: Kysely<DB>) {}
 
   async getWorkspace(): Promise<Workspace> {
     return rowToWorkspace((await this.db.selectFrom('workspace').selectAll().executeTakeFirst())!);
-  }
-
-  async getProject(): Promise<Project> {
-    return rowToProject((await this.db.selectFrom('project').selectAll().executeTakeFirst())!);
   }
 
   async listMembers(): Promise<WorkspaceMember[]> {

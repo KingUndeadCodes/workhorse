@@ -1,7 +1,7 @@
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/types';
-import { rowToAttachment, rowToComment, rowToIssue, rowToIssueLink, rowToWorklog } from '../db/mappers';
-import type { Attachment, Comment, FieldValue, Issue, IssueLink, IssueLinkType, Worklog } from '../domain';
+import { rowToAttachment, rowToBranch, rowToComment, rowToIssue, rowToIssueLink, rowToWorklog } from '../db/mappers';
+import type { Attachment, Branch, Comment, FieldValue, Issue, IssueLink, IssueLinkType, Worklog } from '../domain';
 
 /**
  * The only repository with INSERT/UPDATE/DELETE access to the operational tables: issues
@@ -17,7 +17,12 @@ export class IssueRepository {
 
   // ---- Reads ----
 
-  async list(): Promise<Issue[]> {
+  async list(projectId: string): Promise<Issue[]> {
+    return (await this.db.selectFrom('issues').selectAll().where('project_id', '=', projectId).execute()).map(rowToIssue);
+  }
+
+  /** Every issue across every project — for {@link AuditService}, which replays the whole workspace's event log, not one project's slice of it. */
+  async listAll(): Promise<Issue[]> {
     return (await this.db.selectFrom('issues').selectAll().execute()).map(rowToIssue);
   }
 
@@ -26,8 +31,19 @@ export class IssueRepository {
     return row ? rowToIssue(row) : undefined;
   }
 
-  async listLinks(): Promise<IssueLink[]> {
-    return (await this.db.selectFrom('issue_links').selectAll().execute()).map(rowToIssueLink);
+  /** Issue ids belonging to `projectId` — the subquery every other per-project list below joins through, since links/comments/worklogs/attachments hang off `issue_id`, not `project_id`, directly. */
+  private issueIdsInProject(projectId: string) {
+    return this.db.selectFrom('issues').select('id').where('project_id', '=', projectId);
+  }
+
+  async listLinks(projectId: string): Promise<IssueLink[]> {
+    return (
+      await this.db
+        .selectFrom('issue_links')
+        .selectAll()
+        .where((eb) => eb.or([eb('source_issue_id', 'in', this.issueIdsInProject(projectId)), eb('target_issue_id', 'in', this.issueIdsInProject(projectId))]))
+        .execute()
+    ).map(rowToIssueLink);
   }
 
   async listLinksFor(issueId: string): Promise<IssueLink[]> {
@@ -40,8 +56,10 @@ export class IssueRepository {
     ).map(rowToIssueLink);
   }
 
-  async listComments(): Promise<Comment[]> {
-    return (await this.db.selectFrom('comments').selectAll().orderBy('created_at', 'asc').execute()).map(rowToComment);
+  async listComments(projectId: string): Promise<Comment[]> {
+    return (
+      await this.db.selectFrom('comments').selectAll().where('issue_id', 'in', this.issueIdsInProject(projectId)).orderBy('created_at', 'asc').execute()
+    ).map(rowToComment);
   }
 
   async listCommentsFor(issueId: string): Promise<Comment[]> {
@@ -53,20 +71,32 @@ export class IssueRepository {
     return row ? rowToComment(row) : undefined;
   }
 
-  async listWorklogs(): Promise<Worklog[]> {
-    return (await this.db.selectFrom('worklogs').selectAll().orderBy('started_at', 'asc').execute()).map(rowToWorklog);
+  async listWorklogs(projectId: string): Promise<Worklog[]> {
+    return (
+      await this.db.selectFrom('worklogs').selectAll().where('issue_id', 'in', this.issueIdsInProject(projectId)).orderBy('started_at', 'asc').execute()
+    ).map(rowToWorklog);
   }
 
   async listWorklogsFor(issueId: string): Promise<Worklog[]> {
     return (await this.db.selectFrom('worklogs').selectAll().where('issue_id', '=', issueId).orderBy('started_at', 'asc').execute()).map(rowToWorklog);
   }
 
-  async listAttachments(): Promise<Attachment[]> {
-    return (await this.db.selectFrom('attachments').selectAll().execute()).map(rowToAttachment);
+  async listAttachments(projectId: string): Promise<Attachment[]> {
+    return (await this.db.selectFrom('attachments').selectAll().where('issue_id', 'in', this.issueIdsInProject(projectId)).execute()).map(rowToAttachment);
   }
 
   async listAttachmentsFor(issueId: string): Promise<Attachment[]> {
     return (await this.db.selectFrom('attachments').selectAll().where('issue_id', '=', issueId).execute()).map(rowToAttachment);
+  }
+
+  async getBranchFor(issueId: string): Promise<Branch | undefined> {
+    const row = await this.db.selectFrom('branches').selectAll().where('issue_id', '=', issueId).executeTakeFirst();
+    return row ? rowToBranch(row) : undefined;
+  }
+
+  async listBranchesFor(issueIds: string[]): Promise<Branch[]> {
+    if (issueIds.length === 0) return [];
+    return (await this.db.selectFrom('branches').selectAll().where('issue_id', 'in', issueIds).execute()).map(rowToBranch);
   }
 
   // ---- Writes (see class doc — caller persists) ----
@@ -182,6 +212,7 @@ export class IssueRepository {
     await this.db.deleteFrom('comments').where('issue_id', '=', issueId).execute();
     await this.db.deleteFrom('worklogs').where('issue_id', '=', issueId).execute();
     await this.db.deleteFrom('attachments').where('issue_id', '=', issueId).execute();
+    await this.db.deleteFrom('branches').where('issue_id', '=', issueId).execute();
     await this.db
       .deleteFrom('issue_links')
       .where((eb) => eb.or([eb('source_issue_id', '=', issueId), eb('target_issue_id', '=', issueId)]))
@@ -233,6 +264,25 @@ export class IssueRepository {
 
   async deleteAttachment(id: string): Promise<void> {
     await this.db.deleteFrom('attachments').where('id', '=', id).execute();
+  }
+
+  async insertBranch(branch: Branch): Promise<void> {
+    await this.db
+      .insertInto('branches')
+      .values({
+        id: branch.id,
+        issue_id: branch.issueId,
+        git_repo_link_id: branch.gitRepoLinkId,
+        name: branch.name,
+        url: branch.url,
+        created_at: branch.createdAt,
+        created_by: branch.createdBy,
+      })
+      .execute();
+  }
+
+  async deleteBranchFor(issueId: string): Promise<void> {
+    await this.db.deleteFrom('branches').where('issue_id', '=', issueId).execute();
   }
 
   async insertComment(comment: Comment): Promise<void> {

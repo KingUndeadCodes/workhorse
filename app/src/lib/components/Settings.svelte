@@ -6,14 +6,12 @@
     agentRuns,
     agents,
     automationRules,
-    components as componentsStore,
     fieldDefinitions,
     issuesStore,
     labels,
     settingsJumpTab,
     statusCategories,
     users,
-    versions,
     webhookSubscriptions,
     workflow,
   } from '../stores/workspace';
@@ -21,7 +19,7 @@
   import { displayName, splitHumansAndAgents } from '../util';
   import type { AutomationAction, AutomationCondition, EventType, FilterOp } from '$domain';
 
-  const tabs = ['Labels', 'Components', 'Versions', 'Fields', 'Workflow', 'Automations', 'Agents', 'Webhooks'] as const;
+  const tabs = ['Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Webhooks'] as const;
   let activeTab: (typeof tabs)[number] = 'Labels';
 
   // Lets the TopBar "New…" menu open Settings already on the relevant tab (e.g. "New Label").
@@ -43,36 +41,6 @@
   async function removeLabel(id: string) {
     await api.deleteLabel(id);
     labels.update((l) => l.filter((x) => x.id !== id));
-  }
-
-  // ---- Components ----
-  let newComponentName = '';
-  async function addComponent() {
-    if (!newComponentName.trim()) return;
-    const component = await api.createComponent(newComponentName.trim());
-    componentsStore.update((l) => [...l, component]);
-    newComponentName = '';
-  }
-  async function removeComponent(id: string) {
-    await api.deleteComponent(id);
-    componentsStore.update((l) => l.filter((x) => x.id !== id));
-  }
-
-  // ---- Versions ----
-  let newVersionName = '';
-  async function addVersion() {
-    if (!newVersionName.trim()) return;
-    const version = await api.createVersion(newVersionName.trim());
-    versions.update((l) => [...l, version]);
-    newVersionName = '';
-  }
-  async function releaseVersion(id: string) {
-    const version = await api.releaseVersion(id);
-    versions.update((l) => l.map((v) => (v.id === id ? version : v)));
-  }
-  async function removeVersion(id: string) {
-    await api.deleteVersion(id);
-    versions.update((l) => l.filter((x) => x.id !== id));
   }
 
   // ---- Custom fields ----
@@ -304,31 +272,6 @@
         <input type="text" placeholder="Label name" bind:value={newLabelName} />
         <button type="submit">Add label</button>
       </form>
-    {:else if activeTab === 'Components'}
-      <div class="list">
-        {#each $componentsStore as c (c.id)}
-          <div class="row"><span class="row-name">{c.name}</span><button class="icon-btn" on:click={() => removeComponent(c.id)}><Icon name="trash" size={13} /></button></div>
-        {/each}
-      </div>
-      <form class="add-form" on:submit|preventDefault={addComponent}>
-        <input type="text" placeholder="Component name" bind:value={newComponentName} />
-        <button type="submit">Add component</button>
-      </form>
-    {:else if activeTab === 'Versions'}
-      <div class="list">
-        {#each $versions as v (v.id)}
-          <div class="row">
-            <span class="row-name">{v.name}</span>
-            <span class="row-tag" class:released={!!v.releasedAt}>{v.releasedAt ? 'Released' : 'Unreleased'}</span>
-            {#if !v.releasedAt}<button class="text-btn" on:click={() => releaseVersion(v.id)}>Release</button>{/if}
-            <button class="icon-btn" on:click={() => removeVersion(v.id)}><Icon name="trash" size={13} /></button>
-          </div>
-        {/each}
-      </div>
-      <form class="add-form" on:submit|preventDefault={addVersion}>
-        <input type="text" placeholder="Version name (e.g. v3.5.0)" bind:value={newVersionName} />
-        <button type="submit">Add version</button>
-      </form>
     {:else if activeTab === 'Fields'}
       <div class="list">
         {#each $fieldDefinitions as f (f.id)}
@@ -556,7 +499,6 @@
   .row.column { flex-direction: column; align-items: stretch; }
   .row-name { color: var(--text); font-weight: 500; }
   .row-tag { color: var(--text-3); font-size: 11.5px; flex: 1; }
-  .row-tag.released { color: var(--success); }
   .dot { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 8px; }
   .icon-btn { color: var(--text-3); padding: 4px; border-radius: 6px; margin-left: auto; }
   .icon-btn:hover { background: var(--surface); color: var(--critical); }
