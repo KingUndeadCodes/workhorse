@@ -32,6 +32,7 @@ export class ProjectRepository {
         name: project.name,
         lead_id: project.leadId ?? null,
         default_workflow_id: project.defaultWorkflowId,
+        color: project.color,
         created_at: project.createdAt,
         archived_at: project.archivedAt ?? null,
       })
@@ -40,13 +41,13 @@ export class ProjectRepository {
     return project;
   }
 
-  async updateProject(id: string, changes: Partial<Pick<Project, 'name' | 'leadId' | 'archivedAt'>>): Promise<Project | undefined> {
+  async updateProject(id: string, changes: Partial<Pick<Project, 'name' | 'leadId' | 'archivedAt' | 'color'>>): Promise<Project | undefined> {
     const existing = await this.getProjectById(id);
     if (!existing) return undefined;
     const merged = { ...existing, ...changes };
     await this.db
       .updateTable('project')
-      .set({ name: merged.name, lead_id: merged.leadId ?? null, archived_at: merged.archivedAt ?? null })
+      .set({ name: merged.name, lead_id: merged.leadId ?? null, archived_at: merged.archivedAt ?? null, color: merged.color })
       .where('id', '=', id)
       .execute();
     persistState();

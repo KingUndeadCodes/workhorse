@@ -306,10 +306,10 @@ export function deleteWebhook(id: string): Promise<{ ok: true }> {
 export function listProjects(): Promise<Project[]> {
   return get('/projects');
 }
-export function createProject(body: { name: string; key: string; leadId?: string }): Promise<{ project: Project; board: Board }> {
+export function createProject(body: { name: string; key: string; leadId?: string; color?: string }): Promise<{ project: Project; board: Board }> {
   return post('/projects', body);
 }
-export function updateProject(id: string, changes: Partial<Pick<Project, 'name' | 'leadId' | 'archivedAt'>>): Promise<Project> {
+export function updateProject(id: string, changes: Partial<Pick<Project, 'name' | 'leadId' | 'archivedAt' | 'color'>>): Promise<Project> {
   return patch(`/projects/${id}`, changes);
 }
 

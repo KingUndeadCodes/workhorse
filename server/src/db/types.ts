@@ -18,6 +18,7 @@ export interface DB {
     name: string | null;
     lead_id: string | null;
     default_workflow_id: string | null;
+    color: string | null;
     created_at: string | null;
     archived_at: string | null;
   };

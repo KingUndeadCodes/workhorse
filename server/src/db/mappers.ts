@@ -46,6 +46,7 @@ export function rowToProject(r: Record<string, unknown>): Project {
     name: r.name as string,
     leadId: nullish(r.lead_id),
     defaultWorkflowId: r.default_workflow_id as string,
+    color: r.color as string,
     createdAt: r.created_at as string,
     archivedAt: nullish(r.archived_at),
   };

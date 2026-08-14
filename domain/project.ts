@@ -1,5 +1,13 @@
 import type { ComponentId, ProjectId, UserId, VersionId, WorkflowId, WorkspaceId } from './ids';
 
+/**
+ * Fixed palette every project's color is drawn from — assigned automatically at creation
+ * (cycling through this list) and editable afterward from Project Settings. Shared between
+ * server (default assignment) and client (rendering + the swatch picker) so both agree on
+ * the same set of options.
+ */
+export const PROJECT_COLORS = ['#137A6E', '#6E5DC6', '#3E6FB0', '#B9791A', '#2E9E58', '#CC785C', '#946B3A', '#8A8FA3'] as const;
+
 /** A container for issues within a workspace — the unit most permissions and boards scope to. */
 export interface Project {
   id: ProjectId;
@@ -11,6 +19,8 @@ export interface Project {
   leadId?: UserId;
   /** Used for issue types that don't specify their own workflow. */
   defaultWorkflowId: WorkflowId;
+  /** One of {@link PROJECT_COLORS} — how this project is distinguished at a glance (sidebar list, etc). */
+  color: string;
   archivedAt?: string;
   createdAt: string;
 }

@@ -72,7 +72,7 @@
   <nav class="nav" style="padding-top:0">
     {#each $projects as p (p.id)}
       <button type="button" class="proj-item" class:active={p.id === $currentProjectId} on:click={() => selectProject(p.id)}>
-        <span class="proj-dot" style="background:var(--epic-a)"></span>
+        <span class="proj-dot" style="background:{p.color}"></span>
         <span class="proj-name">{p.name}</span>
       </button>
     {/each}

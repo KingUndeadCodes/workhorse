@@ -2,6 +2,7 @@
   import Icon from './Icon.svelte';
   import { components as componentsStore, currentProject, currentProjectId, gitRepoLink, settingsJumpTab, versions, linkGitRepo, unlinkGitRepo, updateCurrentProject } from '../stores/workspace';
   import * as api from '../api';
+  import { PROJECT_COLORS } from '$domain';
 
   const tabs = ['Project', 'Components', 'Versions', 'Git'] as const;
   let activeTab: (typeof tabs)[number] = 'Project';
@@ -27,6 +28,10 @@
   async function archiveProject() {
     if (!$currentProject || !confirm(`Archive "${$currentProject.name}"? It'll stay in the workspace but hidden from the project switcher.`)) return;
     await updateCurrentProject({ archivedAt: new Date().toISOString() });
+  }
+  async function setProjectColor(color: string) {
+    if (!$currentProject || color === $currentProject.color) return;
+    await updateCurrentProject({ color });
   }
 
   // ---- Components ----
@@ -107,6 +112,21 @@
           <span class="row-tag mono">{$currentProject.key}</span>
         </div>
         <p class="section-hint">The key is permanent — it's baked into every issue's key (e.g. "{$currentProject.key}-142").</p>
+        <div class="field-row">
+          <span class="field-label">Color</span>
+          <div class="swatch-row">
+            {#each PROJECT_COLORS as c}
+              <button
+                type="button"
+                class="swatch"
+                class:active={c === $currentProject.color}
+                style="background:{c}"
+                title={c}
+                on:click={() => setProjectColor(c)}
+              ><Icon name="check" size={11} /></button>
+            {/each}
+          </div>
+        </div>
         <button type="button" class="text-btn danger" on:click={archiveProject}>Archive this project</button>
       {/if}
     {:else if activeTab === 'Components'}
@@ -196,4 +216,12 @@
   .add-form input { font: inherit; font-size: 12.5px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px; flex: 1; }
   .add-form button { font-size: 12px; font-weight: 600; color: var(--accent-on); background: var(--accent); padding: 7px 12px; border-radius: 7px; white-space: nowrap; }
   .add-form button:disabled { opacity: .5; cursor: default; }
+  .swatch-row { display: flex; gap: 7px; flex-wrap: wrap; }
+  .swatch {
+    width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: #fff; transition: transform .1s ease;
+  }
+  .swatch:hover { transform: scale(1.12); }
+  .swatch :global(svg) { opacity: 0; }
+  .swatch.active :global(svg) { opacity: 1; }
 </style>

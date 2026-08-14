@@ -178,7 +178,7 @@ export async function createNewProject(name: string, key: string, leadId?: strin
 }
 
 /** Edits the currently active project (name/lead, or archives via `archivedAt`). */
-export async function updateCurrentProject(changes: Partial<Pick<Project, 'name' | 'leadId' | 'archivedAt'>>): Promise<void> {
+export async function updateCurrentProject(changes: Partial<Pick<Project, 'name' | 'leadId' | 'archivedAt' | 'color'>>): Promise<void> {
   const id = get(currentProjectId);
   if (!id) return;
   const updated = await apiUpdateProject(id, changes);

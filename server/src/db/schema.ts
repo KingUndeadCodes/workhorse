@@ -1,4 +1,5 @@
 import { all, eventsDb, run, stateDb } from './core';
+import { PROJECT_COLORS } from '../domain';
 
 /** Adds a column to an existing table if it isn't already there — `ALTER TABLE ADD COLUMN`
  * has no `IF NOT EXISTS` form in SQLite, so this checks `pragma table_info` first. Needed
@@ -26,6 +27,7 @@ export function migrateStateDb(): void {
   // Issue keys are `${project.key}-${suffix}` — two projects sharing a prefix would make keys
   // ambiguous. Safe/idempotent against the single pre-existing seeded project.
   run(stateDb, `CREATE UNIQUE INDEX IF NOT EXISTS idx_project_key ON project(key)`);
+  addColumnIfMissing('project', 'color', 'TEXT');
   run(
     stateDb,
     `CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, kind TEXT, email TEXT, display_name TEXT, avatar_url TEXT, status TEXT, created_at TEXT)`,
@@ -175,6 +177,20 @@ export function backfillAgentAssignments(): void {
       JSON.stringify(agentAssignments),
       row.id,
     ]);
+  }
+}
+
+/** One-time catch-up for projects that predate the `color` column — assigns each a color from {@link PROJECT_COLORS}, cycling in `created_at` order so the assignment is stable across repeated boots. */
+export function backfillProjectColors(): void {
+  const rows = all<{ id: string; color: string | null }>(stateDb, `SELECT id, color FROM project ORDER BY created_at ASC`);
+  let i = 0;
+  for (const row of rows) {
+    if (row.color) {
+      i++;
+      continue;
+    }
+    run(stateDb, `UPDATE project SET color = ? WHERE id = ?`, [PROJECT_COLORS[i % PROJECT_COLORS.length], row.id]);
+    i++;
   }
 }
 
