@@ -1,11 +1,14 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { currentView, currentProjectId, mobileNavOpen, projects, selectedIssueId, switchProject, createNewProject, workspace, users } from '../stores/workspace';
+  import { currentView, currentProjectId, featureFlags, mobileNavOpen, projects, selectedIssueId, switchProject, createNewProject, workspace, users } from '../stores/workspace';
 
-  const navItems: { icon: string; label: string; view: 'board' | 'backlog' }[] = [
+  const allNavItems: { icon: string; label: string; view: 'board' | 'backlog' }[] = [
     { icon: 'list', label: 'Backlog', view: 'backlog' },
     { icon: 'columns', label: 'Board', view: 'board' },
   ];
+  $: navItems = $featureFlags.sprints ? allNavItems : allNavItems.filter((i) => i.view !== 'backlog');
+  // Sprints just got turned off while looking at the Backlog view — nothing to show there anymore.
+  $: if (!$featureFlags.sprints && $currentView === 'backlog') $currentView = 'board';
 
   /** Switching views always leaves the current ticket — Board/Backlog should show the list, not a stale drawer.
    * Also closes the off-canvas sidebar, since on mobile a nav tap should return to content. */

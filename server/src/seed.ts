@@ -1,5 +1,5 @@
 import type { Board, Project, StatusCategory, Workflow, WorkflowStatus, Workspace } from './domain';
-import { PROJECT_COLORS } from './domain';
+import { DEFAULT_FEATURE_FLAGS, PROJECT_COLORS } from './domain';
 import { persistState, run, stateDb } from './db/core';
 
 /**
@@ -40,9 +40,9 @@ export function bootstrapDatabase(): void {
   ];
   for (const t of transitions) run(stateDb, `INSERT INTO workflow_transitions (id, workflow_id, name, from_status_id, to_status_id, required_field_ids) VALUES (?, ?, ?, ?, ?, NULL)`, [t.id, workflowId, t.name, t.fromStatusId, t.toStatusId, null]);
 
-  const project: Project = { id: 'proj_default', workspaceId: workspace.id, key: 'PRJ', name: 'My Project', defaultWorkflowId: workflowId, color: PROJECT_COLORS[0], createdAt: workspace.createdAt };
-  run(stateDb, `INSERT INTO project (id, workspace_id, key, name, lead_id, default_workflow_id, color, created_at, archived_at) VALUES (?, ?, ?, ?, NULL, ?, ?, ?, NULL)`, [
-    project.id, project.workspaceId, project.key, project.name, project.defaultWorkflowId, project.color, project.createdAt,
+  const project: Project = { id: 'proj_default', workspaceId: workspace.id, key: 'PRJ', name: 'My Project', defaultWorkflowId: workflowId, color: PROJECT_COLORS[0], featureFlags: DEFAULT_FEATURE_FLAGS, createdAt: workspace.createdAt };
+  run(stateDb, `INSERT INTO project (id, workspace_id, key, name, lead_id, default_workflow_id, color, feature_flags, created_at, archived_at) VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, NULL)`, [
+    project.id, project.workspaceId, project.key, project.name, project.defaultWorkflowId, project.color, JSON.stringify(project.featureFlags), project.createdAt,
   ]);
 
   const issueTypes = [

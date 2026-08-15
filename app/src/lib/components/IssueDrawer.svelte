@@ -11,6 +11,7 @@
     assignAgent,
     comments,
     components,
+    featureFlags,
     fieldDefinitions,
     gitRepoLink,
     issueLinks,
@@ -401,45 +402,55 @@
             {/if}
           </div>
         </div>
-        <div class="field">
-          <span class="field-label">Reporter</span>
-          <span class="field-value">
-            {#if reporter}
-              <Avatar userId={reporter.id} name={displayName(reporter)} avatarUrl={reporter.avatarUrl} kind={reporter.kind} size={19} />{displayName(reporter)}
-            {:else}
-              Unassigned
-            {/if}
-          </span>
-        </div>
-        <div class="field">
-          <span class="field-label">Priority</span>
-          <select class="field-select" value={issue.priority} on:change={handlePriorityChange}>
-            {#each ['highest', 'high', 'medium', 'low', 'lowest'] as p}<option value={p}>{p}</option>{/each}
-          </select>
-        </div>
-        <div class="field">
-          <span class="field-label">Story Points</span>
-          <select
-            class="field-select points-select"
-            style={issue.storyPoints ? `background:${storyPointColor(issue.storyPoints).bg};color:${storyPointColor(issue.storyPoints).text}` : ''}
-            value={issue.storyPoints ?? ''}
-            on:change={handlePointsChange}
-          >
-            <option value="">—</option>
-            {#each STORY_POINT_VALUES as p}<option value={p}>{p}</option>{/each}
-          </select>
-        </div>
-        <div class="field">
-          <span class="field-label">Sprint</span>
-          <select class="field-select" value={issue.sprintId ?? ''} on:change={handleSprintChange}>
-            <option value="">No sprint</option>
-            {#each $sprints as s (s.id)}<option value={s.id}>{s.name} ({s.state})</option>{/each}
-          </select>
-        </div>
-        <div class="field">
-          <span class="field-label">Due Date</span>
-          <input class="field-input" type="date" value={issue.dueDate ?? ''} on:change={handleDueDateChange} />
-        </div>
+        {#if $featureFlags.reporters}
+          <div class="field">
+            <span class="field-label">Reporter</span>
+            <span class="field-value">
+              {#if reporter}
+                <Avatar userId={reporter.id} name={displayName(reporter)} avatarUrl={reporter.avatarUrl} kind={reporter.kind} size={19} />{displayName(reporter)}
+              {:else}
+                Unassigned
+              {/if}
+            </span>
+          </div>
+        {/if}
+        {#if $featureFlags.priority}
+          <div class="field">
+            <span class="field-label">Priority</span>
+            <select class="field-select" value={issue.priority} on:change={handlePriorityChange}>
+              {#each ['highest', 'high', 'medium', 'low', 'lowest'] as p}<option value={p}>{p}</option>{/each}
+            </select>
+          </div>
+        {/if}
+        {#if $featureFlags.storyPoints}
+          <div class="field">
+            <span class="field-label">Story Points</span>
+            <select
+              class="field-select points-select"
+              style={issue.storyPoints ? `background:${storyPointColor(issue.storyPoints).bg};color:${storyPointColor(issue.storyPoints).text}` : ''}
+              value={issue.storyPoints ?? ''}
+              on:change={handlePointsChange}
+            >
+              <option value="">—</option>
+              {#each STORY_POINT_VALUES as p}<option value={p}>{p}</option>{/each}
+            </select>
+          </div>
+        {/if}
+        {#if $featureFlags.sprints}
+          <div class="field">
+            <span class="field-label">Sprint</span>
+            <select class="field-select" value={issue.sprintId ?? ''} on:change={handleSprintChange}>
+              <option value="">No sprint</option>
+              {#each $sprints as s (s.id)}<option value={s.id}>{s.name} ({s.state})</option>{/each}
+            </select>
+          </div>
+        {/if}
+        {#if $featureFlags.dueDates}
+          <div class="field">
+            <span class="field-label">Due Date</span>
+            <input class="field-input" type="date" value={issue.dueDate ?? ''} on:change={handleDueDateChange} />
+          </div>
+        {/if}
         {#each applicableFields as fd (fd.id)}
           {@const current = issue.fieldValues.find((fv) => fv.fieldId === fd.id)}
           <div class="field">
@@ -454,7 +465,7 @@
         {/each}
       </div>
 
-      {#if pointsDueDateWarning}
+      {#if pointsDueDateWarning && $featureFlags.storyPoints && $featureFlags.dueDates}
         <p class="points-warning"><Icon name="clock" size={13} />{pointsDueDateWarning}</p>
       {/if}
 
@@ -563,21 +574,23 @@
               </form>
             </div>
 
-            <div class="subsection">
-              <div class="section-label">Time Tracking</div>
-              <div class="time-track">
-                <span class="time-label mono">{(issue.loggedSeconds / 3600).toFixed(1)}h logged</span>
-                {#if issue.originalEstimateSeconds}
-                  <div class="time-bar"><span style="width:{timePct}%"></span></div>
-                  <span class="time-label mono">{(issue.originalEstimateSeconds / 3600).toFixed(0)}h est.</span>
-                {/if}
+            {#if $featureFlags.timeTracking}
+              <div class="subsection">
+                <div class="section-label">Time Tracking</div>
+                <div class="time-track">
+                  <span class="time-label mono">{(issue.loggedSeconds / 3600).toFixed(1)}h logged</span>
+                  {#if issue.originalEstimateSeconds}
+                    <div class="time-bar"><span style="width:{timePct}%"></span></div>
+                    <span class="time-label mono">{(issue.originalEstimateSeconds / 3600).toFixed(0)}h est.</span>
+                  {/if}
+                </div>
+                <form class="inline-form" on:submit|preventDefault={submitWorklog}>
+                  <input class="inline-input small" type="number" min="0" step="0.25" placeholder="Hours" bind:value={worklogHours} />
+                  <input class="inline-input" type="text" placeholder="What did you work on? (optional)" bind:value={worklogNote} />
+                  <button class="inline-btn" type="submit">Log</button>
+                </form>
               </div>
-              <form class="inline-form" on:submit|preventDefault={submitWorklog}>
-                <input class="inline-input small" type="number" min="0" step="0.25" placeholder="Hours" bind:value={worklogHours} />
-                <input class="inline-input" type="text" placeholder="What did you work on? (optional)" bind:value={worklogNote} />
-                <button class="inline-btn" type="submit">Log</button>
-              </form>
-            </div>
+            {/if}
           </div>
         {/if}
       </div>
@@ -725,7 +738,7 @@
   .markdown :global(.mention) {
     font-weight: 600; color: var(--accent-strong); background: var(--accent-soft); border-radius: 4px; padding: 0 3px;
   }
-  .markdown :global(.mention-agent) { color: #cc785c; background: rgba(204, 120, 92, .14); }
+  .markdown :global(.mention-agent) { color: var(--agent-accent); background: var(--agent-accent-soft); }
   .advanced-toggle { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); padding: 4px 0; }
   .advanced-toggle:hover { color: var(--text); }
   .advanced-body { margin-top: 14px; display: flex; flex-direction: column; gap: 20px; }

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import type { ActorRef, GitRepoLink, Project, User } from '../domain';
-import { PROJECT_COLORS } from '../domain';
+import { DEFAULT_FEATURE_FLAGS, PROJECT_COLORS } from '../domain';
 import type { AuthVariables } from '../auth/middleware';
 import { engine, gitRepoLinkRepo, planningRepo, projectRepo, workflowRepo, workspaceRepo } from '../container';
 import { toGitRepoLinkPublic } from '../db/mappers';
@@ -43,6 +43,7 @@ projectsRouter.post('/projects', async (c) => {
     leadId: body.leadId,
     defaultWorkflowId: workflow.id,
     color: body.color?.trim() || PROJECT_COLORS[existingCount % PROJECT_COLORS.length],
+    featureFlags: DEFAULT_FEATURE_FLAGS,
     createdAt: new Date().toISOString(),
   };
   const created = await projectRepo.createProject(project);
@@ -55,9 +56,9 @@ projectsRouter.post('/projects', async (c) => {
   return c.json({ project: created, board }, 201);
 });
 
-/** PATCH /api/projects/:id — edits name/lead/color (or archives via `archivedAt`). `key` is intentionally not editable — it's baked into every existing issue's key string. */
+/** PATCH /api/projects/:id — edits name/lead/color/featureFlags (or archives via `archivedAt`). `key` is intentionally not editable — it's baked into every existing issue's key string. */
 projectsRouter.patch('/projects/:id', async (c) => {
-  const body = await c.req.json<Partial<Pick<Project, 'name' | 'leadId' | 'archivedAt' | 'color'>>>();
+  const body = await c.req.json<Partial<Pick<Project, 'name' | 'leadId' | 'archivedAt' | 'color' | 'featureFlags'>>>();
   const updated = await projectRepo.updateProject(c.req.param('id'), body);
   if (!updated) return c.json({ error: 'Not found' }, 404);
   return c.json(updated);

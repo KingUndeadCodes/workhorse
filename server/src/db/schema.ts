@@ -28,6 +28,7 @@ export function migrateStateDb(): void {
   // ambiguous. Safe/idempotent against the single pre-existing seeded project.
   run(stateDb, `CREATE UNIQUE INDEX IF NOT EXISTS idx_project_key ON project(key)`);
   addColumnIfMissing('project', 'color', 'TEXT');
+  addColumnIfMissing('project', 'feature_flags', 'TEXT');
   run(
     stateDb,
     `CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, kind TEXT, email TEXT, display_name TEXT, avatar_url TEXT, status TEXT, created_at TEXT)`,

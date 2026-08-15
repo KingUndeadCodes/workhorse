@@ -1,7 +1,7 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import IssueCard from './IssueCard.svelte';
-  import { completeSprint, createSprint, issueTypes, issuesStore, selectedIssueId, sprints, startSprint, statusCategories, workflow } from '../stores/workspace';
+  import { completeSprint, createSprint, featureFlags, issueTypes, issuesStore, selectedIssueId, sprints, startSprint, statusCategories, workflow } from '../stores/workspace';
 
   let newSprintName = '';
   let creating = false;
@@ -43,7 +43,7 @@
         <span class="sprint-state" class:active={sprint.state === 'active'} class:closed={sprint.state === 'closed'}>{sprint.state}</span>
         {#if sprint.goal}<span class="sprint-goal">{sprint.goal}</span>{/if}
         <span class="sprint-spacer"></span>
-        <span class="sprint-points mono">{donePoints}/{points} pts</span>
+        {#if $featureFlags.storyPoints}<span class="sprint-points mono">{donePoints}/{points} pts</span>{/if}
         {#if sprint.state === 'future'}
           <button class="btn" on:click={() => startSprint(sprint.id)}>Start sprint</button>
         {:else if sprint.state === 'active'}

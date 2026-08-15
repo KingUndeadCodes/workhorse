@@ -16,6 +16,7 @@ import type {
   IssueType,
   Label,
   Project,
+  ProjectFeatureFlags,
   ProjectVersion,
   SavedView,
   Sprint,
@@ -28,6 +29,7 @@ import type {
   WorkspaceMember,
   WorkspaceRole,
 } from '$domain';
+import { DEFAULT_FEATURE_FLAGS } from '$domain';
 import {
   addAttachment as apiAddAttachment,
   addIssueLink as apiAddIssueLink,
@@ -90,6 +92,8 @@ export const projects = writable<Project[]>([]);
 export const currentProjectId = writable<string | null>(null);
 /** The currently active project, derived from {@link projects}/{@link currentProjectId} — the replacement for the old singular `project` store now that a workspace can hold many. */
 export const currentProject = derived([projects, currentProjectId], ([$projects, $id]) => $projects.find((p) => p.id === $id) ?? null);
+/** The active project's feature flags — falls back to everything-on if no project has loaded yet (avoids flicker-hiding UI during initial load). */
+export const featureFlags = derived(currentProject, ($p) => $p?.featureFlags ?? DEFAULT_FEATURE_FLAGS);
 export const components = writable<Component[]>([]);
 export const versions = writable<ProjectVersion[]>([]);
 export const issueTypes = writable<IssueType[]>([]);
@@ -178,11 +182,17 @@ export async function createNewProject(name: string, key: string, leadId?: strin
 }
 
 /** Edits the currently active project (name/lead, or archives via `archivedAt`). */
-export async function updateCurrentProject(changes: Partial<Pick<Project, 'name' | 'leadId' | 'archivedAt' | 'color'>>): Promise<void> {
+export async function updateCurrentProject(changes: Partial<Pick<Project, 'name' | 'leadId' | 'archivedAt' | 'color' | 'featureFlags'>>): Promise<void> {
   const id = get(currentProjectId);
   if (!id) return;
   const updated = await apiUpdateProject(id, changes);
   projects.update((list) => list.map((p) => (p.id === id ? updated : p)));
+}
+
+/** Flips one feature flag on the active project, sending the whole merged flags object (a partial one would overwrite the others — see ProjectRepository.updateProject's shallow merge). */
+export async function setFeatureFlag(flag: keyof ProjectFeatureFlags, enabled: boolean): Promise<void> {
+  const current = get(featureFlags);
+  await updateCurrentProject({ featureFlags: { ...current, [flag]: enabled } });
 }
 
 function replaceIssue(issue: Issue): void {

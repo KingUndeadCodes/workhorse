@@ -2,7 +2,7 @@
   import type { Issue } from '$domain';
   import Icon from './Icon.svelte';
   import Avatar from './Avatar.svelte';
-  import { issueTypes, users, labels } from '../stores/workspace';
+  import { issueTypes, users, labels, featureFlags } from '../stores/workspace';
   import { displayName, priorityIcon, storyPointColor, typeIcon } from '../util';
 
   export let issue: Issue;
@@ -45,12 +45,14 @@
       </span>
       <span class="key mono">{issue.key}</span>
     </div>
-    <span class="priority-flag {issue.priority}"><Icon name={priorityIcon(issue.priority)} size={11} /></span>
+    {#if $featureFlags.priority}
+      <span class="priority-flag {issue.priority}"><Icon name={priorityIcon(issue.priority)} size={11} /></span>
+    {/if}
   </div>
 
   <div class="title">{issue.title}</div>
 
-  {#if issue.labelIds.length}
+  {#if $featureFlags.labels && issue.labelIds.length}
     <div class="labels">
       {#each issue.labelIds as lid (lid)}
         {@const l = $labels.find((lb) => lb.id === lid)}
@@ -63,14 +65,14 @@
 
   <div class="bottom">
     <div class="bottom-left">
-      {#if isOverdue}
+      {#if $featureFlags.dueDates && isOverdue}
         <span class="due-chip overdue mono">OVERDUE</span>
-      {:else if isDueSoon}
+      {:else if $featureFlags.dueDates && isDueSoon}
         <span class="due-chip due-soon mono">DUE SOON</span>
       {/if}
     </div>
     <div class="bottom-right">
-      {#if issue.storyPoints}
+      {#if $featureFlags.storyPoints && issue.storyPoints}
         <span class="points-badge mono" style="background:{storyPointColor(issue.storyPoints).bg};color:{storyPointColor(issue.storyPoints).text}">{issue.storyPoints}</span>
       {/if}
       {#if attachedAgents.length}

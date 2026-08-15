@@ -1,17 +1,32 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { components as componentsStore, currentProject, currentProjectId, gitRepoLink, settingsJumpTab, versions, linkGitRepo, unlinkGitRepo, updateCurrentProject } from '../stores/workspace';
+  import { components as componentsStore, currentProject, currentProjectId, featureFlags, gitRepoLink, settingsJumpTab, versions, linkGitRepo, unlinkGitRepo, setFeatureFlag, updateCurrentProject } from '../stores/workspace';
   import * as api from '../api';
-  import { PROJECT_COLORS } from '$domain';
+  import { PROJECT_COLORS, type ProjectFeatureFlags } from '$domain';
 
-  const tabs = ['Project', 'Components', 'Versions', 'Git'] as const;
-  let activeTab: (typeof tabs)[number] = 'Project';
+  const allTabs = ['Project', 'Components', 'Versions', 'Git'] as const;
+  $: tabs = $featureFlags.componentsAndVersions ? allTabs : (allTabs.filter((t) => t !== 'Components' && t !== 'Versions') as unknown as typeof allTabs);
+  let activeTab: (typeof allTabs)[number] = 'Project';
+  // If Components/Versions get turned off while one of those tabs is active, fall back to Project.
+  $: if (!tabs.includes(activeTab)) activeTab = 'Project';
 
   // Lets the TopBar "New…" menu open this view already on the relevant tab (e.g. "New Component").
-  if ($settingsJumpTab && (tabs as readonly string[]).includes($settingsJumpTab)) {
-    activeTab = $settingsJumpTab as (typeof tabs)[number];
+  if ($settingsJumpTab && (allTabs as readonly string[]).includes($settingsJumpTab)) {
+    activeTab = $settingsJumpTab as (typeof allTabs)[number];
   }
   settingsJumpTab.set(null);
+
+  const FEATURE_LABELS: Record<keyof ProjectFeatureFlags, string> = {
+    reporters: 'Reporters',
+    storyPoints: 'Story Points',
+    dueDates: 'Due Dates',
+    timeTracking: 'Time Tracking',
+    priority: 'Priority',
+    componentsAndVersions: 'Components & Versions',
+    sprints: 'Sprints',
+    labels: 'Labels',
+  };
+  const FEATURE_KEYS = Object.keys(FEATURE_LABELS) as (keyof ProjectFeatureFlags)[];
 
   // ---- Project ----
   let editProjectName = '';
@@ -127,6 +142,17 @@
             {/each}
           </div>
         </div>
+        <div class="subsection-label">Features</div>
+        <p class="section-hint">Turn off whatever process this project doesn't need — nothing is deleted, and re-enabling brings it right back.</p>
+        <div class="feature-list">
+          {#each FEATURE_KEYS as key}
+            <label class="toggle feature-toggle">
+              <input type="checkbox" checked={$featureFlags[key]} on:change={(e) => setFeatureFlag(key, (e.target as HTMLInputElement).checked)} />
+              {FEATURE_LABELS[key]}
+            </label>
+          {/each}
+        </div>
+
         <button type="button" class="text-btn danger" on:click={archiveProject}>Archive this project</button>
       {/if}
     {:else if activeTab === 'Components'}
@@ -195,6 +221,9 @@
     .panel { padding: 16px; }
   }
   .section-hint { font-size: 12px; line-height: 1.5; color: var(--text-3); margin: 0 0 12px; max-width: 520px; }
+  .subsection-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin: 18px 0 8px; }
+  .feature-list { display: grid; grid-template-columns: repeat(2, minmax(0, 200px)); gap: 8px 20px; margin-bottom: 18px; }
+  .toggle { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text); white-space: nowrap; }
   .field-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
   .field-label { flex: 0 0 60px; font-size: 12px; font-weight: 600; color: var(--text-2); }
   .field-row input[type='text'] {

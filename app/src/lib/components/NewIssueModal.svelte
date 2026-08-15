@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createIssue, issueTypes, users } from '../stores/workspace';
+  import { createIssue, issueTypes, users, featureFlags } from '../stores/workspace';
   import { splitHumansAndAgents } from '../util';
 
   export let onClose: () => void;
@@ -55,12 +55,14 @@
             {#each $issueTypes.filter((t) => t.name !== 'Epic') as t (t.id)}<option value={t.id}>{t.name}</option>{/each}
           </select>
         </label>
-        <label class="field">
-          <span>Priority</span>
-          <select bind:value={priority}>
-            {#each ['highest', 'high', 'medium', 'low', 'lowest'] as p}<option value={p}>{p}</option>{/each}
-          </select>
-        </label>
+        {#if $featureFlags.priority}
+          <label class="field">
+            <span>Priority</span>
+            <select bind:value={priority}>
+              {#each ['highest', 'high', 'medium', 'low', 'lowest'] as p}<option value={p}>{p}</option>{/each}
+            </select>
+          </label>
+        {/if}
       </div>
       <label class="field">
         <span>Assignees</span>

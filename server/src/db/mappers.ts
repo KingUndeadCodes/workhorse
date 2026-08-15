@@ -28,6 +28,7 @@ import type {
   Workspace,
   WorkspaceMember,
 } from '../domain';
+import { DEFAULT_FEATURE_FLAGS } from '../domain';
 
 const j = (v: unknown) => JSON.stringify(v ?? null);
 const parse = <T>(v: unknown, fallback: T): T => (v === null || v === undefined || v === '' ? fallback : (JSON.parse(v as string) as T));
@@ -47,6 +48,7 @@ export function rowToProject(r: Record<string, unknown>): Project {
     leadId: nullish(r.lead_id),
     defaultWorkflowId: r.default_workflow_id as string,
     color: r.color as string,
+    featureFlags: parse(r.feature_flags, DEFAULT_FEATURE_FLAGS),
     createdAt: r.created_at as string,
     archivedAt: nullish(r.archived_at),
   };

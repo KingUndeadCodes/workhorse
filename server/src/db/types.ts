@@ -19,6 +19,7 @@ export interface DB {
     lead_id: string | null;
     default_workflow_id: string | null;
     color: string | null;
+    feature_flags: string | null;
     created_at: string | null;
     archived_at: string | null;
   };

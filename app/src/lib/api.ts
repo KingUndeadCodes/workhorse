@@ -309,7 +309,7 @@ export function listProjects(): Promise<Project[]> {
 export function createProject(body: { name: string; key: string; leadId?: string; color?: string }): Promise<{ project: Project; board: Board }> {
   return post('/projects', body);
 }
-export function updateProject(id: string, changes: Partial<Pick<Project, 'name' | 'leadId' | 'archivedAt' | 'color'>>): Promise<Project> {
+export function updateProject(id: string, changes: Partial<Pick<Project, 'name' | 'leadId' | 'archivedAt' | 'color' | 'featureFlags'>>): Promise<Project> {
   return patch(`/projects/${id}`, changes);
 }
 

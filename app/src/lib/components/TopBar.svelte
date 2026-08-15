@@ -4,12 +4,13 @@
   import NewIssueModal from './NewIssueModal.svelte';
   import AccountSettingsModal from './AccountSettingsModal.svelte';
   import { currentUser, logout } from '../stores/auth';
-  import { currentView, issuesStore, mobileNavOpen, selectedIssueId, settingsJumpTab, sprints } from '../stores/workspace';
+  import { currentView, featureFlags, issuesStore, mobileNavOpen, selectedIssueId, settingsJumpTab, sprints } from '../stores/workspace';
 
-  const tabs: { label: string; view: 'board' | 'backlog' }[] = [
+  const allTabs: { label: string; view: 'board' | 'backlog' }[] = [
     { label: 'Board', view: 'board' },
     { label: 'Backlog', view: 'backlog' },
   ];
+  $: tabs = $featureFlags.sprints ? allTabs : allTabs.filter((t) => t.view !== 'backlog');
 
   $: activeSprint = $sprints.find((s) => s.state === 'active');
   // Only shows the ticket pill while a ticket is actually the thing on screen — not while
@@ -95,11 +96,13 @@
       {#if showNewMenu}
         <div class="dropdown">
           <button class="dropdown-item" on:click={newIssue}>Issue</button>
-          <button class="dropdown-item" on:click={newSprint}>Sprint</button>
+          {#if $featureFlags.sprints}<button class="dropdown-item" on:click={newSprint}>Sprint</button>{/if}
           <div class="dropdown-sep"></div>
-          <button class="dropdown-item" on:click={() => newCatalogItem('Labels')}>Label</button>
-          <button class="dropdown-item" on:click={() => newCatalogItem('Components')}>Component</button>
-          <button class="dropdown-item" on:click={() => newCatalogItem('Versions')}>Version</button>
+          {#if $featureFlags.labels}<button class="dropdown-item" on:click={() => newCatalogItem('Labels')}>Label</button>{/if}
+          {#if $featureFlags.componentsAndVersions}
+            <button class="dropdown-item" on:click={() => newCatalogItem('Components')}>Component</button>
+            <button class="dropdown-item" on:click={() => newCatalogItem('Versions')}>Version</button>
+          {/if}
         </div>
       {/if}
     </div>
