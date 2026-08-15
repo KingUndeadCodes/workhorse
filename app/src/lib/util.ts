@@ -1,6 +1,7 @@
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { STORY_POINT_VALUES } from '$domain';
+import type { AutomationAction, FieldDefinition, User, Workflow } from '$domain';
 
 marked.setOptions({ breaks: true, gfm: true });
 
@@ -191,4 +192,18 @@ export function storyPointDueDateWarning(points: number, dueDate: string | undef
     return `${points} points typically takes up to ${maxDays < 1 ? `${maxDays * 24}h` : `${maxDays} day${maxDays === 1 ? '' : 's'}`}, but the due date is only ${Math.round(daysUntilDue)} day${Math.round(daysUntilDue) === 1 ? '' : 's'} away.`;
   }
   return null;
+}
+
+/** One-line human-readable summary of an automation/agent action, e.g. "→ In Progress" or `comment "Thanks!"` — shared between the Automations rule list and Agents' proposed/past-run displays. */
+export function describeAutomationAction(a: AutomationAction, ctx: { workflow: Workflow | null; users: User[]; fieldDefinitions: FieldDefinition[] }): string {
+  switch (a.type) {
+    case 'transitionStatus':
+      return `→ ${ctx.workflow?.statuses.find((s) => s.id === a.toStatusId)?.name ?? a.toStatusId}`;
+    case 'assignTo':
+      return `assign ${ctx.users.find((u) => u.id === a.userId)?.displayName ?? a.userId}`;
+    case 'addComment':
+      return `comment "${a.body.length > 30 ? `${a.body.slice(0, 30)}…` : a.body}"`;
+    case 'setField':
+      return `set ${ctx.fieldDefinitions.find((f) => f.id === a.fieldId)?.name ?? a.fieldId} = ${JSON.stringify(a.value)}`;
+  }
 }
