@@ -49,6 +49,7 @@ export function migrateStateDb(): void {
     )`,
   );
   addColumnIfMissing('agents', 'model', 'TEXT');
+  addColumnIfMissing('agents', 'runtime', 'TEXT');
   run(
     stateDb,
     `CREATE TABLE IF NOT EXISTS agent_runs (

@@ -1,5 +1,4 @@
 import { createHmac, randomUUID } from 'node:crypto';
-import Anthropic from '@anthropic-ai/sdk';
 import type {
   ActorRef,
   Agent,
@@ -18,44 +17,58 @@ import type { AgentRepository } from '../repositories/AgentRepository';
 import type { AgentRunRepository } from '../repositories/AgentRunRepository';
 import type { AutomationRepository } from '../repositories/AutomationRepository';
 import type { CatalogRepository } from '../repositories/CatalogRepository';
+import type { GitRepoLinkRepository } from '../repositories/GitRepoLinkRepository';
 import type { IssueRepository } from '../repositories/IssueRepository';
 import type { ProjectRepository } from '../repositories/ProjectRepository';
 import type { UserRepository } from '../repositories/UserRepository';
 import type { WebhookRepository } from '../repositories/WebhookRepository';
 import type { WorkflowRepository } from '../repositories/WorkflowRepository';
 import type { WorkspaceRepository } from '../repositories/WorkspaceRepository';
+import type { AgentRuntimeRegistry, AgentRuntimeTool } from './AgentRuntime';
 import type { EventProjector } from './EventProjector';
+import type { GitProviderRegistry } from './GitProvider';
 
-/** Lazily constructed — reads `ANTHROPIC_API_KEY` at call time, not at module load, so tests
- * and environments without a key don't crash just by importing this file. */
-let anthropicClient: Anthropic | undefined;
-function anthropic(): Anthropic {
-  if (!anthropicClient) anthropicClient = new Anthropic();
-  return anthropicClient;
-}
-
-/** One Anthropic tool definition per {@link AutomationAction} variant — the agent's entire
- * vocabulary for acting on an issue is this closed set, never an open-ended shell/code tool. */
-const ACTION_TOOLS: Record<AutomationAction['type'], Anthropic.Tool> = {
+/** One tool definition per {@link AutomationAction} variant — the agent's entire vocabulary
+ * for acting on an issue is this closed set, never an open-ended shell/code tool. Shape is
+ * provider-neutral ({@link AgentRuntimeTool}, not any SDK's own tool type) since whichever
+ * `AgentRuntime` ends up handling a given agent is resolved at call time, not known here. */
+const ACTION_TOOLS: Record<AutomationAction['type'], AgentRuntimeTool> = {
   transitionStatus: {
     name: 'transitionStatus',
     description: "Move the issue to a different workflow status. Only use a status id from the list of valid statuses given below.",
-    input_schema: { type: 'object', properties: { toStatusId: { type: 'string' } }, required: ['toStatusId'] },
+    inputSchema: { type: 'object', properties: { toStatusId: { type: 'string' } }, required: ['toStatusId'] },
   },
   assignTo: {
     name: 'assignTo',
     description: 'Assign the issue to a user. Only use a user id from the list of workspace users given below.',
-    input_schema: { type: 'object', properties: { userId: { type: 'string' } }, required: ['userId'] },
+    inputSchema: { type: 'object', properties: { userId: { type: 'string' } }, required: ['userId'] },
   },
   addComment: {
     name: 'addComment',
-    description: 'Post a comment on the issue, visible to everyone watching it.',
-    input_schema: { type: 'object', properties: { body: { type: 'string' } }, required: ['body'] },
+    description:
+      "Post a comment on the issue, visible to everyone watching it. `body` IS the deliverable — if asked for code, write the actual code directly in `body` as a markdown code block; if asked a question, put the real answer in `body`. Never write a comment that just claims something was done elsewhere ('I've added a script') without the thing itself included in this same body.",
+    inputSchema: { type: 'object', properties: { body: { type: 'string' } }, required: ['body'] },
   },
   setField: {
     name: 'setField',
     description: 'Set the value of a custom field on the issue. Only use a field id from the list of valid fields given below.',
-    input_schema: { type: 'object', properties: { fieldId: { type: 'string' }, value: {} }, required: ['fieldId', 'value'] },
+    inputSchema: { type: 'object', properties: { fieldId: { type: 'string' }, value: {} }, required: ['fieldId', 'value'] },
+  },
+  readRepoFile: {
+    name: 'readRepoFile',
+    description:
+      "Read one file's content from the project's linked git repository (its default branch). Only works if the project has a repo linked — if it doesn't, this will fail. Use this before writing to an existing file, so you edit its real content instead of guessing.",
+    inputSchema: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] },
+  },
+  writeRepoFile: {
+    name: 'writeRepoFile',
+    description:
+      "Create or overwrite one file in the project's linked git repository, committed to a new branch you name — never to the repository's main/default branch directly. `content` must be the file's complete new content, not a diff or a description of the change. A human reviews and merges the branch themselves; nothing here touches anyone's local working copy.",
+    inputSchema: {
+      type: 'object',
+      properties: { path: { type: 'string' }, content: { type: 'string' }, branchName: { type: 'string' }, commitMessage: { type: 'string' } },
+      required: ['path', 'content', 'branchName'],
+    },
   },
 };
 
@@ -87,6 +100,11 @@ function evaluateCondition(condition: AutomationCondition, issue: Issue): boolea
   }
 }
 
+/** The `issueId` field on whichever `EventPayload` variants carry one — see `issueForEvent`. */
+function issueIdFromPayload(payload: EventPayload): string | undefined {
+  return 'issueId' in payload && typeof payload.issueId === 'string' ? payload.issueId : undefined;
+}
+
 /**
  * Reacts to events after they land in the log: runs automations, runs agents, and
  * dispatches webhooks. This is the part of the architecture that makes the event log more
@@ -113,6 +131,9 @@ export class EventEngine {
     private readonly users: UserRepository,
     private readonly projector: EventProjector,
     private readonly projects: ProjectRepository,
+    private readonly agentRuntimes: AgentRuntimeRegistry,
+    private readonly gitRepoLinks: GitRepoLinkRepository,
+    private readonly gitProviders: GitProviderRegistry,
   ) {}
 
   /** The entry point every route should use to record something that happened. */
@@ -186,13 +207,33 @@ export class EventEngine {
     return { event, run };
   }
 
-  /** Executes every proposed action on a run and marks it applied. Public: also called after approval. */
+  /** Executes every proposed action on a run and marks it applied (or failed, if one throws). Public: also called after approval. */
   async executeAgentRun(run: AgentRun, issue: Issue): Promise<void> {
     const actor: ActorRef = { kind: 'user', userId: run.agentUserId, onBehalfOfUserId: issue.agentAssignments?.[run.agentUserId] };
+    // Looked up here rather than threaded in by every caller — whatever event triggered this
+    // run is what an `addComment` action should reply to, if it was itself a comment (see
+    // applyAction's addComment case). resolveAgentRun/startAgentRun both already know this run's
+    // triggeringEventId; re-fetching it here keeps that "what to reply to" decision in one place.
+    const triggeringEvent = getEventById(run.triggeringEventId);
     run.appliedActionIndexes = [];
-    for (let i = 0; i < run.proposedActions.length; i++) {
-      await this.applyAction(run.proposedActions[i], issue, actor);
-      run.appliedActionIndexes.push(i);
+    try {
+      for (let i = 0; i < run.proposedActions.length; i++) {
+        // readRepoFile/writeRepoFile are the first actions here that can genuinely throw
+        // (no linked repo, a git error) — every other action type only ever checks simple
+        // conditions and returns early, never throws. Catching per-run rather than letting it
+        // propagate matters specifically because of that: this method runs synchronously
+        // inside whatever route's `emitEvent` call triggered the agent (e.g. posting a
+        // comment), and an uncaught throw here would 500 that unrelated request instead of
+        // just marking this run failed.
+        await this.applyAction(run.proposedActions[i], issue, actor, triggeringEvent);
+        run.appliedActionIndexes.push(i);
+      }
+    } catch (err) {
+      run.status = 'failed';
+      run.failureReason = err instanceof Error ? err.message : String(err);
+      run.completedAt = new Date().toISOString();
+      await this.projector.upsertAgentRun(run);
+      return;
     }
     run.status = 'applied';
     run.completedAt = new Date().toISOString();
@@ -211,12 +252,41 @@ export class EventEngine {
     return event;
   }
 
+  /**
+   * The issue an event is "about," for automations/agents to react against — not simply
+   * `event.subject`, which for a sub-entity event (a comment, an attachment, a branch) points
+   * at that sub-entity, not the issue it hangs off. Almost every such payload carries its own
+   * `issueId` field precisely so this can be recovered; only `subject.type === 'issue'` events
+   * (status changes, assignee changes, ...) need the subject itself. Falling back to `subject`
+   * only, as this used to, silently meant no automation or agent could ever react to a comment
+   * event — `runAgents`/`runAutomations` would resolve `issue` as `undefined` and bail before
+   * checking a single rule or agent.
+   */
   private issueForEvent(event: EventEnvelope): Promise<Issue | undefined> {
-    if (event.subject.type !== 'issue') return Promise.resolve(undefined);
-    return this.issues.get(event.subject.id);
+    const issueId = event.subject.type === 'issue' ? event.subject.id : issueIdFromPayload(event.payload);
+    return issueId ? this.issues.get(issueId) : Promise.resolve(undefined);
   }
 
-  private async applyAction(action: AutomationAction, issue: Issue, actor: ActorRef): Promise<void> {
+  /**
+   * Whether a status transition crosses into or out of a `'done'`-type {@link StatusCategory}
+   * — see domain/events.ts's `issue.resolved`/`issue.reopened` doc comment for why this is
+   * split out from the plain `issue.statusChanged` every transition already emits. Public so
+   * routes/issues.ts's direct PATCH /issues/:id can classify a transition the same way
+   * `applyAction`'s `transitionStatus` case does below, instead of duplicating this logic.
+   */
+  async classifyStatusTransition(fromStatusId: string, toStatusId: string): Promise<'resolved' | 'reopened' | undefined> {
+    const [workflow, categories] = await Promise.all([this.workflow.getWorkflow(), this.workflow.listStatusCategories()]);
+    const categoryIdByStatusId = new Map(workflow.statuses.map((s) => [s.id, s.categoryId]));
+    const typeByCategoryId = new Map(categories.map((c) => [c.id, c.type]));
+    const fromIsDone = typeByCategoryId.get(categoryIdByStatusId.get(fromStatusId) ?? '') === 'done';
+    const toIsDone = typeByCategoryId.get(categoryIdByStatusId.get(toStatusId) ?? '') === 'done';
+    if (!fromIsDone && toIsDone) return 'resolved';
+    if (fromIsDone && !toIsDone) return 'reopened';
+    return undefined;
+  }
+
+  /** `triggeringEvent`, if given, is what an `addComment` action replies to when it was itself a comment — see that case below. Every other action ignores it. */
+  private async applyAction(action: AutomationAction, issue: Issue, actor: ActorRef, triggeringEvent?: EventEnvelope): Promise<void> {
     switch (action.type) {
       case 'transitionStatus': {
         if (issue.statusId === action.toStatusId) return;
@@ -225,6 +295,14 @@ export class EventEngine {
           subject: { type: 'issue', id: issue.id },
           payload: { type: 'issue.statusChanged', issueId: issue.id, fromStatusId: issue.statusId, toStatusId: action.toStatusId },
         });
+        const transition = await this.classifyStatusTransition(issue.statusId, action.toStatusId);
+        if (transition) {
+          await this.writeEvent({
+            actor,
+            subject: { type: 'issue', id: issue.id },
+            payload: { type: `issue.${transition}`, issueId: issue.id, statusId: action.toStatusId },
+          });
+        }
         return;
       }
       case 'assignTo': {
@@ -250,10 +328,16 @@ export class EventEngine {
         const authorId = actor.kind === 'user' ? actor.userId : ((await this.projects.getProjectById(issue.projectId))?.leadId ?? 'system');
         const onBehalfOfUserId = actor.kind === 'user' ? actor.onBehalfOfUserId : undefined;
         const commentId = `cmt_${randomUUID()}`;
+        // If a rule/agent was triggered by a comment (a mention, a new top-level comment),
+        // thread its reply under that comment rather than posting a new top-level one — the
+        // model/rule never has to know or decide this; it's inferred from what set it off.
+        const triggeringPayload = triggeringEvent?.payload;
+        const parentCommentId =
+          triggeringPayload?.type === 'comment.created' || triggeringPayload?.type === 'comment.mentioned' ? triggeringPayload.commentId : undefined;
         await this.writeEvent({
           actor,
           subject: { type: 'comment', id: commentId },
-          payload: { type: 'comment.created', commentId, issueId: issue.id, authorId, onBehalfOfUserId, body: action.body },
+          payload: { type: 'comment.created', commentId, issueId: issue.id, authorId, onBehalfOfUserId, body: action.body, parentCommentId },
         });
         return;
       }
@@ -269,6 +353,46 @@ export class EventEngine {
         });
         return;
       }
+      case 'readRepoFile': {
+        const link = await this.gitRepoLinks.getForProject(issue.projectId);
+        if (!link) throw new Error('This project has no linked git repository');
+        const provider = this.gitProviders.resolve(link.provider);
+        const { content } = await provider.readFile({ owner: link.owner, repo: link.repo, token: link.token, branch: link.defaultBranch, path: action.path });
+        await this.writeEvent({
+          actor,
+          subject: { type: 'issue', id: issue.id },
+          payload: { type: 'issue.repoFileRead', issueId: issue.id, gitRepoLinkId: link.id, path: action.path, content },
+        });
+        return;
+      }
+      case 'writeRepoFile': {
+        const link = await this.gitRepoLinks.getForProject(issue.projectId);
+        if (!link) throw new Error('This project has no linked git repository');
+        const provider = this.gitProviders.resolve(link.provider);
+        const opts = { owner: link.owner, repo: link.repo, token: link.token };
+        // verifyAccess against the target branch doubles as an existence check — if it throws,
+        // the branch doesn't exist yet and gets created off the repo's default branch first
+        // (the same starting point issue branch creation uses). Never writes to the default
+        // branch itself; see the `writeRepoFile` domain doc comment for why.
+        const branchExists = await provider
+          .verifyAccess({ ...opts, branch: action.branchName })
+          .then(() => true)
+          .catch(() => false);
+        if (!branchExists) await provider.createBranch({ ...opts, fromBranch: link.defaultBranch, newBranchName: action.branchName });
+        const result = await provider.writeFile({
+          ...opts,
+          branch: action.branchName,
+          path: action.path,
+          content: action.content,
+          commitMessage: action.commitMessage?.trim() || `Update ${action.path}`,
+        });
+        await this.writeEvent({
+          actor,
+          subject: { type: 'issue', id: issue.id },
+          payload: { type: 'issue.repoFileWritten', issueId: issue.id, gitRepoLinkId: link.id, path: action.path, branchName: action.branchName, url: result.url },
+        });
+        return;
+      }
     }
   }
 
@@ -281,7 +405,7 @@ export class EventEngine {
       if (!rule.conditions.every((c) => evaluateCondition(c, issue))) continue;
 
       const actor: ActorRef = { kind: 'automation', ruleId: rule.id };
-      for (const action of rule.actions) await this.applyAction(action, issue, actor);
+      for (const action of rule.actions) await this.applyAction(action, issue, actor, event);
       await this.writeEvent({
         actor,
         subject: { type: 'automationRule', id: rule.id },
@@ -313,7 +437,7 @@ export class EventEngine {
   }
 
   /**
-   * Real decision-making: one non-streaming Anthropic Messages API call, tools restricted to
+   * Real decision-making: one non-streaming call to the agent's resolved {@link AgentRuntime}, tools restricted to
    * `agent.allowedActionTypes`, single-shot per call (no in-call tool-use loop — if the model
    * doesn't call a tool on the first response, it proposed nothing this turn). Agents are
    * meant to work a ticket over its whole life, not react once and vanish: an agent stays
@@ -367,29 +491,13 @@ export class EventEngine {
       .filter(Boolean)
       .join('\n');
 
-    let response: Anthropic.Message;
-    try {
-      response = await anthropic().messages.create({
-        model: agent.model,
-        max_tokens: 1024,
-        system,
-        tools,
-        tool_choice: { type: 'auto' },
-        messages: [{ role: 'user', content: userMessage }],
-      });
-    } catch (err) {
-      throw new Error(`Agent model call failed: ${err instanceof Error ? err.message : String(err)}`);
-    }
+    const runtime = this.agentRuntimes.resolve(agent.runtime);
+    const decision = await runtime.decide({ model: agent.model, system, userMessage, tools });
 
-    const tokenUsage = response.usage.input_tokens + response.usage.output_tokens;
-    const actions: AutomationAction[] = [];
-    let rationale = '';
-    for (const block of response.content) {
-      if (block.type === 'text') rationale += block.text;
-      else if (block.type === 'tool_use') actions.push({ type: block.name as AutomationAction['type'], ...(block.input as object) } as AutomationAction);
-    }
+    const actions: AutomationAction[] = decision.toolCalls.map((call) => ({ type: call.name as AutomationAction['type'], ...call.input }) as AutomationAction);
+    let rationale = decision.text;
     if (!rationale) rationale = actions.length > 0 ? `Proposed ${actions.length} action(s).` : 'No action proposed for this event.';
-    return { actions, rationale, tokenUsage };
+    return { actions, rationale, tokenUsage: decision.tokenUsage };
   }
 
   /** Creates and (unless approval is required) immediately executes an {@link AgentRun}. */

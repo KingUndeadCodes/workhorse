@@ -39,6 +39,7 @@ import {
   completeSprint as apiCompleteSprint,
   createIssue as apiCreateIssue,
   createSprint as apiCreateSprint,
+  deleteComment as apiDeleteComment,
   deleteIssue as apiDeleteIssue,
   createProject as apiCreateProject,
   fetchBootstrap,
@@ -224,7 +225,7 @@ export async function unassignAgent(issueId: string, agentUserId: string): Promi
 }
 
 /** Links (or replaces) the current project's git repo, from Settings' Git tab. */
-export async function linkGitRepo(projectId: string, body: { owner: string; repo: string; defaultBranch?: string; token: string }): Promise<void> {
+export async function linkGitRepo(projectId: string, body: { provider: string; owner: string; repo: string; defaultBranch?: string; token: string }): Promise<void> {
   gitRepoLink.set(await apiLinkGitRepo(projectId, body));
 }
 
@@ -264,6 +265,26 @@ export async function addComment(issueId: string, body: string, parentCommentId?
 export async function editComment(issueId: string, commentId: string, body: string): Promise<void> {
   const { comment } = await apiUpdateComment(issueId, commentId, body);
   comments.update((list) => list.map((c) => (c.id === commentId ? comment : c)));
+}
+
+/** Deletes a comment and every reply beneath it, mirroring the server's cascade (see IssueRepository.deleteComment) locally instead of waiting on a full reload to see the whole subtree gone. */
+export async function removeComment(issueId: string, commentId: string): Promise<void> {
+  await apiDeleteComment(issueId, commentId);
+  comments.update((list) => {
+    const toRemove = new Set([commentId]);
+    // Repeated passes rather than a single lookup, since a grandchild's parent might only be added to the set on a later pass.
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const c of list) {
+        if (c.parentCommentId && toRemove.has(c.parentCommentId) && !toRemove.has(c.id)) {
+          toRemove.add(c.id);
+          grew = true;
+        }
+      }
+    }
+    return list.filter((c) => !toRemove.has(c.id));
+  });
 }
 
 export async function addIssueLink(issueId: string, type: IssueLinkType, targetIssueId: string): Promise<void> {

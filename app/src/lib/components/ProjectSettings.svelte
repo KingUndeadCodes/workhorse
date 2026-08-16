@@ -80,18 +80,28 @@
   }
 
   // ---- Git ----
+  // No provider ships built-in — see server/src/services/GitProvider.ts. The link form below
+  // only renders once availableGitProviders confirms at least one is actually registered on
+  // the server, instead of always showing a form that would 400 no matter what's typed into it.
+  let availableGitProviders: string[] = [];
+  api.listGitProviders().then((p) => (availableGitProviders = p));
+
+  let newRepoProvider = '';
   let newRepoOwner = '';
   let newRepoName = '';
   let newRepoDefaultBranch = '';
   let newRepoToken = '';
   let linkingRepo = false;
   let linkRepoError = '';
+  // With exactly one registered provider, there's no real choice — lock to it, same treatment AgentForm gives Runtime.
+  $: if (availableGitProviders.length === 1 && newRepoProvider !== availableGitProviders[0]) newRepoProvider = availableGitProviders[0];
   async function submitGitRepoLink() {
-    if (!$currentProjectId || !newRepoOwner.trim() || !newRepoName.trim() || !newRepoToken.trim()) return;
+    if (!$currentProjectId || !newRepoProvider.trim() || !newRepoOwner.trim() || !newRepoName.trim() || !newRepoToken.trim()) return;
     linkingRepo = true;
     linkRepoError = '';
     try {
-      await linkGitRepo($currentProjectId, { owner: newRepoOwner.trim(), repo: newRepoName.trim(), defaultBranch: newRepoDefaultBranch.trim() || undefined, token: newRepoToken.trim() });
+      await linkGitRepo($currentProjectId, { provider: newRepoProvider.trim(), owner: newRepoOwner.trim(), repo: newRepoName.trim(), defaultBranch: newRepoDefaultBranch.trim() || undefined, token: newRepoToken.trim() });
+      newRepoProvider = '';
       newRepoOwner = '';
       newRepoName = '';
       newRepoDefaultBranch = '';
@@ -181,20 +191,27 @@
         <button type="submit">Add version</button>
       </form>
     {:else if activeTab === 'Git'}
-      <p class="section-hint">Link this project to a GitHub repository to create a real branch for any ticket, right from its drawer.</p>
+      <p class="section-hint">Link this project to a git repository to create a real branch for any ticket, right from its drawer.</p>
       {#if $gitRepoLink}
         <div class="row">
           <Icon name="branch" size={13} />
           <span class="row-name">{$gitRepoLink.owner}/{$gitRepoLink.repo}</span>
-          <span class="row-tag">default branch: {$gitRepoLink.defaultBranch}</span>
+          <span class="row-tag">{$gitRepoLink.provider} · default branch: {$gitRepoLink.defaultBranch}</span>
           <button class="icon-btn" on:click={removeGitRepoLink}><Icon name="trash" size={13} /></button>
         </div>
+      {:else if availableGitProviders.length === 0}
+        <p class="section-hint">No git provider is configured on this server, so there's nothing to link against yet — see server/src/services/GitProvider.ts.</p>
       {:else}
         <form class="add-form column" on:submit|preventDefault={submitGitRepoLink}>
-          <input type="text" placeholder="Owner (e.g. octocat)" bind:value={newRepoOwner} />
-          <input type="text" placeholder="Repo (e.g. Hello-World)" bind:value={newRepoName} />
+          {#if availableGitProviders.length > 1}
+            <select bind:value={newRepoProvider}>
+              {#each availableGitProviders as p}<option value={p}>{p}</option>{/each}
+            </select>
+          {/if}
+          <input type="text" placeholder="Owner" bind:value={newRepoOwner} />
+          <input type="text" placeholder="Repo" bind:value={newRepoName} />
           <input type="text" placeholder="Default branch (main)" bind:value={newRepoDefaultBranch} />
-          <input type="password" placeholder="Personal access token" bind:value={newRepoToken} />
+          <input type="password" placeholder="Access token" bind:value={newRepoToken} />
           <button type="submit" disabled={linkingRepo}>{linkingRepo ? 'Linking…' : 'Link repository'}</button>
         </form>
         {#if linkRepoError}<p class="error">{linkRepoError}</p>{/if}

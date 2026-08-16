@@ -9,6 +9,9 @@
 
   $: pendingRuns = $agentRuns.filter((r) => r.status === 'awaitingApproval');
 
+  let availableRuntimes: string[] = [];
+  api.listAgentRuntimes().then((r) => (availableRuntimes = r));
+
   let expandedAgentId: string | null = null;
   function toggleExpanded(userId: string) {
     expandedAgentId = expandedAgentId === userId ? null : userId;
@@ -58,7 +61,8 @@
   const emptyDraft = () => ({
     name: '',
     description: '',
-    model: 'claude-haiku-4-5',
+    runtime: 'ollama',
+    model: 'llama3.1',
     eventFilter: ['issue.created'] as EventType[],
     allowedActionTypes: ['addComment'] as AutomationAction['type'][],
     approvalPolicy: { mode: 'autoApplyAll' as const },
@@ -143,9 +147,11 @@
           {@const recent = recentRunsFor(agent.userId)}
           <div class="agent-card-body">
             <AgentForm
+              {availableRuntimes}
               initial={{
                 name: agent.name,
                 description: agent.description ?? '',
+                runtime: agent.runtime,
                 model: agent.model,
                 eventFilter: Array.isArray(agent.eventFilter) ? agent.eventFilter : [],
                 allowedActionTypes: agent.allowedActionTypes,
@@ -181,7 +187,7 @@
 {/if}
 
 <div class="subsection-label">Add agent</div>
-<AgentForm initial={emptyDraft()} submitLabel="Add agent" onSubmit={createAgent} />
+<AgentForm {availableRuntimes} initial={emptyDraft()} submitLabel="Add agent" onSubmit={createAgent} />
 
 <style>
   .subsection-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin: 18px 0 8px; }

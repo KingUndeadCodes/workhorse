@@ -1,11 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
-import type { ActorRef, FieldValue, Issue, IssueLinkType, User } from '../domain';
-import { STORY_POINT_VALUES } from '../domain';
+import type { ActorRef, FieldValue, Issue, IssueLinkType, IssuePriority, User } from '../domain';
+import { parseMentionedUserIds, slugifyBranchName, STORY_POINT_VALUES } from '../domain';
 import type { AuthVariables } from '../auth/middleware';
-import { agentRepo, engine, gitRepoLinkRepo, gitHubService, issueRepo, projectRepo, userRepo, workflowRepo } from '../container';
+import { agentRepo, engine, gitProviders, gitRepoLinkRepo, issueRepo, projectRepo, userRepo, workflowRepo } from '../container';
 import { persistState } from '../db/core';
-import { slugifyBranchName } from '../services/GitHubService';
 
 export const issuesRouter = new Hono<{ Variables: AuthVariables }>();
 
@@ -78,11 +77,15 @@ issuesRouter.post('/issues', async (c) => {
 
 /**
  * PATCH /api/issues/:id — edits built-in issue fields. Diffs the body against the current
- * issue so each kind of change emits the event it should: `statusId` -> `issue.statusChanged`,
- * `assigneeIds` -> `issue.assigneesChanged`, `sprintId` -> `issue.sprintChanged`, everything else
- * (title, description, priority, labels, components, fix versions, points, due date,
- * estimates) -> a single `issue.updated` with a `changes` map. Custom field values are
- * handled by PATCH /api/issues/:id/fields/:fieldId instead.
+ * issue so each kind of change emits the event it should: `statusId` -> `issue.statusChanged`
+ * (plus `issue.resolved`/`issue.reopened` if the transition crosses a done-category boundary —
+ * see EventEngine.classifyStatusTransition), `assigneeIds` -> `issue.assigneesChanged`,
+ * `sprintId` -> `issue.sprintChanged`, `priority` -> `issue.priorityChanged`, `labelIds` ->
+ * `issue.labelsChanged`, `dueDate` -> `issue.dueDateChanged`, everything else (title,
+ * description, components, fix versions, points, estimates) -> a single `issue.updated` with a
+ * `changes` map — those stay lumped together since nothing has needed to filter on them
+ * individually yet; pull one out the same way priority/labels/dueDate were if that changes.
+ * Custom field values are handled by PATCH /api/issues/:id/fields/:fieldId instead.
  */
 issuesRouter.patch('/issues/:id', async (c) => {
   const id = c.req.param('id');
@@ -97,7 +100,12 @@ issuesRouter.patch('/issues/:id', async (c) => {
   }
 
   if ('statusId' in body && body.statusId !== issue.statusId) {
-    await engine.emitEvent({ actor, subject: { type: 'issue', id }, payload: { type: 'issue.statusChanged', issueId: id, fromStatusId: issue.statusId, toStatusId: body.statusId as string } });
+    const toStatusId = body.statusId as string;
+    await engine.emitEvent({ actor, subject: { type: 'issue', id }, payload: { type: 'issue.statusChanged', issueId: id, fromStatusId: issue.statusId, toStatusId } });
+    const transition = await engine.classifyStatusTransition(issue.statusId, toStatusId);
+    if (transition) {
+      await engine.emitEvent({ actor, subject: { type: 'issue', id }, payload: { type: `issue.${transition}`, issueId: id, statusId: toStatusId } });
+    }
   }
   if ('assigneeIds' in body) {
     const toUserIds = (body.assigneeIds as string[]) ?? [];
@@ -121,11 +129,32 @@ issuesRouter.patch('/issues/:id', async (c) => {
   if ('sprintId' in body && body.sprintId !== issue.sprintId) {
     await engine.emitEvent({ actor, subject: { type: 'issue', id }, payload: { type: 'issue.sprintChanged', issueId: id, fromSprintId: issue.sprintId, toSprintId: body.sprintId as string | undefined } });
   }
+  if ('priority' in body && body.priority !== issue.priority) {
+    await engine.emitEvent({
+      actor,
+      subject: { type: 'issue', id },
+      payload: { type: 'issue.priorityChanged', issueId: id, fromPriority: issue.priority, toPriority: body.priority as IssuePriority },
+    });
+  }
+  if ('labelIds' in body) {
+    const toLabelIds = (body.labelIds as string[]) ?? [];
+    if (JSON.stringify([...toLabelIds].sort()) !== JSON.stringify([...issue.labelIds].sort())) {
+      await engine.emitEvent({
+        actor,
+        subject: { type: 'issue', id },
+        payload: { type: 'issue.labelsChanged', issueId: id, fromLabelIds: issue.labelIds, toLabelIds },
+      });
+    }
+  }
+  if ('dueDate' in body && body.dueDate !== issue.dueDate) {
+    await engine.emitEvent({
+      actor,
+      subject: { type: 'issue', id },
+      payload: { type: 'issue.dueDateChanged', issueId: id, fromDueDate: issue.dueDate, toDueDate: body.dueDate as string | undefined },
+    });
+  }
 
-  const genericFields = [
-    'title', 'description', 'priority', 'labelIds', 'componentIds', 'fixVersionIds',
-    'storyPoints', 'dueDate', 'originalEstimateSeconds', 'remainingEstimateSeconds',
-  ] as const;
+  const genericFields = ['title', 'description', 'componentIds', 'fixVersionIds', 'storyPoints', 'originalEstimateSeconds', 'remainingEstimateSeconds'] as const;
   const changes: Record<string, unknown> = {};
   for (const field of genericFields) {
     if (!(field in body)) continue;
@@ -188,16 +217,34 @@ issuesRouter.post('/issues/:id/comments', async (c) => {
   }
 
   const commentId = `cmt_${randomUUID()}`;
+  const commentBody = body.body.trim();
   const event = await engine.emitEvent({
     actor: actorFrom(user),
     subject: { type: 'comment', id: commentId },
-    payload: { type: 'comment.created', commentId, issueId: id, authorId: user.id, body: body.body.trim(), parentCommentId },
+    payload: { type: 'comment.created', commentId, issueId: id, authorId: user.id, body: commentBody, parentCommentId },
   });
+
+  const mentionedUserIds = parseMentionedUserIds(commentBody, await userRepo.list()).filter((uid) => uid !== user.id);
+  for (const mentionedUserId of mentionedUserIds) {
+    await engine.emitEvent({
+      actor: actorFrom(user),
+      subject: { type: 'comment', id: commentId },
+      payload: { type: 'comment.mentioned', commentId, issueId: id, authorId: user.id, mentionedUserId, body: commentBody },
+    });
+  }
+
   const comment = (await issueRepo.listCommentsFor(id)).find((cm) => cm.id === commentId);
   return c.json({ comment, event }, 201);
 });
 
-/** PATCH /api/issues/:issueId/comments/:commentId — edits a comment's body; emits `comment.edited`. Only the comment's own author may edit it. */
+/**
+ * PATCH /api/issues/:issueId/comments/:commentId — edits a comment's body; emits
+ * `comment.edited`. Only the comment's own author may edit it. Also re-parses mentions and
+ * emits `comment.mentioned` for any that are new in the edited body — e.g. adding "@Name" to a
+ * comment that didn't have it, or one that was written and immediately edited before the
+ * mentioned person could see the original. Mentions already present before the edit don't fire
+ * again, so re-saving an unrelated change doesn't re-notify everyone already mentioned.
+ */
 issuesRouter.patch('/issues/:issueId/comments/:commentId', async (c) => {
   const { issueId, commentId } = c.req.param();
   const comment = await issueRepo.getComment(commentId);
@@ -208,13 +255,44 @@ issuesRouter.patch('/issues/:issueId/comments/:commentId', async (c) => {
 
   const body = await c.req.json<{ body: string }>();
   if (!body.body?.trim()) return c.json({ error: 'Comment body is required' }, 400);
+  const newBody = body.body.trim();
+
+  const allUsers = await userRepo.list();
+  const mentionedBefore = new Set(parseMentionedUserIds(comment.body.plainText, allUsers));
+  const mentionedAfter = parseMentionedUserIds(newBody, allUsers).filter((uid) => uid !== user.id && !mentionedBefore.has(uid));
 
   const event = await engine.emitEvent({
     actor: actorFrom(user),
     subject: { type: 'comment', id: commentId },
-    payload: { type: 'comment.edited', commentId, issueId, body: body.body.trim() },
+    payload: { type: 'comment.edited', commentId, issueId, body: newBody },
   });
+
+  for (const mentionedUserId of mentionedAfter) {
+    await engine.emitEvent({
+      actor: actorFrom(user),
+      subject: { type: 'comment', id: commentId },
+      payload: { type: 'comment.mentioned', commentId, issueId, authorId: user.id, mentionedUserId, body: newBody },
+    });
+  }
+
   return c.json({ comment: await issueRepo.getComment(commentId), event });
+});
+
+/** DELETE /api/issues/:issueId/comments/:commentId — deletes a comment and every reply beneath it; emits `comment.deleted` for the root comment only (the whole subtree is one user action, same as issue.deleted's cascade). Only the comment's own author may delete it. */
+issuesRouter.delete('/issues/:issueId/comments/:commentId', async (c) => {
+  const { issueId, commentId } = c.req.param();
+  const comment = await issueRepo.getComment(commentId);
+  if (!comment || comment.issueId !== issueId) return c.json({ error: 'Comment not found' }, 404);
+
+  const user = c.get('user');
+  if (comment.authorId !== user.id) return c.json({ error: 'Only the comment author can delete it' }, 403);
+
+  const event = await engine.emitEvent({
+    actor: actorFrom(user),
+    subject: { type: 'comment', id: commentId },
+    payload: { type: 'comment.deleted', commentId, issueId },
+  });
+  return c.json({ event });
 });
 
 /** POST /api/issues/:id/links — links two issues; emits `issue.linked`. */
@@ -341,11 +419,11 @@ issuesRouter.get('/issues/:id/branch', async (c) => {
 
 /**
  * POST /api/issues/:id/branch — creates a live branch on the issue's project's linked repo
- * via the GitHub API (no local git — just a ref lookup + create). Body: `{ name? }`, defaults
- * to a slug derived from the issue key/title. 404 if the issue doesn't exist, 400 if the
- * issue already has a branch or the project has no linked repo, 502 if the GitHub call
- * fails (its error message is surfaced, since this is a synchronous user action, not a
- * fire-and-forget dispatch like webhooks). Emits `issue.branchCreated` on success.
+ * via its registered {@link GitProvider} (no local git — just a ref lookup + create). Body:
+ * `{ name? }`, defaults to a slug derived from the issue key/title. 404 if the issue doesn't
+ * exist, 400 if the issue already has a branch or the project has no linked repo, 502 if the
+ * provider call fails (its error message is surfaced, since this is a synchronous user
+ * action, not a fire-and-forget dispatch like webhooks). Emits `issue.branchCreated` on success.
  */
 issuesRouter.post('/issues/:id/branch', async (c) => {
   const id = c.req.param('id');
@@ -360,9 +438,9 @@ issuesRouter.post('/issues/:id/branch', async (c) => {
 
   let result: { url: string };
   try {
-    result = await gitHubService.createBranch({ owner: link.owner, repo: link.repo, token: link.token, fromBranch: link.defaultBranch, newBranchName: name });
+    result = await gitProviders.resolve(link.provider).createBranch({ owner: link.owner, repo: link.repo, token: link.token, fromBranch: link.defaultBranch, newBranchName: name });
   } catch (err) {
-    return c.json({ error: `GitHub branch creation failed: ${err instanceof Error ? err.message : String(err)}` }, 502);
+    return c.json({ error: `Branch creation failed: ${err instanceof Error ? err.message : String(err)}` }, 502);
   }
 
   const branchId = `branch_${randomUUID()}`;
@@ -377,7 +455,7 @@ issuesRouter.post('/issues/:id/branch', async (c) => {
     // The unique index on branches(issue_id) is what actually enforces "at most one branch
     // per issue" — the check above is only a fast path, not a lock, so a concurrent request
     // can still lose the race here. Surface that as the same 400 the fast path returns,
-    // rather than a raw constraint-violation 500 — the GitHub ref this request just created
+    // rather than a raw constraint-violation 500 — the remote ref this request just created
     // is orphaned in that case, but no duplicate row is written.
     if (err instanceof Error && /unique/i.test(err.message)) {
       return c.json({ error: 'Issue already has a branch' }, 400);
@@ -388,7 +466,7 @@ issuesRouter.post('/issues/:id/branch', async (c) => {
   return c.json({ branch, event }, 201);
 });
 
-/** DELETE /api/issues/:id/branch — removes the branch record only (no GitHub call — this app only ever creates refs, never deletes them remotely). Emits `issue.branchDeleted`. */
+/** DELETE /api/issues/:id/branch — removes the branch record only (no provider call — this app only ever creates refs, never deletes them remotely). Emits `issue.branchDeleted`. */
 issuesRouter.delete('/issues/:id/branch', async (c) => {
   const id = c.req.param('id');
   const branch = await issueRepo.getBranchFor(id);

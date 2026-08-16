@@ -1,59 +1,24 @@
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
-import { STORY_POINT_VALUES } from '$domain';
-import type { AutomationAction, FieldDefinition, User, Workflow } from '$domain';
+import { replaceMentions, STORY_POINT_VALUES } from '$domain';
+import type { AutomationAction, FieldDefinition, Mentionable, User, Workflow } from '$domain';
 
 marked.setOptions({ breaks: true, gfm: true });
 
-/** A user (or agent) mentionable via "@Name" in a comment or description. */
-export interface Mentionable {
-  id: string;
-  displayName: string;
-  kind: string;
-}
-
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-/** Splits on fenced/inline code spans so mention highlighting never touches text inside `code`. */
-function splitOutsideCode(text: string): { text: string; isCode: boolean }[] {
-  const parts: { text: string; isCode: boolean }[] = [];
-  const re = /(```[\s\S]*?```|`[^`]*`)/g;
-  let last = 0;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text))) {
-    if (m.index > last) parts.push({ text: text.slice(last, m.index), isCode: false });
-    parts.push({ text: m[0], isCode: true });
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) parts.push({ text: text.slice(last), isCode: false });
-  return parts;
-}
+export type { Mentionable };
 
 /**
  * Wraps every "@Full Name" occurrence that matches a real workspace user in a `<span>`, so
- * `renderMarkdown` can turn it into a styled mention pill. Matched against display names
- * directly (no stored mention ids) — simple, but means a later rename won't retroactively
- * relabel old mentions, and mentioning someone requires typing their name exactly (the
- * editor's autocomplete is what makes that reliable in practice).
+ * `renderMarkdown` can turn it into a styled mention pill. The match itself — what counts as a
+ * mention at all — is `domain/mentions.ts`'s `replaceMentions`, shared with the server's
+ * `comment.mentioned` event detection so the two can't drift into recognizing different things
+ * as mentions; this function only supplies the HTML the match gets turned into.
  */
 function highlightMentions(text: string, users: Mentionable[]): string {
-  if (users.length === 0) return text;
-  // Longest name first, so multi-word names win over any shorter name that's a prefix of them.
-  const sorted = [...users].sort((a, b) => b.displayName.length - a.displayName.length);
-  const pattern = sorted.map((u) => escapeRegExp(u.displayName)).join('|');
-  const byName = new Map(sorted.map((u) => [u.displayName, u]));
-  const re = new RegExp(`@(${pattern})\\b`, 'g');
-  return splitOutsideCode(text)
-    .map(({ text: segment, isCode }) => {
-      if (isCode) return segment;
-      return segment.replace(re, (match, name: string) => {
-        const cls = byName.get(name)?.kind === 'agent' ? 'mention mention-agent' : 'mention';
-        return `<span class="${cls}">@${name}</span>`;
-      });
-    })
-    .join('');
+  return replaceMentions(text, users, (name, user) => {
+    const cls = user.kind === 'agent' ? 'mention mention-agent' : 'mention';
+    return `<span class="${cls}">@${name}</span>`;
+  });
 }
 
 /**
@@ -96,7 +61,7 @@ export function avatarColor(userId: string): string {
 }
 
 /** An AI agent's name is always shown with an "[AI]" prefix, everywhere a human would just see their name. */
-export function displayName(user: { kind: string; displayName: string }): string {
+export function displayName(user: { kind?: string; displayName: string }): string {
   return user.kind === 'agent' ? `[AI] ${user.displayName}` : user.displayName;
 }
 
@@ -205,5 +170,9 @@ export function describeAutomationAction(a: AutomationAction, ctx: { workflow: W
       return `comment "${a.body.length > 30 ? `${a.body.slice(0, 30)}…` : a.body}"`;
     case 'setField':
       return `set ${ctx.fieldDefinitions.find((f) => f.id === a.fieldId)?.name ?? a.fieldId} = ${JSON.stringify(a.value)}`;
+    case 'readRepoFile':
+      return `read ${a.path}`;
+    case 'writeRepoFile':
+      return `write ${a.path} → branch "${a.branchName}"`;
   }
 }

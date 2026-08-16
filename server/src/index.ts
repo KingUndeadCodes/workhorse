@@ -1,15 +1,31 @@
-/** Entry point: boots both databases, wires the OO container, creates the minimal structural rows if `state.db` is brand new (see seed.ts — no sample content), then serves the Hono app (app.ts) on `PORT`, defaulting to 8787. */
+/** Entry point: boots both databases, wires the OO container, loads third-party plugins, creates the minimal structural rows if `state.db` is brand new (see seed.ts — no sample content), then serves the Hono app (app.ts) on `PORT`, defaulting to 8787. */
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { app } from './app';
-import { initContainer, planningRepo, userRepo, workflowRepo, workspaceRepo } from './container';
+import { agentRuntimes, gitProviders, initContainer, planningRepo, userRepo, workflowRepo, workspaceRepo } from './container';
 import { initDatabases, persistState } from './db/core';
 import { backfillAgentAssignments, backfillProjectColors, migrateEventsDb, migrateStateDb } from './db/schema';
+import { loadPlugins } from './plugins/loadPlugins';
 import { bootstrapDatabase } from './seed';
 
 const { isFreshState } = await initDatabases();
 migrateStateDb();
 migrateEventsDb();
 initContainer();
+
+/**
+ * Where third-party extensions live — see plugins/README.md and services/GitProvider.ts /
+ * services/AgentRuntime.ts for the contract. `PLUGINS_DIR` lets a deployment point at a
+ * directory outside this repo entirely (e.g. a separate config volume), matching the
+ * `OLLAMA_HOST`/`JWT_SECRET` env-var-override convention used elsewhere.
+ */
+const pluginsDir = process.env.PLUGINS_DIR?.trim() || join(dirname(fileURLToPath(import.meta.url)), '../../plugins');
+await loadPlugins(pluginsDir, {
+  registerGitProvider: (p) => gitProviders.register(p),
+  registerAgentRuntime: (r) => agentRuntimes.register(r),
+});
+
 if (isFreshState) bootstrapDatabase();
 
 /**

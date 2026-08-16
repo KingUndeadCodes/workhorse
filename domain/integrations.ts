@@ -6,14 +6,16 @@ import type { BranchId, GitRepoLinkId, IssueId, ProjectId, UserId } from './ids'
  * schema uses; see schema.ts's third-normal-form disclaimer). Modeled after
  * WebhookSubscription: a plaintext "definition" row, not part of the event-sourced log.
  *
- * `provider` is a literal union of one today (`'github'`) so a second host (GitLab,
- * Bitbucket) can be added later by widening the union and adding a second implementation
- * behind the same shape `GitHubService` exposes, without reshaping this type or its schema.
+ * `provider` is an open string, not a literal union — this app ships no built-in git host, only
+ * the harness (`server/src/services/GitProvider.ts`'s `GitProvider` interface + registry).
+ * It's an id that must match a `GitProvider.id` registered in `container.ts` for linking to
+ * actually work; which ids are valid is entirely up to whatever `GitProvider`s a deployment
+ * registers (`'github'`, `'gitlab'`, `'my-internal-host'`, ...).
  */
 export interface GitRepoLink {
   id: GitRepoLinkId;
   projectId: ProjectId;
-  provider: 'github';
+  provider: string;
   owner: string;
   repo: string;
   defaultBranch: string;
@@ -43,10 +45,10 @@ export interface Branch {
 }
 
 /**
- * Shared by the server (the actual branch name it creates on GitHub) and the client (the
+ * Shared by the server (the actual branch name a `GitProvider` creates) and the client (the
  * editable suggestion shown before submitting) so the two can never drift — this lives here,
- * not in server/src/services/GitHubService.ts, specifically so the frontend can import it
- * without pulling in that file's `octokit` dependency.
+ * not alongside any provider implementation, specifically so the frontend can import it
+ * without pulling in a provider's own dependencies.
  * e.g. `slugifyBranchName('PRJ-142', 'Fix login redirect loop')` -> `'issue/PRJ-142-fix-login-redirect-loop'`.
  */
 export function slugifyBranchName(issueKey: string, title: string): string {

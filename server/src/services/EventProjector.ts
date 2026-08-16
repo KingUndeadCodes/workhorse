@@ -42,6 +42,19 @@ export class EventProjector {
       case 'issue.updated':
         await this.issues.updateFields(payload.issueId, payload.changes, event.occurredAt);
         break;
+      case 'issue.priorityChanged':
+        await this.issues.updateFields(payload.issueId, { priority: payload.toPriority }, event.occurredAt);
+        break;
+      case 'issue.labelsChanged':
+        await this.issues.updateFields(payload.issueId, { labelIds: payload.toLabelIds }, event.occurredAt);
+        break;
+      case 'issue.dueDateChanged':
+        await this.issues.updateFields(payload.issueId, { dueDate: payload.toDueDate }, event.occurredAt);
+        break;
+      case 'issue.resolved':
+      case 'issue.reopened':
+        // Notification-only — issue.statusChanged (always emitted alongside) already wrote the actual statusId/updated_at.
+        break;
       case 'issue.fieldChanged':
         await this.issues.setFieldValue(payload.issueId, payload.fieldId, payload.toValue as FieldValue['value'], event.occurredAt);
         break;
@@ -88,6 +101,9 @@ export class EventProjector {
         break;
       case 'comment.edited':
         await this.issues.updateComment(payload.commentId, payload.body, event.occurredAt);
+        break;
+      case 'comment.deleted':
+        await this.issues.deleteComment(payload.commentId);
         break;
       case 'issue.branchCreated':
         await this.issues.insertBranch({

@@ -3,10 +3,10 @@ import { Hono } from 'hono';
 import type { ActorRef, GitRepoLink, Project, User } from '../domain';
 import { DEFAULT_FEATURE_FLAGS, PROJECT_COLORS } from '../domain';
 import type { AuthVariables } from '../auth/middleware';
-import { engine, gitRepoLinkRepo, planningRepo, projectRepo, workflowRepo, workspaceRepo } from '../container';
+import { engine, gitProviders, gitRepoLinkRepo, planningRepo, projectRepo, workflowRepo, workspaceRepo } from '../container';
 import { toGitRepoLinkPublic } from '../db/mappers';
 
-/** CRUD for projects, plus a project's linked git repo definition. Branch creation lives in issues.ts, via GitHubService. */
+/** CRUD for projects, plus a project's linked git repo definition. Branch creation lives in issues.ts, via a registered GitProvider. */
 export const projectsRouter = new Hono<{ Variables: AuthVariables }>();
 
 function actorFrom(user: User): ActorRef {
@@ -14,6 +14,9 @@ function actorFrom(user: User): ActorRef {
 }
 
 projectsRouter.get('/projects', async (c) => c.json(await projectRepo.listProjects()));
+
+/** GET /api/git-providers — ids of every GitProvider actually registered in container.ts. Mirrors GET /api/agent-runtimes (routes/agents.ts); lets the client know upfront whether linking a repo can possibly succeed, instead of only finding out via a 400 after filling out the form. */
+projectsRouter.get('/git-providers', (c) => c.json(gitProviders.list().map((p) => p.id)));
 
 /**
  * POST /api/projects — creates a project. Body: `{ name, key, leadId?, color? }`. 400 if
@@ -72,24 +75,42 @@ projectsRouter.get('/projects/:id/git-repo-link', async (c) => {
 
 /**
  * POST /api/projects/:id/git-repo-link — links (or replaces) the project's git repo.
- * Body: `{ owner, repo, defaultBranch?, token }`. Emits `project.gitRepoLinked` (never
- * carrying the token). Response is always the token-free `GitRepoLinkPublic`, even here.
+ * Body: `{ provider, owner, repo, defaultBranch?, token }`. `provider` must match the `id` of
+ * a `GitProvider` registered in container.ts — this app ships no provider by default (see
+ * services/GitProvider.ts), so until a deployment registers one, this always 400s with "No
+ * GitProvider registered for ...". Once one is registered, this verifies the token can see the
+ * repo and that `defaultBranch` exists before storing anything — 400 with the provider's
+ * reason if not, so a typo or under-scoped token is caught here rather than surfacing later as
+ * a 502 on first branch creation. Emits `project.gitRepoLinked` (never carrying the token).
+ * Response is always the token-free `GitRepoLinkPublic`, even here.
  */
 projectsRouter.post('/projects/:id/git-repo-link', async (c) => {
   const projectId = c.req.param('id');
-  const body = await c.req.json<{ owner: string; repo: string; defaultBranch?: string; token: string }>();
-  if (!body.owner?.trim() || !body.repo?.trim() || !body.token?.trim()) {
-    return c.json({ error: 'owner, repo, and token are required' }, 400);
+  const body = await c.req.json<{ provider: string; owner: string; repo: string; defaultBranch?: string; token: string }>();
+  if (!body.provider?.trim() || !body.owner?.trim() || !body.repo?.trim() || !body.token?.trim()) {
+    return c.json({ error: 'provider, owner, repo, and token are required' }, 400);
+  }
+
+  const provider = body.provider.trim();
+  const owner = body.owner.trim();
+  const repo = body.repo.trim();
+  const defaultBranch = body.defaultBranch?.trim() || 'main';
+  const token = body.token.trim();
+
+  try {
+    await gitProviders.resolve(provider).verifyAccess({ owner, repo, token, branch: defaultBranch });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 400);
   }
 
   const link: GitRepoLink = {
     id: `gitlink_${randomUUID()}`,
     projectId,
-    provider: 'github',
-    owner: body.owner.trim(),
-    repo: body.repo.trim(),
-    defaultBranch: body.defaultBranch?.trim() || 'main',
-    token: body.token.trim(),
+    provider,
+    owner,
+    repo,
+    defaultBranch,
+    token,
     createdAt: new Date().toISOString(),
     createdBy: c.get('user').id,
   };

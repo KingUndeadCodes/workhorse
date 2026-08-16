@@ -7,6 +7,7 @@
   export let initial: {
     name: string;
     description: string;
+    runtime: string;
     model: string;
     eventFilter: EventType[];
     allowedActionTypes: AutomationAction['type'][];
@@ -18,13 +19,19 @@
   export let onSubmit: (values: Omit<Agent, 'userId' | 'workspaceId' | 'projectId' | 'enabled' | 'createdAt'>) => Promise<void>;
   /** Only set in edit mode — lets the card collapse back without saving. */
   export let onCancel: (() => void) | undefined = undefined;
+  /** Ids of every AgentRuntime actually registered on the server (see api.listAgentRuntimes). With one entry there's no real choice to make, so the Runtime field hides itself and locks to it; with several it becomes a dropdown of real options instead of free text guessing at a valid id. */
+  export let availableRuntimes: string[] = [];
 
-  const AGENT_MODELS = ['claude-haiku-4-5', 'claude-sonnet-5', 'claude-opus-5'];
-  const AGENT_ACTION_TYPES: AutomationAction['type'][] = ['transitionStatus', 'assignTo', 'addComment', 'setField'];
-  const EVENT_TRIGGER_OPTIONS: EventType[] = ['issue.created', 'issue.statusChanged', 'issue.assigneesChanged', 'comment.created', 'issue.updated'];
+  const AGENT_MODELS = ['llama3.1', 'qwen2.5', 'mistral'];
+  const AGENT_ACTION_TYPES: AutomationAction['type'][] = ['transitionStatus', 'assignTo', 'addComment', 'setField', 'readRepoFile', 'writeRepoFile'];
+  const EVENT_TRIGGER_OPTIONS: EventType[] = [
+    'issue.created', 'issue.statusChanged', 'issue.resolved', 'issue.reopened', 'issue.assigneesChanged',
+    'issue.priorityChanged', 'issue.labelsChanged', 'issue.dueDateChanged', 'comment.created', 'comment.mentioned', 'issue.updated',
+  ];
 
   let name = initial.name;
   let description = initial.description;
+  let runtime = initial.runtime;
   let model = initial.model;
   let eventFilter = [...initial.eventFilter];
   let allowedActionTypes = [...initial.allowedActionTypes];
@@ -55,7 +62,11 @@
     return budget;
   }
 
-  $: valid = name.trim() && description.trim() && allowedActionTypes.length > 0 && eventFilter.length > 0 && (approvalMode !== 'requireApprovalFor' || requireApprovalActionTypes.length > 0);
+  // With exactly one registered runtime, there's no real choice — lock to it so nothing ever
+  // asks the user to type or pick an id with only one valid answer.
+  $: if (availableRuntimes.length === 1 && runtime !== availableRuntimes[0]) runtime = availableRuntimes[0];
+
+  $: valid = name.trim() && description.trim() && runtime.trim() && allowedActionTypes.length > 0 && eventFilter.length > 0 && (approvalMode !== 'requireApprovalFor' || requireApprovalActionTypes.length > 0);
 
   async function submit() {
     if (!valid || submitting) return;
@@ -64,6 +75,7 @@
       await onSubmit({
         name: name.trim(),
         description: description.trim(),
+        runtime: runtime.trim(),
         model,
         eventFilter,
         allowedActionTypes,
@@ -80,11 +92,17 @@
 <form class="agent-form" on:submit|preventDefault={submit}>
   <input type="text" placeholder="Agent name" bind:value={name} />
   <input type="text" placeholder="Instructions — what should this agent do with a ticket?" bind:value={description} />
+  {#if availableRuntimes.length > 1}
+    <label class="agent-form-label">
+      Runtime
+      <select bind:value={runtime}>
+        {#each availableRuntimes as r}<option value={r}>{r}</option>{/each}
+      </select>
+    </label>
+  {/if}
   <label class="agent-form-label">
     Model
-    <select bind:value={model}>
-      {#each AGENT_MODELS as m}<option value={m}>{m}</option>{/each}
-    </select>
+    <input type="text" placeholder="llama3.1" list="agent-model-suggestions" bind:value={model} />
   </label>
 
   <span class="agent-form-label">Reacts to</span>
@@ -150,6 +168,9 @@
     <button type="submit" class="btn primary" disabled={!valid || submitting}>{submitting ? '…' : submitLabel}</button>
     {#if onCancel}<button type="button" class="btn ghost" on:click={onCancel}>Cancel</button>{/if}
   </div>
+  <datalist id="agent-model-suggestions">
+    {#each AGENT_MODELS as m}<option value={m}></option>{/each}
+  </datalist>
 </form>
 
 <style>
@@ -162,7 +183,7 @@
     display: flex; flex-direction: column; gap: 4px; font-size: 10.5px; font-weight: 600;
     letter-spacing: .04em; text-transform: uppercase; color: var(--text-3); margin-top: 4px;
   }
-  .agent-form-label select {
+  .agent-form-label select, .agent-form-label input {
     font: inherit; font-size: 12.5px; text-transform: none; font-weight: 400; color: var(--text);
     background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px;
   }

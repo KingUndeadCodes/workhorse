@@ -2,13 +2,15 @@ import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import type { Agent, AgentApprovalPolicy, AgentBudget, AutomationAction, EventType } from '../domain';
 import type { AuthVariables } from '../auth/middleware';
-import { agentRepo, agentRunRepo, engine, userRepo, workspaceRepo } from '../container';
+import { agentRepo, agentRunRepo, agentRuntimes, engine, userRepo, workspaceRepo } from '../container';
 
 /** CRUD for agent definitions, plus manual triggering and run approval — execution lives in {@link EventEngine}. */
 export const agentsRouter = new Hono<{ Variables: AuthVariables }>();
 
 agentsRouter.get('/agents', async (c) => c.json(await agentRepo.list()));
 agentsRouter.get('/agent-runs', async (c) => c.json(await agentRunRepo.list()));
+/** GET /api/agent-runtimes — ids of every {@link AgentRuntime} actually registered in container.ts, so the client can offer a choice (or skip asking entirely) instead of hardcoding a provider name it has no way to know is real. */
+agentsRouter.get('/agent-runtimes', (c) => c.json(agentRuntimes.list().map((r) => r.id)));
 
 /**
  * POST /api/agents — registers a new agent. Since an Agent is a User (`kind: 'agent'`)
@@ -20,6 +22,7 @@ agentsRouter.post('/agents', async (c) => {
   const body = await c.req.json<{
     name: string;
     description?: string;
+    runtime?: string;
     model?: string;
     eventFilter: EventType[] | '*';
     allowedActionTypes: AutomationAction['type'][];
@@ -40,7 +43,8 @@ agentsRouter.post('/agents', async (c) => {
     name: body.name.trim(),
     description: body.description,
     enabled: true,
-    model: body.model?.trim() || 'claude-haiku-4-5',
+    runtime: body.runtime?.trim() || 'ollama',
+    model: body.model?.trim() || 'llama3.1',
     eventFilter: body.eventFilter,
     allowedActionTypes: body.allowedActionTypes,
     approvalPolicy: body.approvalPolicy,

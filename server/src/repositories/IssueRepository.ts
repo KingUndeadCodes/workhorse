@@ -307,4 +307,20 @@ export class IssueRepository {
     const body = { ...existingBody, plainText };
     await this.db.updateTable('comments').set({ body: JSON.stringify(body), edited_at: editedAt }).where('id', '=', commentId).execute();
   }
+
+  /**
+   * Deletes a comment and every reply beneath it, to any depth — the whole subtree, not just
+   * the one row. Collected breadth-first in application code rather than a recursive SQL query
+   * (sql.js's SQLite build doesn't reliably support `WITH RECURSIVE` through Kysely here), then
+   * removed in one statement. The route calling this (DELETE /issues/:issueId/comments/:id)
+   * confirms with the user client-side first — this method itself doesn't ask.
+   */
+  async deleteComment(commentId: string): Promise<void> {
+    const toDelete = [commentId];
+    for (let i = 0; i < toDelete.length; i++) {
+      const children = await this.db.selectFrom('comments').select('id').where('parent_comment_id', '=', toDelete[i]).execute();
+      toDelete.push(...children.map((c) => c.id));
+    }
+    await this.db.deleteFrom('comments').where('id', 'in', toDelete).execute();
+  }
 }

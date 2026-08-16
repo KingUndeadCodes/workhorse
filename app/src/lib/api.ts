@@ -152,6 +152,9 @@ export function postComment(issueId: string, body: string, parentCommentId?: str
 export function updateComment(issueId: string, commentId: string, body: string): Promise<{ comment: Comment; event: EventEnvelope }> {
   return patch(`/issues/${issueId}/comments/${commentId}`, { body });
 }
+export function deleteComment(issueId: string, commentId: string): Promise<{ event: EventEnvelope }> {
+  return del(`/issues/${issueId}/comments/${commentId}`);
+}
 
 export function addIssueLink(issueId: string, type: IssueLinkType, targetIssueId: string): Promise<{ link: IssueLink; event: EventEnvelope }> {
   return post(`/issues/${issueId}/links`, { type, targetIssueId });
@@ -268,6 +271,7 @@ export function deleteAutomationRule(id: string): Promise<{ ok: true }> {
 export function createAgent(agent: {
   name: string;
   description?: string;
+  runtime?: string;
   model?: string;
   eventFilter: EventType[] | '*';
   allowedActionTypes: AutomationAction['type'][];
@@ -287,6 +291,10 @@ export function approveAgentRun(runId: string): Promise<{ run: AgentRun }> {
 }
 export function rejectAgentRun(runId: string): Promise<{ run: AgentRun }> {
   return post(`/agent-runs/${runId}/reject`, {});
+}
+/** Ids of every AgentRuntime actually registered on the server — lets the UI offer a real choice (or skip asking when there's only one) instead of hardcoding a provider name. */
+export function listAgentRuntimes(): Promise<string[]> {
+  return get('/agent-runtimes');
 }
 
 // ---- Webhooks ---------------------------------------------------------------
@@ -315,10 +323,14 @@ export function updateProject(id: string, changes: Partial<Pick<Project, 'name' 
 
 // ---- Git Integration ----------------------------------------------------------
 
+/** Ids of every GitProvider actually registered on the server — lets the UI tell upfront whether linking a repo can work at all. */
+export function listGitProviders(): Promise<string[]> {
+  return get('/git-providers');
+}
 export function getGitRepoLink(projectId: string): Promise<GitRepoLinkPublic | null> {
   return get(`/projects/${projectId}/git-repo-link`);
 }
-export function linkGitRepo(projectId: string, body: { owner: string; repo: string; defaultBranch?: string; token: string }): Promise<GitRepoLinkPublic> {
+export function linkGitRepo(projectId: string, body: { provider: string; owner: string; repo: string; defaultBranch?: string; token: string }): Promise<GitRepoLinkPublic> {
   return post(`/projects/${projectId}/git-repo-link`, body);
 }
 export function unlinkGitRepo(projectId: string): Promise<{ ok: true }> {

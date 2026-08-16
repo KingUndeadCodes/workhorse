@@ -27,7 +27,16 @@ export interface Agent extends EventSubscription {
   name: string;
   description?: string;
   enabled: boolean;
-  /** Anthropic model id used for this agent's decision-making, e.g. `claude-haiku-4-5`. */
+  /**
+   * Which {@link AgentRuntime} (server/src/services/AgentRuntime.ts) executes this agent's
+   * decision-making — an id that must match a runtime registered in container.ts, same
+   * relationship `GitRepoLink.provider` has to `GitProvider`. Defaults to `'ollama'`, the one
+   * runtime this app ships (a local Ollama server — no hosted-provider dependency), at the
+   * mapping layer for agents predating this field. A hosted provider like Anthropic is meant
+   * to arrive later as a third-party runtime, not something this app bundles.
+   */
+  runtime: string;
+  /** Model id passed to the resolved runtime, e.g. `llama3.1` for the `'ollama'` runtime. */
   model: string;
   /**
    * Bounds what the agent may ever propose to the same action vocabulary `AutomationRule`

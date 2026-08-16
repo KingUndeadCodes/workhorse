@@ -21,7 +21,17 @@ export type AutomationAction =
   | { type: 'transitionStatus'; toStatusId: StatusId }
   | { type: 'assignTo'; userId: UserId }
   | { type: 'addComment'; body: string }
-  | { type: 'setField'; fieldId: FieldId; value: unknown };
+  | { type: 'setField'; fieldId: FieldId; value: unknown }
+  /** Reads one file from the project's linked repo's default branch. Requires a registered `GitProvider` — see server/src/services/GitProvider.ts — same hard-gate as any other git action; no provider means this action always fails. */
+  | { type: 'readRepoFile'; path: string }
+  /**
+   * Writes (creates or overwrites) one file, committed to `branchName` — never to the
+   * repo's default/working branch directly. If `branchName` doesn't exist yet it's created
+   * first, off the default branch, the same way a manually-created issue branch is. This is
+   * the "write access" half of agent file access: a human reviews and merges the branch
+   * themselves: nothing here ever touches the working tree a person has checked out.
+   */
+  | { type: 'writeRepoFile'; path: string; content: string; branchName: string; commitMessage?: string };
 
 /**
  * A no-code rule: what it hears is {@link EventSubscription} — the listening protocol

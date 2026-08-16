@@ -8,4 +8,5 @@ export * from '../../domain/index';
 // drops them at runtime under tsx's loader, so they're re-exported explicitly instead.
 export { STORY_POINT_VALUES } from '../../domain/issue';
 export { slugifyBranchName } from '../../domain/integrations';
+export { parseMentionedUserIds } from '../../domain/mentions';
 export { PROJECT_COLORS, DEFAULT_FEATURE_FLAGS } from '../../domain/project';

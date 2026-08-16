@@ -25,7 +25,10 @@
   }
   settingsJumpTab.set(null);
 
-  const commonEventTypes: EventType[] = ['issue.created', 'issue.statusChanged', 'issue.assigneesChanged', 'comment.created', 'issue.updated'];
+  const commonEventTypes: EventType[] = [
+    'issue.created', 'issue.statusChanged', 'issue.resolved', 'issue.reopened', 'issue.assigneesChanged',
+    'issue.priorityChanged', 'issue.labelsChanged', 'issue.dueDateChanged', 'comment.created', 'comment.mentioned', 'issue.updated',
+  ];
 
   // ---- Labels ----
   let newLabelName = '';
@@ -85,14 +88,18 @@
   /** A condition/action mid-edit in the "add rule" form — string-valued so plain `<input>`s
    * work; converted to the domain's typed shape only when the rule is actually submitted. */
   interface DraftCondition { field: string; op: FilterOp; value: string }
-  interface DraftAction { type: AutomationAction['type']; toStatusId: string; userId: string; body: string; fieldId: string; value: string }
+  interface DraftAction {
+    type: AutomationAction['type'];
+    toStatusId: string; userId: string; body: string; fieldId: string; value: string;
+    path: string; content: string; branchName: string; commitMessage: string;
+  }
 
   const CONDITION_FIELDS = ['statusId', 'priority', 'issueTypeId', 'assigneeIds', 'labelIds'];
   const FILTER_OPS: FilterOp[] = ['=', '!=', 'in', 'notIn', '>', '<', 'contains', 'isEmpty'];
-  const AUTOMATION_ACTION_TYPES: AutomationAction['type'][] = ['transitionStatus', 'assignTo', 'addComment', 'setField'];
+  const AUTOMATION_ACTION_TYPES: AutomationAction['type'][] = ['transitionStatus', 'assignTo', 'addComment', 'setField', 'readRepoFile', 'writeRepoFile'];
 
   function blankAction(): DraftAction {
-    return { type: 'addComment', toStatusId: '', userId: '', body: '', fieldId: '', value: '' };
+    return { type: 'addComment', toStatusId: '', userId: '', body: '', fieldId: '', value: '', path: '', content: '', branchName: '', commitMessage: '' };
   }
 
   let newRuleName = '';
@@ -122,6 +129,8 @@
       case 'assignTo': return !!a.userId;
       case 'addComment': return !!a.body.trim();
       case 'setField': return !!a.fieldId && !!a.value.trim();
+      case 'readRepoFile': return !!a.path.trim();
+      case 'writeRepoFile': return !!a.path.trim() && !!a.content.trim() && !!a.branchName.trim();
     }
   }
 
@@ -146,6 +155,9 @@
       case 'assignTo': return { type: 'assignTo', userId: a.userId };
       case 'addComment': return { type: 'addComment', body: a.body.trim() };
       case 'setField': return { type: 'setField', fieldId: a.fieldId, value: a.value };
+      case 'readRepoFile': return { type: 'readRepoFile', path: a.path.trim() };
+      case 'writeRepoFile':
+        return { type: 'writeRepoFile', path: a.path.trim(), content: a.content, branchName: a.branchName.trim(), commitMessage: a.commitMessage.trim() || undefined };
     }
   }
 
@@ -313,6 +325,13 @@
                 {#each $fieldDefinitions as f (f.id)}<option value={f.id}>{f.name}</option>{/each}
               </select>
               <input type="text" placeholder="value" bind:value={action.value} />
+            {:else if action.type === 'readRepoFile'}
+              <input type="text" placeholder="path/to/file.ts" bind:value={action.path} />
+            {:else if action.type === 'writeRepoFile'}
+              <input type="text" placeholder="path/to/file.ts" bind:value={action.path} />
+              <input type="text" placeholder="branch name" bind:value={action.branchName} />
+              <input type="text" placeholder="file content" bind:value={action.content} />
+              <input type="text" placeholder="commit message (optional)" bind:value={action.commitMessage} />
             {/if}
             {#if newRuleActions.length > 1}
               <button type="button" class="icon-btn" on:click={() => removeAction(i)}><Icon name="x" size={13} /></button>

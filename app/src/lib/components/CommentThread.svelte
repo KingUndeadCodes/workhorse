@@ -20,6 +20,7 @@
   export let onCancelReply: () => void;
   export let onSubmitReply: () => void;
   export let onEditComment: (commentId: string, body: string) => Promise<void>;
+  export let onDeleteComment: (commentId: string) => Promise<void>;
 
   $: author = users.find((u) => u.id === comment.authorId);
   $: onBehalfOf = comment.onBehalfOfUserId ? users.find((u) => u.id === comment.onBehalfOfUserId) : undefined;
@@ -31,6 +32,20 @@
   let editing = false;
   let editDraft = '';
   let submittingEdit = false;
+  let deleting = false;
+
+  async function handleDelete() {
+    if (deleting) return;
+    const hasReplies = allComments.some((c) => c.parentCommentId === comment.id);
+    const message = hasReplies ? 'Delete this comment and all its replies? This can\'t be undone.' : "Delete this comment? This can't be undone.";
+    if (!confirm(message)) return;
+    deleting = true;
+    try {
+      await onDeleteComment(comment.id);
+    } finally {
+      deleting = false;
+    }
+  }
 
   function startEdit() {
     editDraft = comment.body.plainText;
@@ -86,6 +101,7 @@
           <button class="reply-btn" on:click={() => onStartReply(comment.id)}><Icon name="reply" size={12} />Reply</button>
           {#if comment.authorId === currentUserId}
             <button class="reply-btn" on:click={startEdit}><Icon name="pencil" size={12} />Edit</button>
+            <button class="reply-btn" on:click={handleDelete} disabled={deleting}><Icon name="trash" size={12} />{deleting ? 'Deleting…' : 'Delete'}</button>
           {/if}
         </div>
       {/if}
@@ -122,6 +138,7 @@
           {onCancelReply}
           {onSubmitReply}
           {onEditComment}
+          {onDeleteComment}
         />
       {/each}
     </div>

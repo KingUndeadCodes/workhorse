@@ -20,3 +20,4 @@ export * from './agent';
 export * from './notifications';
 export * from './automation';
 export * from './integrations';
+export * from './mentions';

@@ -1,4 +1,4 @@
-import type { Issue, IssueLinkType } from './issue';
+import type { Issue, IssueLinkType, IssuePriority } from './issue';
 import type {
   AgentRunId,
   AttachmentId,
@@ -9,6 +9,7 @@ import type {
   FieldId,
   GitRepoLinkId,
   IssueId,
+  LabelId,
   LinkId,
   ProjectId,
   SprintId,
@@ -83,11 +84,27 @@ export type EventPayload =
   | { type: 'issue.deleted'; issueId: IssueId }
   /**
    * Catch-all for built-in property edits that don't warrant their own case (title,
-   * description, priority, story points, labels, components, fix versions, due date,
-   * estimates). `issue.fieldChanged` stays reserved for *custom* field values
-   * ({@link FieldValue}) — this is for the fixed {@link Issue} shape instead.
+   * description, story points, components, fix versions, estimates). `issue.fieldChanged`
+   * stays reserved for *custom* field values ({@link FieldValue}) — this is for the fixed
+   * {@link Issue} shape instead. Priority, labels, and due date used to live in here too but
+   * were pulled out below — they're common enough automation/agent triggers that being
+   * unfilterable inside a generic `changes` map defeated the point of having a typed event at
+   * all. Pull anything else out of this bucket the same way, if it turns out to matter.
    */
   | { type: 'issue.updated'; issueId: IssueId; changes: Record<string, unknown> }
+  | { type: 'issue.priorityChanged'; issueId: IssueId; fromPriority: IssuePriority; toPriority: IssuePriority }
+  | { type: 'issue.labelsChanged'; issueId: IssueId; fromLabelIds: LabelId[]; toLabelIds: LabelId[] }
+  | { type: 'issue.dueDateChanged'; issueId: IssueId; fromDueDate?: string; toDueDate?: string }
+  /**
+   * Fired alongside `issue.statusChanged` specifically when the transition crosses into or out
+   * of a `'done'`-type {@link StatusCategory} — "moved to some status" and "got resolved"
+   * are different facts, and only the second is usually what an automation/agent/webhook
+   * actually wants to react to. Both status-change call sites (routes/issues.ts's direct PATCH,
+   * and EventEngine.applyAction's `transitionStatus` case) compute this the same way — see
+   * EventEngine.ts's `resolutionTransition`.
+   */
+  | { type: 'issue.resolved'; issueId: IssueId; statusId: StatusId }
+  | { type: 'issue.reopened'; issueId: IssueId; statusId: StatusId }
   | { type: 'issue.worklogAdded'; issueId: IssueId; worklogId: WorklogId; authorId: UserId; timeSpentSeconds: number; note?: string }
   | {
       type: 'issue.attachmentAdded';
@@ -101,6 +118,17 @@ export type EventPayload =
     }
   | { type: 'comment.created'; commentId: CommentId; issueId: IssueId; authorId: UserId; onBehalfOfUserId?: UserId; body: string; parentCommentId?: CommentId }
   | { type: 'comment.edited'; commentId: CommentId; issueId: IssueId; body: string }
+  | { type: 'comment.deleted'; commentId: CommentId; issueId: IssueId }
+  /**
+   * One of these is emitted per user/agent "@Full Name" mentioned in a comment's body — a
+   * comment mentioning three people produces one `comment.created` plus three of these,
+   * rather than a single event carrying a list, so an agent/automation/webhook subscribed to
+   * this type only ever reacts to mentions of it specifically instead of filtering a list
+   * itself. Detected the same way the editor highlights mentions (see
+   * domain/mentions.ts's `parseMentionedUserIds`) — matched against display names, not stored
+   * mention ids. Never fired for the comment's own author self-mentioning.
+   */
+  | { type: 'comment.mentioned'; commentId: CommentId; issueId: IssueId; authorId: UserId; mentionedUserId: UserId; body: string }
   | { type: 'sprint.started'; sprintId: SprintId }
   | { type: 'sprint.completed'; sprintId: SprintId }
   | { type: 'project.created'; projectId: ProjectId }
@@ -109,6 +137,9 @@ export type EventPayload =
   | { type: 'project.gitRepoUnlinked'; projectId: ProjectId; gitRepoLinkId: GitRepoLinkId }
   | { type: 'issue.branchCreated'; issueId: IssueId; branchId: BranchId; gitRepoLinkId: GitRepoLinkId; name: string; url: string }
   | { type: 'issue.branchDeleted'; issueId: IssueId; branchId: BranchId }
+  /** Notification-only — carries the read content so a webhook/automation can see what an agent looked at, without needing to re-read it itself. */
+  | { type: 'issue.repoFileRead'; issueId: IssueId; gitRepoLinkId: GitRepoLinkId; path: string; content: string }
+  | { type: 'issue.repoFileWritten'; issueId: IssueId; gitRepoLinkId: GitRepoLinkId; path: string; branchName: string; url: string }
   /**
    * Automation actions themselves emit events, carrying the event that triggered them —
    * so a chain of automations reacting to each other stays traceable instead of opaque,
