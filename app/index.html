@@ -5,6 +5,14 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Workhorse — Board</title>
+    <!-- UI font is configurable via app/ui.config.json ("font" — see that file's comments and
+         vite.config.ts's uiConfigHtmlPlugin, which substitutes the {{...}} placeholders below.
+         Falls back to Plex (src/app.css's @font-face block) if the configured family fails to
+         load. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="{{UI_FONT_GOOGLE_URL}}" rel="stylesheet" />
+    <style>:root { --font-sans: '{{UI_FONT_FAMILY}}', 'Plex', -apple-system, 'Segoe UI', sans-serif; }</style>
   </head>
   <body>
     <div id="app"></div>

@@ -6,6 +6,10 @@
 @font-face { font-family: 'Mono'; font-weight: 500; font-style: normal; src: url(/fonts/JetBrainsMono-500.woff2) format('woff2'); font-display: swap; }
 @font-face { font-family: 'Mono'; font-weight: 600; font-style: normal; src: url(/fonts/JetBrainsMono-600.woff2) format('woff2'); font-display: swap; }
 
+/* --font-sans itself is declared in index.html's inline <style>, driven by app/ui.config.json's
+   "font" — not here, so that a later-injected stylesheet in dev can't win the cascade and
+   silently override the configured font. Its value already chains down to 'Plex' as the
+   fallback, so nothing here needs to repeat that. */
 :root {
   --bg: #F2F4F7;
   --surface: #FFFFFF;
@@ -54,7 +58,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; }
 body {
-  font-family: 'Plex', -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--font-sans);
   background: var(--bg);
   color: var(--text);
   font-size: 13px;
