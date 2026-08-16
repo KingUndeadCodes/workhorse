@@ -5,14 +5,29 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Workhorse — Board</title>
-    <!-- UI font is configurable via app/ui.config.json ("font" — see that file's comments and
-         vite.config.ts's uiConfigHtmlPlugin, which substitutes the {{...}} placeholders below.
-         Falls back to Plex (src/app.css's @font-face block) if the configured family fails to
-         load. -->
+    <!-- UI font + color scheme are configurable via app/ui.config.json ("font" and
+         "activeColorScheme"/"colorSchemes") — see that file's comments and vite.config.ts's
+         uiConfigHtmlPlugin, which substitutes the {{...}} placeholders below. Deliberately
+         declared here, not in src/app.css: a later-injected stylesheet in dev can otherwise
+         win the cascade and silently override these (bit us once already with the font).
+         Falls back to Plex if the configured font fails to load; the color values have no
+         fallback since every key is always present.
+
+         Three layers, in increasing precedence: (1) :root always carries the light values as
+         the baseline; (2) the prefers-color-scheme media query applies dark if the OS/browser
+         wants it; (3) an explicit data-theme="light"/"dark" on <html> — set by the Appearance
+         toggle in Settings, via src/lib/stores/theme.ts — always wins, via :not([data-theme])
+         guarding the media query so a manual "light" choice isn't clobbered by a dark system
+         preference, and an explicit [data-theme="dark"] rule that applies regardless of the
+         system preference either way. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="{{UI_FONT_GOOGLE_URL}}" rel="stylesheet" />
-    <style>:root { --font-sans: '{{UI_FONT_FAMILY}}', 'Plex', -apple-system, 'Segoe UI', sans-serif; }</style>
+    <style>
+      :root { --font-sans: '{{UI_FONT_FAMILY}}', 'Plex', -apple-system, 'Segoe UI', sans-serif; {{UI_COLOR_SCHEME_LIGHT}} }
+      @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { {{UI_COLOR_SCHEME_DARK}} } }
+      :root[data-theme="dark"] { {{UI_COLOR_SCHEME_DARK}} }
+    </style>
   </head>
   <body>
     <div id="app"></div>

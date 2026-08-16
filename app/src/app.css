@@ -6,53 +6,51 @@
 @font-face { font-family: 'Mono'; font-weight: 500; font-style: normal; src: url(/fonts/JetBrainsMono-500.woff2) format('woff2'); font-display: swap; }
 @font-face { font-family: 'Mono'; font-weight: 600; font-style: normal; src: url(/fonts/JetBrainsMono-600.woff2) format('woff2'); font-display: swap; }
 
-/* --font-sans itself is declared in index.html's inline <style>, driven by app/ui.config.json's
-   "font" — not here, so that a later-injected stylesheet in dev can't win the cascade and
-   silently override the configured font. Its value already chains down to 'Plex' as the
-   fallback, so nothing here needs to repeat that. */
+/* --font-sans and every --bg/--surface/--border/--text/--accent/--sidebar-* token are declared
+   in index.html's inline <style>, driven by app/ui.config.json's "font" and the named scheme
+   selected by "activeColorScheme" (currently "neo" -> the "neolight"/"neodark" entries in
+   "colorSchemes") — not here, so that a later-injected stylesheet in dev can't win the cascade
+   and silently override the configured values (this bit us once already, with the font). What's
+   left below is the semantic/status palette (success/warning/critical/info), the epic-grouping
+   colors, and agent-accent/shadow — not part of the swappable brand scheme, so they stay fixed
+   here. */
 :root {
-  --bg: #F2F4F7;
-  --surface: #FFFFFF;
-  --surface-2: #F8F9FB;
-  --surface-sunken: #EAEDF2;
-  --border: #DEE1E8;
-  --border-strong: #C7CBD6;
-  --text: #1A1D29;
-  --text-2: #5B6072;
-  --text-3: #8A8FA3;
-  --accent: #137A6E;
-  --accent-strong: #0E5C53;
-  --accent-soft: #E1F1EE;
-  --accent-on: #FFFFFF;
   --success: #2E9E58; --success-soft: #E3F5E9;
   --warning: #B9791A; --warning-soft: #FBF0DD;
   --critical: #D6455A; --critical-soft: #FBE6EA;
   --info: #3B7DC4; --info-soft: #E6EFFA;
-  --epic-a: #137A6E; --epic-b: #6E5DC6; --epic-c: #3E6FB0;
+  /* epic-b was a purple (#6E5DC6) — replaced with a muted rose so no epic-color slot falls in
+     the purple family (see docs/ui-style-guide.md rule 2). */
+  --epic-a: #137A6E; --epic-b: #B5527A; --epic-c: #1A3D64;
   --agent-accent: #CC785C; --agent-accent-soft: rgba(204,120,92,.14);
-  --shadow: 0 1px 2px rgba(20,24,34,.04), 0 8px 24px rgba(20,24,34,.06);
-  --shadow-lg: 0 12px 32px rgba(20,24,34,.14), 0 2px 8px rgba(20,24,34,.08);
-  --sidebar-bg: #171922;
-  --sidebar-text: #C7CAD6;
-  --sidebar-text-dim: #7B7F92;
-  --sidebar-border: #272A36;
-  --sidebar-active-bg: #20242F;
+  --shadow: 0 1px 2px rgba(12,43,78,.04), 0 8px 24px rgba(12,43,78,.06);
+  --shadow-lg: 0 12px 32px rgba(12,43,78,.14), 0 2px 8px rgba(12,43,78,.08);
 }
 
+/* Same three-layer precedence as index.html's inline <style> (media query, then an explicit
+   data-theme override that wins either direction) — see that file's comment for why. Split into
+   two rules rather than one shared selector so the light-mode values above stay the fallback in
+   both cases without repeating them. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #12141B; --surface: #1A1D26; --surface-2: #1F222C; --surface-sunken: #171922;
-    --border: #2B2F3B; --border-strong: #3A3F4E;
-    --text: #E7E8ED; --text-2: #9CA0B4; --text-3: #6B7086;
-    --accent: #3FCBB8; --accent-strong: #7FE0D1; --accent-soft: rgba(63,203,184,.14); --accent-on: #0A1512;
+  :root:not([data-theme="light"]) {
     --success: #4FBE7C; --success-soft: rgba(79,190,124,.15);
     --warning: #E0A53D; --warning-soft: rgba(224,165,61,.15);
     --critical: #E8677C; --critical-soft: rgba(232,103,124,.15);
     --info: #6FA8E4; --info-soft: rgba(111,168,228,.15);
-    --epic-a: #3FCBB8; --epic-b: #9C8AEE; --epic-c: #6FA8E4;
+    --epic-a: #3FCBB8; --epic-b: #D97AA0; --epic-c: #6FA8E4;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
     --shadow-lg: 0 16px 40px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4);
   }
+}
+
+:root[data-theme="dark"] {
+  --success: #4FBE7C; --success-soft: rgba(79,190,124,.15);
+  --warning: #E0A53D; --warning-soft: rgba(224,165,61,.15);
+  --critical: #E8677C; --critical-soft: rgba(232,103,124,.15);
+  --info: #6FA8E4; --info-soft: rgba(111,168,228,.15);
+  --epic-a: #3FCBB8; --epic-b: #D97AA0; --epic-c: #6FA8E4;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  --shadow-lg: 0 16px 40px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4);
 }
 
 * { box-sizing: border-box; }

@@ -12,11 +12,12 @@
     webhookSubscriptions,
     workflow,
   } from '../stores/workspace';
+  import { theme } from '../stores/theme';
   import * as api from '../api';
   import { describeAutomationAction, splitHumansAndAgents } from '../util';
   import type { AutomationAction, AutomationCondition, EventType, FilterOp } from '$domain';
 
-  const tabs = ['Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Webhooks'] as const;
+  const tabs = ['Appearance', 'Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Webhooks'] as const;
   let activeTab: (typeof tabs)[number] = 'Labels';
 
   // Lets the TopBar "New…" menu open Settings already on the relevant tab (e.g. "New Label").
@@ -211,7 +212,27 @@
   </nav>
 
   <div class="panel">
-    {#if activeTab === 'Labels'}
+    {#if activeTab === 'Appearance'}
+      <div class="appearance-row">
+        <div class="appearance-copy">
+          <span class="row-name">Theme</span>
+          <span class="row-hint">Switches between light and dark for this browser. Defaults to your system setting until you choose one here.</span>
+        </div>
+        <button
+          type="button"
+          class="theme-slider"
+          class:dark={$theme === 'dark'}
+          role="switch"
+          aria-checked={$theme === 'dark'}
+          aria-label="Toggle dark mode"
+          on:click={() => theme.set($theme === 'dark' ? 'light' : 'dark')}
+        >
+          <Icon name="sun" size={12} />
+          <Icon name="moon" size={12} />
+          <span class="theme-slider-knob"></span>
+        </button>
+      </div>
+    {:else if activeTab === 'Labels'}
       <div class="list">
         {#each $labels as l (l.id)}
           <div class="row"><span class="dot" style="background:{l.color}"></span><span class="row-name">{l.name}</span><button class="icon-btn" on:click={() => removeLabel(l.id)}><Icon name="trash" size={13} /></button></div>
@@ -387,6 +408,24 @@
   .row-name { color: var(--text); font-weight: 500; }
   .row-tag { color: var(--text-3); font-size: 11.5px; flex: 1; }
   .dot { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 8px; }
+  .appearance-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 460px;
+    padding: 12px 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px;
+  }
+  .appearance-copy { display: flex; flex-direction: column; gap: 3px; }
+  .row-hint { color: var(--text-3); font-size: 11.5px; max-width: 320px; }
+  .theme-slider {
+    position: relative; flex: 0 0 auto; width: 52px; height: 28px; border-radius: 999px;
+    background: var(--surface-sunken); border: 1px solid var(--border-strong);
+    display: flex; align-items: center; justify-content: space-between; padding: 0 6px;
+    color: var(--text-3); transition: background .15s ease;
+  }
+  .theme-slider.dark { background: var(--accent-soft); color: var(--accent-strong); }
+  .theme-slider-knob {
+    position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--surface); box-shadow: var(--shadow); transition: transform .15s ease;
+  }
+  .theme-slider.dark .theme-slider-knob { transform: translateX(24px); background: var(--accent); }
   .icon-btn { color: var(--text-3); padding: 4px; border-radius: 6px; margin-left: auto; }
   .icon-btn:hover { background: var(--surface); color: var(--critical); }
   .text-btn { font-size: 12px; font-weight: 600; color: var(--accent-strong); }

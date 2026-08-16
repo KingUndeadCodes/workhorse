@@ -1,6 +1,11 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import { currentView, currentProjectId, featureFlags, mobileNavOpen, projects, selectedIssueId, switchProject, createNewProject, workspace, users } from '../stores/workspace';
+  import { splitHumansAndAgents } from '../util';
+
+  // AI agents are User rows (kind: 'agent') so they can be assigned/mentioned like anyone else,
+  // but they aren't people — the workspace's member count should only reflect humans.
+  $: memberCount = splitHumansAndAgents($users).humans.length;
 
   const allNavItems: { icon: string; label: string; view: 'board' | 'backlog' }[] = [
     { icon: 'list', label: 'Backlog', view: 'backlog' },
@@ -59,7 +64,7 @@
     <div class="workspace-dot"></div>
     <div class="workspace-text">
       <div class="workspace-name">{$workspace?.name ?? ''}</div>
-      <div class="workspace-sub">{$users.length} {$users.length === 1 ? 'member' : 'members'}</div>
+      <div class="workspace-sub">{memberCount} {memberCount === 1 ? 'member' : 'members'}</div>
     </div>
   </button>
 
@@ -115,7 +120,7 @@
     padding: 18px 18px 16px;
     font-weight: 700;
     font-size: 15px;
-    color: #F2F3F6;
+    color: var(--sidebar-text);
   }
   .brand :global(svg) { color: var(--accent); }
   .workspace {
@@ -132,16 +137,16 @@
   }
   .workspace:hover, .workspace.active { border-color: var(--accent); }
   .workspace-text { overflow: hidden; }
-  .workspace-dot { width: 18px; height: 18px; border-radius: 5px; background: linear-gradient(140deg, var(--accent), #0C4A43); flex: 0 0 18px; }
-  .workspace-name { font-size: 12.5px; font-weight: 600; color: #EDEEF2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .workspace-dot { width: 18px; height: 18px; border-radius: 5px; background: linear-gradient(140deg, var(--accent), var(--accent-strong)); flex: 0 0 18px; }
+  .workspace-name { font-size: 12.5px; font-weight: 600; color: var(--sidebar-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .workspace-sub { font-size: 11px; color: var(--sidebar-text-dim); }
   .nav { padding: 4px 10px; display: flex; flex-direction: column; gap: 1px; }
   .nav-item {
     display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 7px;
     font-size: 12.5px; font-weight: 500; color: var(--sidebar-text); width: 100%; text-align: left;
   }
-  .nav-item:hover { background: var(--sidebar-active-bg); color: #F1F2F5; }
-  .nav-item.active { background: rgba(63, 203, 184, .16); color: #7FE0D1; }
+  .nav-item:hover { background: var(--sidebar-active-bg); color: var(--sidebar-text); }
+  .nav-item.active { background: var(--sidebar-active-bg); color: var(--sidebar-text); font-weight: 600; }
   .section-label {
     font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
     color: var(--sidebar-text-dim); padding: 16px 14px 6px;
@@ -151,13 +156,13 @@
     color: var(--sidebar-text); width: 100%; text-align: left; background: none; border: none;
   }
   .proj-item:hover { background: var(--sidebar-active-bg); }
-  .proj-item.active { background: var(--sidebar-active-bg); color: #F1F2F5; font-weight: 600; }
+  .proj-item.active { background: var(--sidebar-active-bg); color: var(--sidebar-text); font-weight: 600; }
   .proj-dot { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 8px; }
   .proj-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .proj-add { color: var(--sidebar-text-dim); }
   .proj-new-form { display: flex; flex-direction: column; gap: 6px; padding: 6px 10px; }
   .proj-new-input {
-    font: inherit; font-size: 12px; color: #F1F2F5; background: var(--sidebar-active-bg); border: 1px solid var(--sidebar-border);
+    font: inherit; font-size: 12px; color: var(--sidebar-text); background: var(--sidebar-active-bg); border: 1px solid var(--sidebar-border);
     border-radius: 6px; padding: 6px 8px;
   }
   .proj-new-actions { display: flex; gap: 6px; }

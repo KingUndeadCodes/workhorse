@@ -6,7 +6,9 @@ import type { ComponentId, ProjectId, UserId, VersionId, WorkflowId, WorkspaceId
  * server (default assignment) and client (rendering + the swatch picker) so both agree on
  * the same set of options.
  */
-export const PROJECT_COLORS = ['#137A6E', '#6E5DC6', '#3E6FB0', '#B9791A', '#2E9E58', '#CC785C', '#946B3A', '#8A8FA3'] as const;
+/* #6E5DC6 (purple) replaced with #B5527A (rose) — see docs/ui-style-guide.md rule 2 and
+   app/src/app.css's --epic-b, which got the same swap for the same reason. */
+export const PROJECT_COLORS = ['#137A6E', '#B5527A', '#3E6FB0', '#B9791A', '#2E9E58', '#CC785C', '#946B3A', '#8A8FA3'] as const;
 
 /**
  * Which optional pieces of process are turned on for a project — a personal/small-group
