@@ -24,6 +24,7 @@ agentsRouter.post('/agents', async (c) => {
     description?: string;
     runtime?: string;
     model?: string;
+    contextScope?: Agent['contextScope'];
     eventFilter: EventType[] | '*';
     allowedActionTypes: AutomationAction['type'][];
     approvalPolicy: AgentApprovalPolicy;
@@ -45,6 +46,7 @@ agentsRouter.post('/agents', async (c) => {
     enabled: true,
     runtime: body.runtime?.trim() || 'ollama',
     model: body.model?.trim() || 'llama3.1',
+    contextScope: body.contextScope || 'ticket',
     eventFilter: body.eventFilter,
     allowedActionTypes: body.allowedActionTypes,
     approvalPolicy: body.approvalPolicy,

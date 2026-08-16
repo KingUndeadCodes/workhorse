@@ -523,6 +523,14 @@ export class EventEngine {
       ? allPriorRuns.filter((r) => threadRootCommentId(getEventById(r.triggeringEventId), allComments) === threadRootId)
       : allPriorRuns;
 
+    const scopeRank: Record<Agent['contextScope'], number> = { thread: 0, ticket: 1, project: 2, workspace: 3 };
+    const rank = scopeRank[agent.contextScope] ?? scopeRank.ticket;
+    const includeTicket = rank >= scopeRank.ticket;
+    const [projectContext, workspaceContext] = await Promise.all([
+      rank >= scopeRank.project ? this.buildProjectContext(issue) : Promise.resolve(''),
+      rank >= scopeRank.workspace ? this.buildWorkspaceContext() : Promise.resolve(''),
+    ]);
+
     const system = [
       `You are "${agent.name}", an AI agent embedded in an issue tracker. ${agent.description ?? ''}`.trim(),
       "You're being triggered by one event on the issue below, but you stay attached to this issue for its whole life — " +
@@ -544,17 +552,19 @@ export class EventEngine {
       .join('\n');
 
     const userMessage = [
-      `Issue: ${issue.title}`,
-      issue.description ? `Description: ${issue.description}` : undefined,
-      `Current status: ${issue.statusId}`,
-      `Type: ${issue.issueTypeId}`,
-      `Assignees: ${issue.assigneeIds.length ? issue.assigneeIds.join(', ') : 'unassigned'}`,
+      includeTicket ? `Issue: ${issue.title}` : `Issue: ${issue.id}`,
+      includeTicket && issue.description ? `Description: ${issue.description}` : undefined,
+      includeTicket ? `Current status: ${issue.statusId}` : undefined,
+      includeTicket ? `Type: ${issue.issueTypeId}` : undefined,
+      includeTicket ? `Assignees: ${issue.assigneeIds.length ? issue.assigneeIds.join(', ') : 'unassigned'}` : undefined,
       recentComments
         ? `${threadRootId ? 'This comment thread' : 'Recent comments'} (oldest first):\n${recentComments}`
         : 'No comments yet.',
       recentTurns
         ? `Your prior turns ${threadRootId ? 'in this thread' : 'on this issue'} (oldest first):\n${recentTurns}`
         : "You haven't acted on this issue before.",
+      projectContext || undefined,
+      workspaceContext || undefined,
     ]
       .filter(Boolean)
       .join('\n');
@@ -566,6 +576,45 @@ export class EventEngine {
     let rationale = decision.text;
     if (!rationale) rationale = actions.length > 0 ? `Proposed ${actions.length} action(s).` : 'No action proposed for this event.';
     return { actions, rationale, tokenUsage: decision.tokenUsage };
+  }
+
+  /**
+   * `contextScope: 'project'` layer — deliberately thin: the project name plus a bare
+   * id/title/status list of the project's other open tickets, no comment bodies or
+   * descriptions. Enough for the model to notice "there's a related ticket for this" without
+   * pulling in enough text to dilute its focus on the issue actually in front of it.
+   */
+  private async buildProjectContext(issue: Issue): Promise<string> {
+    const project = await this.projects.getProjectById(issue.projectId);
+    if (!project) return '';
+    const [workflow, categories, projectIssues] = await Promise.all([
+      this.workflow.getWorkflow(),
+      this.workflow.listStatusCategories(),
+      this.issues.list(issue.projectId),
+    ]);
+    const categoryIdByStatusId = new Map(workflow.statuses.map((s) => [s.id, s.categoryId]));
+    const typeByCategoryId = new Map(categories.map((c) => [c.id, c.type]));
+    const statusNameById = new Map(workflow.statuses.map((s) => [s.id, s.name]));
+    const openSiblings = projectIssues.filter((i) => {
+      if (i.id === issue.id) return false;
+      const type = typeByCategoryId.get(categoryIdByStatusId.get(i.statusId) ?? '');
+      return type === 'todo' || type === 'inProgress';
+    });
+    const list = openSiblings.map((i) => `  - ${i.id} "${i.title}" [${statusNameById.get(i.statusId) ?? i.statusId}]`).join('\n');
+    return [`Project: ${project.name}`, list ? `Other open tickets in this project (oldest first):\n${list}` : 'No other open tickets in this project.'].join(
+      '\n',
+    );
+  }
+
+  /**
+   * `contextScope: 'workspace'` layer — the thinnest tier: just the workspace name and which
+   * projects exist, no ticket-level detail at all. Only useful for an agent whose job spans
+   * the whole workspace (e.g. noticing a ticket belongs in a different project).
+   */
+  private async buildWorkspaceContext(): Promise<string> {
+    const [workspace, projects] = await Promise.all([this.workspace.getWorkspace(), this.projects.listProjects()]);
+    const names = projects.map((p) => p.name).join(', ') || 'none';
+    return [`Workspace: ${workspace.name}`, `Projects (${projects.length}): ${names}`].join('\n');
   }
 
   /** Creates and (unless approval is required) immediately executes an {@link AgentRun}. */

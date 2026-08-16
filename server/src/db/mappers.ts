@@ -85,6 +85,7 @@ export function rowToAgent(r: Record<string, unknown>): Agent {
     enabled: bool(r.enabled),
     runtime: (r.runtime as string | null) ?? 'ollama',
     model: (r.model as string | null) ?? 'llama3.1',
+    contextScope: (r.context_scope as Agent['contextScope'] | null) ?? 'ticket',
     eventFilter: parse(r.event_filter, '*' as const),
     allowedActionTypes: parse(r.allowed_action_types, []),
     approvalPolicy: parse(r.approval_policy, { mode: 'autoApplyAll' as const }),

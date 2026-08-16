@@ -39,6 +39,17 @@ export interface Agent extends EventSubscription {
   /** Model id passed to the resolved runtime, e.g. `llama3.1` for the `'ollama'` runtime. */
   model: string;
   /**
+   * How much surrounding context this agent's prompt is built from, each tier additive over
+   * the last: `'thread'` is just the triggering comment's own thread; `'ticket'` (the default)
+   * adds the issue's own title/description/status/type/assignees; `'project'` adds a thin list
+   * of other open/in-progress tickets in the same project (id/title/status only, no comment
+   * bodies); `'workspace'` adds the workspace name and a project-name/count summary. Defaults
+   * to `'ticket'` so existing agents (and new ones left unset) see exactly what they always
+   * have — wider scope is opt-in, since it costs more tokens and can dilute the model's focus
+   * with unrelated tickets if the agent's task doesn't need it.
+   */
+  contextScope: AgentContextScope;
+  /**
    * Bounds what the agent may ever propose to the same action vocabulary `AutomationRule`
    * uses, rather than "whatever it decides" — caps blast radius and keeps agent-caused
    * writes auditable through the same pipeline as rule-caused writes.
@@ -54,6 +65,9 @@ export interface Agent extends EventSubscription {
   ignoreSelfTriggeredEvents: boolean;
   createdAt: string;
 }
+
+/** Additive tiers of context an {@link Agent}'s prompt can be built from — see {@link Agent.contextScope}. */
+export type AgentContextScope = 'thread' | 'ticket' | 'project' | 'workspace';
 
 /** How much of an {@link Agent}'s proposed actions execute automatically vs. wait for a human. */
 export type AgentApprovalPolicy =

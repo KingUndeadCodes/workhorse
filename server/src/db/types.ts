@@ -52,6 +52,7 @@ export interface DB {
     enabled: number | null;
     model: string | null;
     runtime: string | null;
+    context_scope: string | null;
     event_filter: string | null;
     allowed_action_types: string | null;
     approval_policy: string | null;

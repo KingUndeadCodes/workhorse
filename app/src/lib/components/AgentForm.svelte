@@ -9,6 +9,7 @@
     description: string;
     runtime: string;
     model: string;
+    contextScope: Agent['contextScope'];
     eventFilter: EventType[];
     allowedActionTypes: AutomationAction['type'][];
     approvalPolicy: AgentApprovalPolicy;
@@ -23,6 +24,12 @@
   export let availableRuntimes: string[] = [];
 
   const AGENT_MODELS = ['llama3.1', 'qwen2.5', 'mistral'];
+  const CONTEXT_SCOPES: { value: Agent['contextScope']; label: string; hint: string }[] = [
+    { value: 'thread', label: 'Thread', hint: 'Just this comment thread' },
+    { value: 'ticket', label: 'Ticket', hint: 'Thread + this ticket’s own details (default)' },
+    { value: 'project', label: 'Project', hint: 'Ticket + other open tickets in this project' },
+    { value: 'workspace', label: 'Workspace', hint: 'Project + the rest of the workspace' },
+  ];
   const AGENT_ACTION_TYPES: AutomationAction['type'][] = ['transitionStatus', 'assignTo', 'addComment', 'setField', 'readRepoFile', 'writeRepoFile'];
   const EVENT_TRIGGER_OPTIONS: EventType[] = [
     'issue.created', 'issue.statusChanged', 'issue.resolved', 'issue.reopened', 'issue.assigneesChanged',
@@ -33,6 +40,7 @@
   let description = initial.description;
   let runtime = initial.runtime;
   let model = initial.model;
+  let contextScope = initial.contextScope;
   let eventFilter = [...initial.eventFilter];
   let allowedActionTypes = [...initial.allowedActionTypes];
   let approvalMode = initial.approvalPolicy.mode;
@@ -77,6 +85,7 @@
         description: description.trim(),
         runtime: runtime.trim(),
         model,
+        contextScope,
         eventFilter,
         allowedActionTypes,
         approvalPolicy: buildApprovalPolicy(),
@@ -103,6 +112,12 @@
   <label class="agent-form-label">
     Model
     <input type="text" placeholder="llama3.1" list="agent-model-suggestions" bind:value={model} />
+  </label>
+  <label class="agent-form-label">
+    Context scope
+    <select bind:value={contextScope}>
+      {#each CONTEXT_SCOPES as s}<option value={s.value}>{s.label} — {s.hint}</option>{/each}
+    </select>
   </label>
 
   <span class="agent-form-label">Reacts to</span>
