@@ -8,6 +8,7 @@ import { initDatabases, persistState } from './db/core';
 import { backfillAgentAssignments, backfillProjectColors, migrateEventsDb, migrateStateDb } from './db/schema';
 import { loadPlugins } from './plugins/loadPlugins';
 import { bootstrapDatabase } from './seed';
+import { initWebSocketServer } from './ws';
 
 const { isFreshState } = await initDatabases();
 migrateStateDb();
@@ -70,6 +71,7 @@ persistState();
 
 const port = Number(process.env.PORT ?? 8787);
 
-serve({ fetch: app.fetch, port }, (info) => {
+const httpServer = serve({ fetch: app.fetch, port }, (info) => {
   console.log(`Workhorse API listening on http://localhost:${info.port}`);
 });
+initWebSocketServer(httpServer);

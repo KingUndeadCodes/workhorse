@@ -50,6 +50,17 @@
       .slice(0, 5);
   }
 
+  /** All-time token usage across every run this agent has ever made — the same field `withinBudget` sums for `maxSpendPerDay` (server/src/services/EventEngine.ts), just not scoped to today here. */
+  function totalTokensFor(agentUserId: string): number {
+    return $agentRuns.filter((r) => r.agentUserId === agentUserId).reduce((sum, r) => sum + (r.tokenUsage ?? 0), 0);
+  }
+
+  function formatTokenCount(n: number): string {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+    return `${n}`;
+  }
+
   const STATUS_LABEL: Record<AgentRunStatus, string> = {
     pending: 'Pending',
     awaitingApproval: 'Awaiting approval',
@@ -132,6 +143,9 @@
             <span class="agent-instructions">{agent.description ?? ''}</span>
           </div>
           <span class="model-chip mono">{agent.model}</span>
+          {#if totalTokensFor(agent.userId) > 0}
+            <span class="model-chip mono" title="Total tokens used across every run">{formatTokenCount(totalTokensFor(agent.userId))} tok</span>
+          {/if}
           <label class="toggle">
             <input
               type="checkbox"
@@ -173,6 +187,7 @@
                     <span class="run-summary">
                       {run.proposedActions.length ? run.proposedActions.map((a) => describeAutomationAction(a, { workflow: $workflow, users: $users, fieldDefinitions: $fieldDefinitions })).join('; ') : '—'}
                     </span>
+                    {#if run.tokenUsage}<span class="run-tokens mono">{formatTokenCount(run.tokenUsage)} tok</span>{/if}
                     <span class="run-time">{formatRelativeDate(run.startedAt)}</span>
                   </div>
                   {#if run.failureReason}<p class="failure-reason">{run.failureReason}</p>{/if}
@@ -225,6 +240,7 @@
   .pending-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .on-behalf-of { font-size: 11.5px; color: var(--text-3); }
   .issue-key { font-size: 11px; color: var(--text-2); background: var(--surface); border-radius: 5px; padding: 1px 6px; }
+  .run-tokens { font-size: 11px; color: var(--text-3); white-space: nowrap; flex: 0 0 auto; }
   .run-time { font-size: 11px; color: var(--text-3); margin-left: auto; white-space: nowrap; }
   .rationale { font-size: 12px; color: var(--text-2); margin: 6px 0 0; }
   .proposed-actions { margin: 6px 0 0; padding-left: 18px; font-size: 12px; color: var(--text-2); }

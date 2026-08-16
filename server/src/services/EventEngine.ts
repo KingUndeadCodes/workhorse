@@ -5,6 +5,7 @@ import type {
   AgentRun,
   AutomationAction,
   AutomationCondition,
+  Comment,
   EntityRef,
   EventEnvelope,
   EventPayload,
@@ -24,6 +25,7 @@ import type { UserRepository } from '../repositories/UserRepository';
 import type { WebhookRepository } from '../repositories/WebhookRepository';
 import type { WorkflowRepository } from '../repositories/WorkflowRepository';
 import type { WorkspaceRepository } from '../repositories/WorkspaceRepository';
+import { broadcastEvent } from '../ws';
 import type { AgentRuntimeRegistry, AgentRuntimeTool } from './AgentRuntime';
 import type { EventProjector } from './EventProjector';
 import type { GitProviderRegistry } from './GitProvider';
@@ -103,6 +105,45 @@ function evaluateCondition(condition: AutomationCondition, issue: Issue): boolea
 /** The `issueId` field on whichever `EventPayload` variants carry one — see `issueForEvent`. */
 function issueIdFromPayload(payload: EventPayload): string | undefined {
   return 'issueId' in payload && typeof payload.issueId === 'string' ? payload.issueId : undefined;
+}
+
+/**
+ * The root comment id of the thread an event belongs to, or `undefined` if the event wasn't
+ * itself a comment (nothing to scope to). Mirrors the same `comment.created` / `comment.mentioned`
+ * check `applyAction`'s `addComment` case uses to decide what to reply to — walks `parentCommentId`
+ * up to the top so replies-to-replies still resolve to the one thread they're all part of.
+ */
+function threadRootCommentId(event: EventEnvelope | undefined, comments: Comment[]): string | undefined {
+  const payload = event?.payload;
+  const commentId = payload?.type === 'comment.created' || payload?.type === 'comment.mentioned' ? payload.commentId : undefined;
+  if (!commentId) return undefined;
+  const byId = new Map(comments.map((c) => [c.id, c]));
+  let current = byId.get(commentId);
+  if (!current) return commentId; // comment since deleted — treat its own id as the root
+  const seen = new Set<string>();
+  while (current.parentCommentId && !seen.has(current.id)) {
+    seen.add(current.id);
+    const parent = byId.get(current.parentCommentId);
+    if (!parent) break;
+    current = parent;
+  }
+  return current.id;
+}
+
+/** Every comment in the thread rooted at `rootId` — the root itself plus every reply nested under it, at any depth. */
+function commentsInThread(rootId: string, comments: Comment[]): Comment[] {
+  const ids = new Set([rootId]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const c of comments) {
+      if (c.parentCommentId && ids.has(c.parentCommentId) && !ids.has(c.id)) {
+        ids.add(c.id);
+        grew = true;
+      }
+    }
+  }
+  return comments.filter((c) => ids.has(c.id));
 }
 
 /**
@@ -203,7 +244,7 @@ export class EventEngine {
     });
 
     let run: AgentRun | undefined;
-    if (issue && (await this.withinBudget(agent))) run = await this.startAgentRun(agent, issue, event.id);
+    if (issue && (await this.withinBudget(agent))) run = await this.startAgentRun(agent, issue, event);
     return { event, run };
   }
 
@@ -249,6 +290,10 @@ export class EventEngine {
   private async writeEvent(entry: { actor: ActorRef; subject: EntityRef; payload: EventPayload }): Promise<EventEnvelope> {
     const event = appendEventToLog(entry, `evt_${randomUUID()}`, (await this.workspace.getWorkspace()).id);
     await this.projector.applyEvent(event);
+    // Every event, whether it came from a route or (like an automation/agent's own actions)
+    // from inside this class, goes out to connected browser tabs the same way — this is the
+    // one place both paths converge, so live updates can't miss one or the other.
+    broadcastEvent(event);
     return event;
   }
 
@@ -446,18 +491,37 @@ export class EventEngine {
    * can pick up where it left off instead of re-deciding from a blank slate every time. The
    * model sees that history plus the agent's own `description` as its only instructions; it
    * never sees or touches anything outside the closed {@link AutomationAction} vocabulary.
+   *
+   * When the triggering event is itself a comment (a new reply or a mention), the "comment
+   * thread" and "prior turns" context below are scoped to that comment's thread alone — its
+   * root comment plus every reply nested under it, and only this agent's prior runs that were
+   * themselves triggered from within that same thread — rather than the whole issue's history.
+   * Separate threads on one issue are usually separate conversations; without this, an agent
+   * replying in thread A would see (and get confused by) unrelated activity from thread B. A
+   * non-comment trigger (issue created, status changed, manually triggered with no thread to
+   * anchor to) has no thread to scope to, so it falls back to the prior issue-wide behavior.
    */
-  private async decideAgentActions(agent: Agent, issue: Issue): Promise<{ actions: AutomationAction[]; rationale: string; tokenUsage: number }> {
+  private async decideAgentActions(
+    agent: Agent,
+    issue: Issue,
+    triggeringEvent?: EventEnvelope,
+  ): Promise<{ actions: AutomationAction[]; rationale: string; tokenUsage: number }> {
     const tools = agent.allowedActionTypes.map((type) => ACTION_TOOLS[type]);
     if (tools.length === 0) return { actions: [], rationale: 'This agent has no allowed action types.', tokenUsage: 0 };
 
-    const [statuses, users, fields, comments, priorRuns] = await Promise.all([
+    const [statuses, users, fields, allComments, allPriorRuns] = await Promise.all([
       this.workflow.getWorkflow().then((w) => w.statuses),
       this.users.list(),
       this.catalog.listFieldDefinitions(),
       this.issues.listCommentsFor(issue.id),
       this.agentRuns.list().then((runs) => runs.filter((r) => r.issueId === issue.id && r.agentUserId === agent.userId)),
     ]);
+
+    const threadRootId = threadRootCommentId(triggeringEvent, allComments);
+    const comments = threadRootId ? commentsInThread(threadRootId, allComments) : allComments;
+    const priorRuns = threadRootId
+      ? allPriorRuns.filter((r) => threadRootCommentId(getEventById(r.triggeringEventId), allComments) === threadRootId)
+      : allPriorRuns;
 
     const system = [
       `You are "${agent.name}", an AI agent embedded in an issue tracker. ${agent.description ?? ''}`.trim(),
@@ -485,8 +549,12 @@ export class EventEngine {
       `Current status: ${issue.statusId}`,
       `Type: ${issue.issueTypeId}`,
       `Assignees: ${issue.assigneeIds.length ? issue.assigneeIds.join(', ') : 'unassigned'}`,
-      recentComments ? `Recent comments (oldest first):\n${recentComments}` : 'No comments yet.',
-      recentTurns ? `Your prior turns on this issue (oldest first):\n${recentTurns}` : "You haven't acted on this issue before.",
+      recentComments
+        ? `${threadRootId ? 'This comment thread' : 'Recent comments'} (oldest first):\n${recentComments}`
+        : 'No comments yet.',
+      recentTurns
+        ? `Your prior turns ${threadRootId ? 'in this thread' : 'on this issue'} (oldest first):\n${recentTurns}`
+        : "You haven't acted on this issue before.",
     ]
       .filter(Boolean)
       .join('\n');
@@ -501,10 +569,11 @@ export class EventEngine {
   }
 
   /** Creates and (unless approval is required) immediately executes an {@link AgentRun}. */
-  private async startAgentRun(agent: Agent, issue: Issue, triggeringEventId: string): Promise<AgentRun> {
+  private async startAgentRun(agent: Agent, issue: Issue, triggeringEvent: EventEnvelope): Promise<AgentRun> {
+    const triggeringEventId = triggeringEvent.id;
     let decided: { actions: AutomationAction[]; rationale: string; tokenUsage: number };
     try {
-      decided = await this.decideAgentActions(agent, issue);
+      decided = await this.decideAgentActions(agent, issue, triggeringEvent);
     } catch (err) {
       const run: AgentRun = {
         id: `run_${randomUUID()}`,
@@ -569,7 +638,7 @@ export class EventEngine {
       if (agent.ignoreSelfTriggeredEvents && event.actor.kind === 'user' && event.actor.userId === agent.userId) continue;
       if (!matchesFilter(agent.eventFilter, event.payload.type)) continue;
       if (!(await this.withinBudget(agent))) continue;
-      await this.startAgentRun(agent, issue, event.id);
+      await this.startAgentRun(agent, issue, event);
     }
   }
 

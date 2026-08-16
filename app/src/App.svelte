@@ -10,6 +10,7 @@
   import Login from './lib/components/Login.svelte';
   import { currentUser } from './lib/stores/auth';
   import { currentView, initWorkspace, loaded, loadError, selectedIssueId } from './lib/stores/workspace';
+  import { connectWebSocket, disconnectWebSocket } from './lib/ws';
 
   // Kicks off the one API call that populates every store in workspace.ts, once there's a
   // logged-in user to make it as; $loaded and $loadError below gate what renders until it
@@ -20,6 +21,10 @@
     initializedForUserId = $currentUser.id;
     loadError.set(null);
     initWorkspace();
+    connectWebSocket();
+  } else if (!$currentUser && initializedForUserId) {
+    initializedForUserId = null;
+    disconnectWebSocket();
   }
 </script>
 
