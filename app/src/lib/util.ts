@@ -1,9 +1,25 @@
 import { marked } from 'marked';
+import { markedHighlight } from 'marked-highlight';
+import hljs from 'highlight.js';
 import DOMPurify from 'dompurify';
 import { replaceMentions, STORY_POINT_VALUES } from '$domain';
 import type { AutomationAction, FieldDefinition, Mentionable, User, Workflow } from '$domain';
 
 marked.setOptions({ breaks: true, gfm: true });
+// Syntax-highlights fenced code blocks (```js, ```python, ...) via highlight.js, tagging each
+// token with an .hljs-* class. No hardcoded theme here — the colors for those classes live in
+// CommentThread.svelte/IssueDrawer.svelte's :global(.hljs-*) rules, built from the same
+// --accent/--success/--text-3/etc. tokens as everything else, so highlighted code follows the
+// light/dark toggle and color scheme for free instead of needing its own light/dark stylesheet.
+marked.use(
+  markedHighlight({
+    langPrefix: 'hljs language-',
+    highlight(code, lang) {
+      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+      return hljs.highlight(code, { language }).value;
+    },
+  }),
+);
 
 export type { Mentionable };
 
@@ -34,12 +50,14 @@ export function renderMarkdown(text: string, mentionUsers: Mentionable[] = []): 
   return DOMPurify.sanitize(html);
 }
 
-/** Fixed per-user avatar colors, keyed by the seed data's user ids. */
+/** Fixed per-user avatar colors, keyed by the seed data's user ids.
+ * u_riya was #6E5DC6 (purple) — replaced per docs/ui-style-guide.md rule 2, same swap already
+ * made for --epic-b and PROJECT_COLORS. */
 const AVATAR_COLORS: Record<string, string> = {
   u_leon: '#946B3A',
   u_jordan: '#3B7DC4',
   u_mina: '#B9791A',
-  u_riya: '#6E5DC6',
+  u_riya: '#B5527A',
   u_sam: '#2E9E58',
   u_dana: '#8A8FA3',
   u_triage_bot: '#3E6FB0',
@@ -60,9 +78,12 @@ export function avatarColor(userId: string): string {
   return AVATAR_COLORS[userId] ?? '#8A8FA3';
 }
 
-/** An AI agent's name is always shown with an "[AI]" prefix, everywhere a human would just see their name. */
+/** A user's plain display name — callers that render this as visible text should pair it with
+ * an <Icon name="robot"> when `user.kind === 'agent'` (see CommentThread/IssueDrawer/etc.)
+ * rather than baking a text marker in here; this stays plain since it also feeds non-visual
+ * uses like an <Avatar>'s title attribute, where an icon can't go. */
 export function displayName(user: { kind?: string; displayName: string }): string {
-  return user.kind === 'agent' ? `[AI] ${user.displayName}` : user.displayName;
+  return user.displayName;
 }
 
 /**

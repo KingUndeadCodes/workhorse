@@ -101,7 +101,7 @@ export interface AgentRun {
   agentUserId: UserId;
   /** Includes a manual `agent.manuallyTriggered` event. */
   triggeringEventId: EventId;
-  /** The issue this run reacted to — lets the UI show which human the agent was acting on behalf of (via that issue's `agentAssignments`) without re-resolving the triggering event. */
+  /** The issue this run reacted to — lets the UI show it without re-resolving the triggering event. */
   issueId: IssueId;
   status: AgentRunStatus;
   proposedActions: AutomationAction[];

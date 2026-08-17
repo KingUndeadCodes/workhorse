@@ -76,12 +76,13 @@ export interface Issue {
   /** Accountable owners — humans only. AI agents are never assignees, see {@link agentAssignments}. */
   assigneeIds: UserId[];
   /**
-   * AI agents working this issue, each mapped to the human {@link assigneeIds} entry they act
-   * on behalf of. An agent may only be attached here on behalf of a *current* assignee — if
-   * that assignee is removed, the agent's entry is removed with them. This is what guarantees
-   * an agent's actions are always attributable to a real assigned user (see {@link ActorRef}).
+   * AI agents attached to work this issue — simple membership, like {@link assigneeIds} but for
+   * agents. Not tied to any particular human assignee; an agent's own actions are attributed to
+   * itself (see {@link ActorRef}), not "branded" as acting on someone else's behalf. Who
+   * attached a given agent is still recoverable from the event log (`issue.agentAssigned`'s
+   * `actor`), just not carried around as ongoing state.
    */
-  agentAssignments?: Partial<Record<UserId, UserId>>;
+  agentAssignments?: UserId[];
 
   /**
    * Primary hierarchy parent (epic -> story -> subtask, etc). Nesting depth is not fixed

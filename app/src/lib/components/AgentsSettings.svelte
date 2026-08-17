@@ -89,12 +89,10 @@
     {#each pendingRuns as run (run.id)}
       {@const agent = $agents.find((a) => a.userId === run.agentUserId)}
       {@const runIssue = $issuesStore.find((i) => i.id === run.issueId)}
-      {@const onBehalfOf = $users.find((u) => u.id === runIssue?.agentAssignments?.[run.agentUserId])}
       <div class="pending-card">
         <div class="pending-head">
           <Avatar userId={run.agentUserId} name={agent?.name ?? run.agentUserId} kind="agent" size={20} />
           <span class="agent-name">{agent?.name ?? run.agentUserId}<span class="ai-badge">AI</span></span>
-          {#if onBehalfOf}<span class="on-behalf-of">on behalf of {onBehalfOf.displayName}</span>{/if}
           {#if runIssue}<span class="issue-key mono">{runIssue.key}</span>{/if}
           <span class="run-time">{formatRelativeDate(run.startedAt)}</span>
         </div>
@@ -240,7 +238,6 @@
   .pending-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
   .pending-card { background: var(--warning-soft); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
   .pending-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .on-behalf-of { font-size: 11.5px; color: var(--text-3); }
   .issue-key { font-size: 11px; color: var(--text-2); background: var(--surface); border-radius: 5px; padding: 1px 6px; }
   .run-tokens { font-size: 11px; color: var(--text-3); white-space: nowrap; flex: 0 0 auto; }
   .run-time { font-size: 11px; color: var(--text-3); margin-left: auto; white-space: nowrap; }

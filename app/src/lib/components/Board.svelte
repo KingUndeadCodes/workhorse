@@ -85,7 +85,10 @@
       {/each}
     </div>
 
-    {#if ungroupedIssues.length > 0}
+    <!-- Also shown when there are no epics at all (even with zero ungrouped issues) — without
+         that, a project with no epics and no issues yet rendered a totally blank board: column
+         headers with nothing underneath, no "No issues" placeholder, nothing to click into. -->
+    {#if ungroupedIssues.length > 0 || epics.length === 0}
       <div class="swimlane">
         <div class="swimlane-head">
           <span class="epic-dot" style="background:var(--text-3)"></span>

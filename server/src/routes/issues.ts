@@ -114,16 +114,6 @@ issuesRouter.patch('/issues/:id', async (c) => {
     }
     if (JSON.stringify([...toUserIds].sort()) !== JSON.stringify([...issue.assigneeIds].sort())) {
       await engine.emitEvent({ actor, subject: { type: 'issue', id }, payload: { type: 'issue.assigneesChanged', issueId: id, fromUserIds: issue.assigneeIds, toUserIds } });
-      // An agent may only ever be attached on behalf of a *current* assignee — if that
-      // assignee just got removed, the agent's attachment is removed with them, so the
-      // "always on behalf of an assigned user" invariant holds at every point, not just at
-      // attach time.
-      const removedUserIds = new Set(issue.assigneeIds.filter((uid) => !toUserIds.includes(uid)));
-      for (const [agentUserId, onBehalfOfUserId] of Object.entries(issue.agentAssignments ?? {})) {
-        if (onBehalfOfUserId && removedUserIds.has(onBehalfOfUserId)) {
-          await engine.emitEvent({ actor, subject: { type: 'issue', id }, payload: { type: 'issue.agentUnassigned', issueId: id, agentUserId } });
-        }
-      }
     }
   }
   if ('sprintId' in body && body.sprintId !== issue.sprintId) {
@@ -319,25 +309,23 @@ issuesRouter.delete('/issues/:issueId/links/:linkId', async (c) => {
 });
 
 /**
- * POST /api/issues/:id/agents — attaches an AI agent to an issue on behalf of one of its
- * current human assignees. Emits `issue.agentAssigned`. Body: `{ agentUserId, onBehalfOfUserId }`.
- * 400 if `agentUserId` isn't a real agent, or `onBehalfOfUserId` isn't currently an assignee.
+ * POST /api/issues/:id/agents — attaches an AI agent to an issue, simple membership like an
+ * assignee. Emits `issue.agentAssigned` — its `actor` is who attached the agent, so that's
+ * still recoverable from the event log even though it's no longer carried as ongoing state on
+ * the issue. Body: `{ agentUserId }`. 400 if `agentUserId` isn't a real agent.
  */
 issuesRouter.post('/issues/:id/agents', async (c) => {
   const id = c.req.param('id');
   const issue = await issueRepo.get(id);
   if (!issue) return c.json({ error: 'Issue not found' }, 404);
 
-  const body = await c.req.json<{ agentUserId: string; onBehalfOfUserId: string }>();
+  const body = await c.req.json<{ agentUserId: string }>();
   if (!(await agentRepo.get(body.agentUserId))) return c.json({ error: 'Agent not found' }, 400);
-  if (!issue.assigneeIds.includes(body.onBehalfOfUserId)) {
-    return c.json({ error: 'An agent can only be attached on behalf of a current assignee' }, 400);
-  }
 
   const event = await engine.emitEvent({
     actor: actorFrom(c.get('user')),
     subject: { type: 'issue', id },
-    payload: { type: 'issue.agentAssigned', issueId: id, agentUserId: body.agentUserId, onBehalfOfUserId: body.onBehalfOfUserId },
+    payload: { type: 'issue.agentAssigned', issueId: id, agentUserId: body.agentUserId },
   });
   return c.json({ issue: await issueRepo.get(id), event }, 201);
 });

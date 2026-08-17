@@ -5,8 +5,6 @@ export interface Comment {
   id: CommentId;
   issueId: IssueId;
   authorId: UserId;
-  /** Set when the author is an agent that was assigned by a human — see {@link ActorRef.onBehalfOfUserId}. */
-  onBehalfOfUserId?: UserId;
   body: RichText;
   createdAt: string;
   editedAt?: string;

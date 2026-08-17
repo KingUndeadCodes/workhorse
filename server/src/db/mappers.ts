@@ -343,7 +343,6 @@ export function rowToComment(r: Record<string, unknown>): Comment {
     id: r.id as string,
     issueId: r.issue_id as string,
     authorId: r.author_id as string,
-    onBehalfOfUserId: nullish(r.on_behalf_of_user_id),
     body: parse(r.body, { format: 'richtext-v1' as const, content: null, plainText: '' }),
     createdAt: r.created_at as string,
     editedAt: nullish(r.edited_at),

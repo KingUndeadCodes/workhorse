@@ -22,7 +22,7 @@ export interface AuditReport {
 interface ExpectedIssueState {
   statusId?: string;
   assigneeIds?: string[];
-  agentAssignments?: Partial<Record<string, string>>;
+  agentAssignments?: string[];
   sprintId?: string;
   loggedSeconds: number;
   commentIds: Set<string>;
@@ -33,14 +33,6 @@ function setsEqual(a: Set<string>, b: Set<string>): boolean {
   if (a.size !== b.size) return false;
   for (const x of a) if (!b.has(x)) return false;
   return true;
-}
-
-/** Order-independent equality for string-keyed/valued records (JSON.stringify would false-positive on key order). */
-function recordsEqual(a: Partial<Record<string, string>>, b: Partial<Record<string, string>>): boolean {
-  const aKeys = Object.keys(a);
-  const bKeys = Object.keys(b);
-  if (aKeys.length !== bKeys.length) return false;
-  return aKeys.every((k) => a[k] === b[k]);
 }
 
 /**
@@ -73,7 +65,7 @@ export class AuditService {
     const ensure = (issueId: string): ExpectedIssueState => {
       let e = expectedByIssue.get(issueId);
       if (!e) {
-        e = { loggedSeconds: 0, commentIds: new Set(), deleted: false, agentAssignments: {} };
+        e = { loggedSeconds: 0, commentIds: new Set(), deleted: false, agentAssignments: [] };
         expectedByIssue.set(issueId, e);
       }
       return e;
@@ -92,7 +84,7 @@ export class AuditService {
           const e = ensure(p.issueId);
           e.statusId = p.issue.statusId;
           e.assigneeIds = p.issue.assigneeIds;
-          e.agentAssignments = { ...(p.issue.agentAssignments ?? {}) };
+          e.agentAssignments = [...(p.issue.agentAssignments ?? [])];
           e.sprintId = p.issue.sprintId;
           break;
         }
@@ -102,12 +94,17 @@ export class AuditService {
         case 'issue.assigneesChanged':
           ensure(p.issueId).assigneeIds = p.toUserIds;
           break;
-        case 'issue.agentAssigned':
-          ensure(p.issueId).agentAssignments![p.agentUserId] = p.onBehalfOfUserId;
+        case 'issue.agentAssigned': {
+          const e = ensure(p.issueId);
+          if (!e.agentAssignments) e.agentAssignments = [];
+          if (!e.agentAssignments.includes(p.agentUserId)) e.agentAssignments.push(p.agentUserId);
           break;
-        case 'issue.agentUnassigned':
-          delete ensure(p.issueId).agentAssignments![p.agentUserId];
+        }
+        case 'issue.agentUnassigned': {
+          const e = ensure(p.issueId);
+          e.agentAssignments = (e.agentAssignments ?? []).filter((id) => id !== p.agentUserId);
           break;
+        }
         case 'issue.sprintChanged':
           ensure(p.issueId).sprintId = p.toSprintId;
           break;
@@ -150,7 +147,7 @@ export class AuditService {
       if (expected.assigneeIds !== undefined && setsEqual(new Set(expected.assigneeIds), new Set(actual.assigneeIds)) === false) {
         findings.push({ issueId, field: 'assigneeIds', expected: expected.assigneeIds, actual: actual.assigneeIds });
       }
-      if (!recordsEqual(expected.agentAssignments ?? {}, actual.agentAssignments ?? {})) {
+      if (!setsEqual(new Set(expected.agentAssignments ?? []), new Set(actual.agentAssignments ?? []))) {
         findings.push({ issueId, field: 'agentAssignments', expected: expected.agentAssignments, actual: actual.agentAssignments });
       }
       if ((expected.sprintId ?? undefined) !== actual.sprintId) findings.push({ issueId, field: 'sprintId', expected: expected.sprintId, actual: actual.sprintId });

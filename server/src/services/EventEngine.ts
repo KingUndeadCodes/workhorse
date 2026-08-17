@@ -232,8 +232,8 @@ export class EventEngine {
     if (!agent) throw new Error('Agent not found');
 
     const issue = issueId ? await this.issues.get(issueId) : undefined;
-    if (issueId && issue && issue.agentAssignments?.[agentUserId] === undefined) {
-      throw new Error('Attach this agent to the issue (choose who it acts on behalf of) before triggering it');
+    if (issueId && issue && !issue.agentAssignments?.includes(agentUserId)) {
+      throw new Error('Attach this agent to the issue before triggering it');
     }
 
     const subject: EntityRef = issueId ? { type: 'issue', id: issueId } : { type: 'agent', id: agentUserId };
@@ -250,7 +250,7 @@ export class EventEngine {
 
   /** Executes every proposed action on a run and marks it applied (or failed, if one throws). Public: also called after approval. */
   async executeAgentRun(run: AgentRun, issue: Issue): Promise<void> {
-    const actor: ActorRef = { kind: 'user', userId: run.agentUserId, onBehalfOfUserId: issue.agentAssignments?.[run.agentUserId] };
+    const actor: ActorRef = { kind: 'user', userId: run.agentUserId };
     // Looked up here rather than threaded in by every caller — whatever event triggered this
     // run is what an `addComment` action should reply to, if it was itself a comment (see
     // applyAction's addComment case). resolveAgentRun/startAgentRun both already know this run's
@@ -371,7 +371,6 @@ export class EventEngine {
         // project has no lead assigned yet. Agent-authored comments don't hit this branch:
         // agents ARE users, so `actor.kind === 'user'` already holds for them.
         const authorId = actor.kind === 'user' ? actor.userId : ((await this.projects.getProjectById(issue.projectId))?.leadId ?? 'system');
-        const onBehalfOfUserId = actor.kind === 'user' ? actor.onBehalfOfUserId : undefined;
         const commentId = `cmt_${randomUUID()}`;
         // If a rule/agent was triggered by a comment (a mention, a new top-level comment),
         // thread its reply under that comment rather than posting a new top-level one — the
@@ -382,7 +381,7 @@ export class EventEngine {
         await this.writeEvent({
           actor,
           subject: { type: 'comment', id: commentId },
-          payload: { type: 'comment.created', commentId, issueId: issue.id, authorId, onBehalfOfUserId, body: action.body, parentCommentId },
+          payload: { type: 'comment.created', commentId, issueId: issue.id, authorId, body: action.body, parentCommentId },
         });
         return;
       }
@@ -679,11 +678,9 @@ export class EventEngine {
     if (!issue) return;
     for (const agent of await this.agents.list()) {
       if (!agent.enabled) continue;
-      // An agent only reacts to an issue it's been explicitly attached to (on behalf of one
-      // of that issue's assignees) — this is what makes "always acts on behalf of an assigned
-      // user" an enforced invariant rather than best-effort: a broad `eventFilter` no longer
-      // lets an agent auto-react to issues nobody put it on.
-      if (issue.agentAssignments?.[agent.userId] === undefined) continue;
+      // An agent only reacts to an issue it's been explicitly attached to — a broad
+      // `eventFilter` alone doesn't let an agent auto-react to issues nobody put it on.
+      if (!issue.agentAssignments?.includes(agent.userId)) continue;
       if (agent.ignoreSelfTriggeredEvents && event.actor.kind === 'user' && event.actor.userId === agent.userId) continue;
       if (!matchesFilter(agent.eventFilter, event.payload.type)) continue;
       if (!(await this.withinBudget(agent))) continue;

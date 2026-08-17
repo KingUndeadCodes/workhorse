@@ -31,6 +31,7 @@
   } from '../stores/workspace';
   import { createBranch as apiCreateBranch, deleteBranch as apiDeleteBranch, getBranch, triggerAgent } from '../api';
   import { displayName, priorityIcon, renderMarkdown, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
+  import { lineNumbers } from '../actions/lineNumbers';
   import { STORY_POINT_VALUES, slugifyBranchName, type Branch, type IssueLinkType } from '$domain';
 
   let draftComment = '';
@@ -56,13 +57,10 @@
   $: category = status ? $statusCategories.find((c) => c.id === status.categoryId) : undefined;
   $: reporter = issue ? $users.find((u) => u.id === issue.reporterId) : undefined;
   $: ({ humans: humanUsers, agents: agentUsers } = splitHumansAndAgents($users));
-  $: issueAssignees = issue ? issue.assigneeIds.map((id) => $users.find((u) => u.id === id)).filter((u): u is (typeof $users)[number] => !!u) : [];
   $: attachedAgents = issue
-    ? Object.entries(issue.agentAssignments ?? {})
-        .map(([agentId, onBehalfOfId]) => ({ agent: $users.find((u) => u.id === agentId), onBehalfOf: $users.find((u) => u.id === onBehalfOfId) }))
-        .filter((e): e is { agent: (typeof $users)[number]; onBehalfOf: (typeof $users)[number] } => !!e.agent && !!e.onBehalfOf)
+    ? (issue.agentAssignments ?? []).map((id) => $users.find((u) => u.id === id)).filter((u): u is (typeof $users)[number] => !!u)
     : [];
-  $: unattachedAgents = issue ? agentUsers.filter((a) => issue!.agentAssignments?.[a.id] === undefined) : agentUsers;
+  $: unattachedAgents = issue ? agentUsers.filter((a) => !issue!.agentAssignments?.includes(a.id)) : agentUsers;
   $: issueComments = issue ? $comments.filter((c) => c.issueId === issue.id) : [];
   // Threading is one level deep (see domain/collaboration.ts) — top-level comments plus,
   // for each, the replies attached to it, both ordered oldest-first.
@@ -176,35 +174,16 @@
   }
 
   let showAgentPicker = false;
-  /** Per-unattached-agent "on behalf of" pick — same checkbox-toggle interaction the Assignees
-   * popover uses (check to attach immediately), pre-seeded with a default so a single click is
-   * usually enough. */
-  let pendingOnBehalfOf: Record<string, string> = {};
   let triggeringAgentId: string | null = null;
 
-  /** Defaults the on-behalf-of pick to the current user if they're an assignee, else the first assignee. */
-  function defaultOnBehalfOf(): string {
-    if (!issue) return '';
-    return $currentUser && issue.assigneeIds.includes($currentUser.id) ? $currentUser.id : (issue.assigneeIds[0] ?? '');
-  }
   function toggleAgentPicker() {
-    if (showAgentPicker) {
-      showAgentPicker = false;
-      return;
-    }
-    // Always reseeded from scratch, not merged with any prior selection — the assignee set
-    // (and therefore what's valid) may have changed since the picker was last open.
-    const fallback = defaultOnBehalfOf();
-    pendingOnBehalfOf = Object.fromEntries(unattachedAgents.map((a) => [a.id, fallback]));
-    showAgentPicker = true;
+    showAgentPicker = !showAgentPicker;
   }
   async function attachAgentChecked(agentUserId: string, e: Event) {
     const checkbox = e.currentTarget as HTMLInputElement;
     if (!issue) return;
-    const onBehalfOfUserId = pendingOnBehalfOf[agentUserId];
-    if (!onBehalfOfUserId) return;
     try {
-      await assignAgent(issue.id, agentUserId, onBehalfOfUserId);
+      await assignAgent(issue.id, agentUserId);
     } catch (err) {
       // Revert the checkbox — without this it stays checked even though the agent never
       // actually got attached, silently disagreeing with attachedAgents.
@@ -367,7 +346,8 @@
         {:else}
           <button class="desc-view" on:click={startEditingDescription}>
             {#if issue.description?.plainText}
-              <div class="markdown">{@html renderMarkdown(issue.description.plainText, $users)}</div>
+              {@const descriptionHtml = renderMarkdown(issue.description.plainText, $users)}
+              <div class="markdown" use:lineNumbers={descriptionHtml}>{@html descriptionHtml}</div>
             {:else}
               <span class="desc-placeholder">Add a description… (markdown supported)</span>
             {/if}
@@ -472,14 +452,14 @@
 
       <div class="section agents-section" use:closeOnClickOutside={() => (showAgentPicker = false)}>
         <div class="section-label">AI Agents</div>
-        {#if attachedAgents.length === 0 && issueAssignees.length > 0}
-          <p class="agents-hint">Attach an agent to have it work this ticket on behalf of an assignee.</p>
+        {#if attachedAgents.length === 0}
+          <p class="agents-hint">Attach an agent to have it work this ticket.</p>
         {/if}
         <div class="agent-chips">
-          {#each attachedAgents as { agent, onBehalfOf } (agent.id)}
+          {#each attachedAgents as agent (agent.id)}
             <span class="agent-chip">
               <Avatar userId={agent.id} name={displayName(agent)} kind={agent.kind} size={16} />
-              {displayName(agent)} — on behalf of {onBehalfOf.displayName}
+              <Icon name="robot" size={11} />{displayName(agent)}
               <button
                 type="button"
                 class="chip-run"
@@ -490,30 +470,21 @@
               <button type="button" class="chip-remove" on:click={() => detachAgent(agent.id)}><Icon name="x" size={10} /></button>
             </span>
           {/each}
-          {#if issueAssignees.length === 0}
-            <span class="agents-empty">Assign a person first</span>
-          {:else}
-            <button type="button" class="assignee-add" on:click={toggleAgentPicker}>+ Add</button>
-            {#if showAgentPicker}
-              <div class="assignee-popover">
-                {#if unattachedAgents.length === 0}
-                  <div class="agents-empty">No more agents to attach</div>
-                {:else}
-                  {#each unattachedAgents as a (a.id)}
-                    <label class="assignee-option agent-picker-option">
-                      <input type="checkbox" on:change={(e) => attachAgentChecked(a.id, e)} />
-                      <Avatar userId={a.id} name={displayName(a)} kind={a.kind} size={16} />
-                      {displayName(a)}
-                      {#if issueAssignees.length > 1}
-                        <select class="on-behalf-of-select" bind:value={pendingOnBehalfOf[a.id]} on:click|stopPropagation>
-                          {#each issueAssignees as u (u.id)}<option value={u.id}>{u.displayName}</option>{/each}
-                        </select>
-                      {/if}
-                    </label>
-                  {/each}
-                {/if}
-              </div>
-            {/if}
+          <button type="button" class="assignee-add" on:click={toggleAgentPicker}>+ Add</button>
+          {#if showAgentPicker}
+            <div class="assignee-popover">
+              {#if unattachedAgents.length === 0}
+                <div class="agents-empty">No more agents to attach</div>
+              {:else}
+                {#each unattachedAgents as a (a.id)}
+                  <label class="assignee-option agent-picker-option">
+                    <input type="checkbox" on:change={(e) => attachAgentChecked(a.id, e)} />
+                    <Avatar userId={a.id} name={displayName(a)} kind={a.kind} size={16} />
+                    <Icon name="robot" size={11} />{displayName(a)}
+                  </label>
+                {/each}
+              {/if}
+            </div>
           {/if}
         </div>
       </div>
@@ -715,10 +686,6 @@
   .agents-empty { font-size: 12px; color: var(--text-3); font-style: italic; }
   .agents-hint { font-size: 12px; color: var(--text-3); margin: 0 0 8px; }
   .agent-picker-option { gap: 6px; }
-  .on-behalf-of-select {
-    margin-left: auto; font: inherit; font-size: 11px; color: var(--text-2); background: var(--surface-2);
-    border: 1px solid var(--border); border-radius: 5px; padding: 2px 4px;
-  }
   .section-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin: 0 0 8px; }
   .section { margin-bottom: 20px; }
   .desc-view {
@@ -741,6 +708,33 @@
     font-weight: 600; color: var(--accent-strong); background: var(--accent-soft); border-radius: 4px; padding: 0 3px;
   }
   .markdown :global(.mention-agent) { color: var(--agent-accent); background: var(--agent-accent-soft); }
+  /* highlight.js token colors for fenced code blocks (see renderMarkdown in util.ts) — built
+     from the same tokens as the rest of the theme, so highlighted code follows the light/dark
+     toggle and color scheme without needing its own separate hljs theme stylesheet. */
+  .markdown :global(.hljs-comment), .markdown :global(.hljs-quote) { color: var(--text-3); font-style: italic; }
+  .markdown :global(.hljs-keyword), .markdown :global(.hljs-selector-tag), .markdown :global(.hljs-literal),
+  .markdown :global(.hljs-subst), .markdown :global(.hljs-tag), .markdown :global(.hljs-name) { color: var(--accent-strong); font-weight: 600; }
+  .markdown :global(.hljs-string), .markdown :global(.hljs-doctag), .markdown :global(.hljs-regexp),
+  .markdown :global(.hljs-addition) { color: var(--success); }
+  .markdown :global(.hljs-number), .markdown :global(.hljs-symbol), .markdown :global(.hljs-deletion) { color: var(--warning); }
+  .markdown :global(.hljs-title), .markdown :global(.hljs-section), .markdown :global(.hljs-selector-id) { color: var(--info); font-weight: 600; }
+  .markdown :global(.hljs-type), .markdown :global(.hljs-built_in), .markdown :global(.hljs-builtin-name),
+  .markdown :global(.hljs-class .hljs-title) { color: var(--epic-c); }
+  .markdown :global(.hljs-attribute), .markdown :global(.hljs-variable), .markdown :global(.hljs-template-variable) { color: var(--critical); }
+  .markdown :global(.hljs-attr) { color: var(--info); }
+  .markdown :global(.hljs-meta) { color: var(--text-3); }
+  .markdown :global(.hljs-emphasis) { font-style: italic; }
+  .markdown :global(.hljs-strong) { font-weight: 700; }
+  /* Line-number gutter added by the lineNumbers action (highlightjs-line-numbers.js) — turns
+     a highlighted <code class="hljs"> into a <table class="hljs-ln">, one <tr> per line. The
+     library itself only injects structural CSS (border-collapse, td padding); all the actual
+     color/spacing here is ours, on the same tokens as the syntax colors above. */
+  .markdown :global(.hljs-ln) { width: 100%; }
+  .markdown :global(.hljs-ln-numbers) {
+    text-align: right; vertical-align: top; width: 1%; white-space: nowrap; user-select: none;
+    color: var(--text-3); border-right: 1px solid var(--border); padding-right: 8px;
+  }
+  .markdown :global(.hljs-ln-code) { vertical-align: top; padding-left: 10px; }
   .advanced-toggle { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); padding: 4px 0; }
   .advanced-toggle:hover { color: var(--text); }
   .advanced-body { margin-top: 14px; display: flex; flex-direction: column; gap: 20px; }

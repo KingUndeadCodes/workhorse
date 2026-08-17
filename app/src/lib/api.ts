@@ -164,9 +164,9 @@ export function removeIssueLink(issueId: string, linkId: string): Promise<{ even
   return del(`/issues/${issueId}/links/${linkId}`);
 }
 
-/** Attaches an AI agent to an issue on behalf of one of its current human assignees. */
-export function assignAgentToIssue(issueId: string, agentUserId: string, onBehalfOfUserId: string): Promise<{ issue: Issue; event: EventEnvelope }> {
-  return post(`/issues/${issueId}/agents`, { agentUserId, onBehalfOfUserId });
+/** Attaches an AI agent to an issue — simple membership, like an assignee. */
+export function assignAgentToIssue(issueId: string, agentUserId: string): Promise<{ issue: Issue; event: EventEnvelope }> {
+  return post(`/issues/${issueId}/agents`, { agentUserId });
 }
 
 export function unassignAgentFromIssue(issueId: string, agentUserId: string): Promise<{ issue: Issue; event: EventEnvelope }> {

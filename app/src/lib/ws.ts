@@ -111,7 +111,6 @@ function applyRemoteEvent(event: EventEnvelope): void {
                 id: payload.commentId,
                 issueId: payload.issueId,
                 authorId: payload.authorId,
-                onBehalfOfUserId: payload.onBehalfOfUserId,
                 body: { format: 'richtext-v1', content: null, plainText: payload.body },
                 parentCommentId: payload.parentCommentId,
                 createdAt: event.occurredAt,

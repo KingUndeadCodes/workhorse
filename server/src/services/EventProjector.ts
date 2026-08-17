@@ -31,7 +31,7 @@ export class EventProjector {
         await this.issues.updateAssignees(payload.issueId, payload.toUserIds, event.occurredAt);
         break;
       case 'issue.agentAssigned':
-        await this.issues.assignAgent(payload.issueId, payload.agentUserId, payload.onBehalfOfUserId, event.occurredAt);
+        await this.issues.assignAgent(payload.issueId, payload.agentUserId, event.occurredAt);
         break;
       case 'issue.agentUnassigned':
         await this.issues.unassignAgent(payload.issueId, payload.agentUserId, event.occurredAt);
@@ -93,7 +93,6 @@ export class EventProjector {
           id: payload.commentId,
           issueId: payload.issueId,
           authorId: payload.authorId,
-          onBehalfOfUserId: payload.onBehalfOfUserId,
           body: { format: 'richtext-v1', content: null, plainText: payload.body },
           createdAt: event.occurredAt,
           parentCommentId: payload.parentCommentId,

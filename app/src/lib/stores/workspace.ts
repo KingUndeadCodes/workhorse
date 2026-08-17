@@ -213,9 +213,9 @@ export async function updateIssue(issueId: string, changes: Partial<Issue>): Pro
   replaceIssue(issue);
 }
 
-/** Attaches an AI agent to an issue on behalf of one of its current human assignees. */
-export async function assignAgent(issueId: string, agentUserId: string, onBehalfOfUserId: string): Promise<void> {
-  const { issue } = await apiAssignAgentToIssue(issueId, agentUserId, onBehalfOfUserId);
+/** Attaches an AI agent to an issue — simple membership, like an assignee. */
+export async function assignAgent(issueId: string, agentUserId: string): Promise<void> {
+  const { issue } = await apiAssignAgentToIssue(issueId, agentUserId);
   replaceIssue(issue);
 }
 

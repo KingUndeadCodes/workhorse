@@ -16,7 +16,7 @@
 
   $: issueType = $issueTypes.find((t) => t.id === issue.issueTypeId);
   $: assignees = issue.assigneeIds.map((id) => $users.find((u) => u.id === id)).filter((u): u is (typeof $users)[number] => !!u);
-  $: attachedAgents = Object.keys(issue.agentAssignments ?? {})
+  $: attachedAgents = (issue.agentAssignments ?? [])
     .map((id) => $users.find((u) => u.id === id))
     .filter((u): u is (typeof $users)[number] => !!u);
   // Due dates have no time of day, so "due" means by the end of that day — gives real

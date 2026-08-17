@@ -59,4 +59,14 @@ export default defineConfig({
       '/ws': { target: 'ws://localhost:8787', ws: true },
     },
   },
+  optimizeDeps: {
+    // highlightjs-line-numbers.js is only ever reached via a dynamic `import()` inside
+    // lineNumbers.ts (deliberately — it patches methods onto the global `hljs`, and has to
+    // run after that assignment, which a static import can't guarantee; see that file's
+    // comment). Vite's cold-start dependency scan doesn't reliably follow that dynamic import,
+    // which caused it to re-optimize mid-session and momentarily end up with two out-of-sync
+    // highlight.js module instances. Listing both here forces them into the initial pre-bundle
+    // instead of leaving it to runtime discovery.
+    include: ['highlight.js', 'highlightjs-line-numbers.js'],
+  },
 })

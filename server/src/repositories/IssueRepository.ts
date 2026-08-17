@@ -144,10 +144,10 @@ export class IssueRepository {
     await this.db.updateTable('issues').set({ assignee_ids: JSON.stringify(toUserIds), updated_at: occurredAt }).where('id', '=', issueId).execute();
   }
 
-  /** Attaches an agent to an issue on behalf of one of its current human assignees, or replaces an existing attachment. */
-  async assignAgent(issueId: string, agentUserId: string, onBehalfOfUserId: string, occurredAt: string): Promise<void> {
+  /** Attaches an agent to an issue — simple membership, or a no-op if it's already attached. */
+  async assignAgent(issueId: string, agentUserId: string, occurredAt: string): Promise<void> {
     const current = await this.get(issueId);
-    const agentAssignments = { ...(current?.agentAssignments ?? {}), [agentUserId]: onBehalfOfUserId };
+    const agentAssignments = [...new Set([...(current?.agentAssignments ?? []), agentUserId])];
     await this.db
       .updateTable('issues')
       .set({ agent_assignments: JSON.stringify(agentAssignments), updated_at: occurredAt })
@@ -155,11 +155,10 @@ export class IssueRepository {
       .execute();
   }
 
-  /** Detaches an agent from an issue — used both for explicit removal and the cascade when its on-behalf-of assignee is removed. */
+  /** Detaches an agent from an issue. */
   async unassignAgent(issueId: string, agentUserId: string, occurredAt: string): Promise<void> {
     const current = await this.get(issueId);
-    const agentAssignments = { ...(current?.agentAssignments ?? {}) };
-    delete agentAssignments[agentUserId];
+    const agentAssignments = (current?.agentAssignments ?? []).filter((id) => id !== agentUserId);
     await this.db
       .updateTable('issues')
       .set({ agent_assignments: JSON.stringify(agentAssignments), updated_at: occurredAt })
@@ -292,7 +291,6 @@ export class IssueRepository {
         id: comment.id,
         issue_id: comment.issueId,
         author_id: comment.authorId,
-        on_behalf_of_user_id: comment.onBehalfOfUserId ?? null,
         body: JSON.stringify(comment.body),
         created_at: comment.createdAt,
         parent_comment_id: comment.parentCommentId ?? null,

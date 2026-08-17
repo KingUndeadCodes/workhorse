@@ -10,6 +10,13 @@
   import Avatar from './Avatar.svelte';
   import { displayName, type Mentionable } from '../util';
 
+  // `autocorrect` is WebKit/Safari-only and isn't part of Svelte's HTMLAttributes typings for
+  // <textarea> (unlike spellcheck/autocapitalize/autocomplete, which are standard and set
+  // directly in the markup below) — set imperatively instead of erroring svelte-check.
+  function noAutocorrect(node: HTMLTextAreaElement) {
+    node.setAttribute('autocorrect', 'off');
+  }
+
   export let value = '';
   export let placeholder = '';
   export let rows = 4;
@@ -185,6 +192,10 @@
         {rows}
         {placeholder}
         {autofocus}
+        spellcheck="false"
+        autocapitalize="off"
+        autocomplete="off"
+        use:noAutocorrect
         on:input={updateMentionState}
         on:keyup={handleMentionKeyup}
         on:blur={() => (mentionQuery = null)}
@@ -201,7 +212,7 @@
               on:mousedown|preventDefault={() => selectMention(u)}
             >
               <Avatar userId={u.id} name={displayName(u)} kind={u.kind} size={16} />
-              {displayName(u)}
+              {#if u.kind === 'agent'}<Icon name="robot" size={11} />{/if}{displayName(u)}
             </button>
           {/each}
         </div>

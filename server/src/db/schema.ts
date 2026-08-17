@@ -148,36 +148,30 @@ export function migrateStateDb(): void {
 /**
  * One-time catch-up for issues that predate the AI-Agents-are-not-assignees split: any
  * agent-kind id still sitting in `assignee_ids` (from before `agent_assignments` existed) is
- * moved there, using the old `assigned_by` entry for that agent as the human it acted on
- * behalf of — that column already recorded exactly this relationship. An agent with no
- * recoverable `assigned_by` entry is just dropped from `assignee_ids`, since an unattributed
- * agent assignment can't be kept without breaking the "always on behalf of someone" invariant.
- * Raw SQL, not the repository/mapper layer, since `assignedBy` no longer exists on the mapped
- * `Issue` type by design — this is the one place still allowed to read the legacy column.
+ * moved there instead — simple membership, same as every other issue's `agent_assignments`
+ * (see domain/issue.ts; this list no longer ties an agent to a specific human it acted "on
+ * behalf of"). Raw SQL, not the repository/mapper layer, since this reads `assignee_ids`
+ * directly rather than going through the mapped `Issue` type.
  */
 export function backfillAgentAssignments(): void {
   const agentIds = new Set(all<{ id: string }>(stateDb, `SELECT id FROM users WHERE kind = 'agent'`).map((r) => r.id));
   if (agentIds.size === 0) return;
 
-  const rows = all<{ id: string; assignee_ids: string | null; assigned_by: string | null; agent_assignments: string | null }>(
+  const rows = all<{ id: string; assignee_ids: string | null; agent_assignments: string | null }>(
     stateDb,
-    `SELECT id, assignee_ids, assigned_by, agent_assignments FROM issues`,
+    `SELECT id, assignee_ids, agent_assignments FROM issues`,
   );
   for (const row of rows) {
     const assigneeIds: string[] = row.assignee_ids ? JSON.parse(row.assignee_ids) : [];
     const stray = assigneeIds.filter((id) => agentIds.has(id));
     if (stray.length === 0) continue;
 
-    const assignedBy: Record<string, string> = row.assigned_by ? JSON.parse(row.assigned_by) : {};
-    const agentAssignments: Record<string, string> = row.agent_assignments ? JSON.parse(row.agent_assignments) : {};
-    for (const agentId of stray) {
-      const onBehalfOfUserId = assignedBy[agentId];
-      if (onBehalfOfUserId) agentAssignments[agentId] = onBehalfOfUserId;
-    }
+    const agentAssignments: string[] = row.agent_assignments ? JSON.parse(row.agent_assignments) : [];
+    const mergedAgentAssignments = [...new Set([...agentAssignments, ...stray])];
     const humanAssigneeIds = assigneeIds.filter((id) => !agentIds.has(id));
     run(stateDb, `UPDATE issues SET assignee_ids = ?, agent_assignments = ? WHERE id = ?`, [
       JSON.stringify(humanAssigneeIds),
-      JSON.stringify(agentAssignments),
+      JSON.stringify(mergedAgentAssignments),
       row.id,
     ]);
   }
