@@ -201,7 +201,6 @@ export interface DB {
     priority: string | null;
     reporter_id: string | null;
     assignee_ids: string | null;
-    assigned_by: string | null;
     agent_assignments: string | null;
     parent_id: string | null;
     additional_parent_ids: string | null;
@@ -231,7 +230,6 @@ export interface DB {
     id: string;
     issue_id: string | null;
     author_id: string | null;
-    on_behalf_of_user_id: string | null;
     body: string | null;
     created_at: string | null;
     edited_at: string | null;

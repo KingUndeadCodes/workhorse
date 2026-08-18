@@ -29,6 +29,11 @@ export function connectWebSocket(): void {
   socket = new WebSocket(`${protocol}//${location.host}/ws?token=${encodeURIComponent(token)}`);
 
   socket.addEventListener('open', () => {
+    // A nonzero reconnectAttempt means this `open` follows a real drop, not the initial
+    // connect — whatever happened while disconnected was never received, so catch up with a
+    // full refetch rather than silently resuming with stale state. Same fallback this file
+    // already uses per-event for rare/complex payloads, just triggered by the reconnect itself.
+    if (reconnectAttempt > 0) initWorkspace();
     reconnectAttempt = 0;
   });
   socket.addEventListener('message', (e) => {

@@ -2,7 +2,7 @@ import { marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js';
 import DOMPurify from 'dompurify';
-import { replaceMentions, STORY_POINT_VALUES } from '$domain';
+import { PROJECT_COLORS, replaceMentions, STORY_POINT_VALUES } from '$domain';
 import type { AutomationAction, FieldDefinition, Mentionable, User, Workflow } from '$domain';
 
 marked.setOptions({ breaks: true, gfm: true });
@@ -50,19 +50,6 @@ export function renderMarkdown(text: string, mentionUsers: Mentionable[] = []): 
   return DOMPurify.sanitize(html);
 }
 
-/** Fixed per-user avatar colors, keyed by the seed data's user ids.
- * u_riya was #6E5DC6 (purple) — replaced per docs/ui-style-guide.md rule 2, same swap already
- * made for --epic-b and PROJECT_COLORS. */
-const AVATAR_COLORS: Record<string, string> = {
-  u_leon: '#946B3A',
-  u_jordan: '#3B7DC4',
-  u_mina: '#B9791A',
-  u_riya: '#B5527A',
-  u_sam: '#2E9E58',
-  u_dana: '#8A8FA3',
-  u_triage_bot: '#3E6FB0',
-};
-
 /** Up to two uppercase initials from a display name, e.g. "Jordan Cole" -> "JC". */
 export function initials(name: string): string {
   return name
@@ -73,9 +60,23 @@ export function initials(name: string): string {
     .toUpperCase();
 }
 
-/** Looks up a user's avatar color, falling back to a neutral gray for unknown ids. */
+/** Cheap, deterministic string hash (djb2) — not cryptographic, just needs to spread ids evenly across {@link PROJECT_COLORS}. */
+function hashString(s: string): number {
+  let hash = 5381;
+  for (let i = 0; i < s.length; i++) hash = (hash * 33) ^ s.charCodeAt(i);
+  return hash >>> 0;
+}
+
+/**
+ * A user's avatar color, deterministic from their id — same on-brand palette
+ * {@link PROJECT_COLORS} uses (one curated non-purple/non-black set instead of a second one
+ * just for avatars), picked by hashing the id instead of a fixed per-user lookup table. A
+ * fixed table only ever covered the ~7 seed users and silently gave everyone else the exact
+ * same fallback gray; hashing spreads every user (seed or real) across the whole palette, and
+ * stays stable for a given id since the hash is pure.
+ */
 export function avatarColor(userId: string): string {
-  return AVATAR_COLORS[userId] ?? '#8A8FA3';
+  return PROJECT_COLORS[hashString(userId) % PROJECT_COLORS.length];
 }
 
 /** A user's plain display name — callers that render this as visible text should pair it with

@@ -15,6 +15,26 @@ import type { Attachment, Branch, Comment, FieldValue, Issue, IssueLink, IssueLi
 export class IssueRepository {
   constructor(private readonly db: Kysely<DB>) {}
 
+  /** One chained promise per issue id — see {@link withIssueLock}. */
+  private readonly issueLocks = new Map<string, Promise<unknown>>();
+
+  /**
+   * Serializes read-modify-write operations on a single issue (currently `assignAgent` /
+   * `unassignAgent`, both of which fetch the current row, compute a new value, then write it
+   * back). Without this, two concurrent calls for the same issue can interleave across that
+   * `await` gap and one write silently clobbers the other. Chains onto whatever's already
+   * queued for this issue id rather than actually locking anything — cheap, and enough since
+   * this process is the only writer.
+   */
+  private withIssueLock<T>(issueId: string, fn: () => Promise<T>): Promise<T> {
+    const previous = this.issueLocks.get(issueId) ?? Promise.resolve();
+    const next = previous.then(fn, fn);
+    // Swallow rejections here so one failed call doesn't wedge the queue for later callers —
+    // each caller still sees its own `next`'s real rejection via the returned promise.
+    this.issueLocks.set(issueId, next.catch(() => undefined));
+    return next;
+  }
+
   // ---- Reads ----
 
   async list(projectId: string): Promise<Issue[]> {
@@ -145,25 +165,29 @@ export class IssueRepository {
   }
 
   /** Attaches an agent to an issue — simple membership, or a no-op if it's already attached. */
-  async assignAgent(issueId: string, agentUserId: string, occurredAt: string): Promise<void> {
-    const current = await this.get(issueId);
-    const agentAssignments = [...new Set([...(current?.agentAssignments ?? []), agentUserId])];
-    await this.db
-      .updateTable('issues')
-      .set({ agent_assignments: JSON.stringify(agentAssignments), updated_at: occurredAt })
-      .where('id', '=', issueId)
-      .execute();
+  assignAgent(issueId: string, agentUserId: string, occurredAt: string): Promise<void> {
+    return this.withIssueLock(issueId, async () => {
+      const current = await this.get(issueId);
+      const agentAssignments = [...new Set([...(current?.agentAssignments ?? []), agentUserId])];
+      await this.db
+        .updateTable('issues')
+        .set({ agent_assignments: JSON.stringify(agentAssignments), updated_at: occurredAt })
+        .where('id', '=', issueId)
+        .execute();
+    });
   }
 
   /** Detaches an agent from an issue. */
-  async unassignAgent(issueId: string, agentUserId: string, occurredAt: string): Promise<void> {
-    const current = await this.get(issueId);
-    const agentAssignments = (current?.agentAssignments ?? []).filter((id) => id !== agentUserId);
-    await this.db
-      .updateTable('issues')
-      .set({ agent_assignments: JSON.stringify(agentAssignments), updated_at: occurredAt })
-      .where('id', '=', issueId)
-      .execute();
+  unassignAgent(issueId: string, agentUserId: string, occurredAt: string): Promise<void> {
+    return this.withIssueLock(issueId, async () => {
+      const current = await this.get(issueId);
+      const agentAssignments = (current?.agentAssignments ?? []).filter((id) => id !== agentUserId);
+      await this.db
+        .updateTable('issues')
+        .set({ agent_assignments: JSON.stringify(agentAssignments), updated_at: occurredAt })
+        .where('id', '=', issueId)
+        .execute();
+    });
   }
 
   async updateSprint(issueId: string, toSprintId: string | undefined, occurredAt: string): Promise<void> {

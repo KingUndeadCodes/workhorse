@@ -28,6 +28,16 @@
       @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { {{UI_COLOR_SCHEME_DARK}} } }
       :root[data-theme="dark"] { {{UI_COLOR_SCHEME_DARK}} }
     </style>
+    <!-- Applies a saved light/dark choice before first paint, so it doesn't flash the wrong
+         theme while waiting for src/main.ts (which sets this same attribute — see
+         src/lib/stores/theme.ts) to load and run. Has to be synchronous and inline, not a
+         module script, to run before the browser paints anything. -->
+    <script>
+      (function () {
+        var saved = localStorage.getItem('workhorse-theme');
+        if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>
