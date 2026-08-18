@@ -15,7 +15,7 @@ import {
   workflowRepo,
   workspaceRepo,
 } from './container';
-import { getEventsSince } from './eventLog';
+import { getEventById, getEventsSince } from './eventLog';
 import { agentsRouter } from './routes/agents';
 import { automationsRouter } from './routes/automations';
 import { catalogRouter } from './routes/catalog';
@@ -84,6 +84,13 @@ app.get('/api/bootstrap', async (c) => {
 app.get('/api/events', async (c) => {
   const since = Number(c.req.query('since') ?? 0);
   return c.json(getEventsSince((await workspaceRepo.getWorkspace()).id, since));
+});
+
+/** GET /api/events/:id -> `{ event }` — one event's full payload, 404 if it doesn't exist. Used to lazily fill in an Activity row's details only once a user expands it (see routes/issues.ts's `/issues/:id/events`). */
+app.get('/api/events/:id', async (c) => {
+  const event = getEventById(c.req.param('id'));
+  if (!event) return c.json({ error: 'Event not found' }, 404);
+  return c.json({ event });
 });
 
 /**

@@ -64,6 +64,18 @@ export function getEventsSince(workspaceId: string, sequence: number): EventEnve
   return all<EventRow>(eventsDb, `SELECT * FROM events WHERE workspace_id = ? AND sequence > ? ORDER BY sequence ASC`, [workspaceId, sequence]).map(rowToEvent);
 }
 
+/**
+ * Every event whose payload carries this `issueId` — the issue's own lifecycle (status,
+ * assignees, links, worklogs, branches, ...) plus every comment event on it, since comments
+ * carry their parent issue's id too. This is a full table scan of the log filtered in JS
+ * rather than a SQL `WHERE`, same tradeoff `AuditService` already makes with `getAllEvents`:
+ * `payload` is opaque JSON to SQLite, so there's no column to index on without denormalizing
+ * `issueId` onto the row, which nothing else here needs. Fine at this app's scale.
+ */
+export function getEventsForIssue(workspaceId: string, issueId: string): EventEnvelope[] {
+  return getAllEvents(workspaceId).filter((e) => 'issueId' in e.payload && e.payload.issueId === issueId);
+}
+
 export function getEventById(id: string): EventEnvelope | undefined {
   const row = get<EventRow>(eventsDb, `SELECT * FROM events WHERE id = ?`, [id]);
   return row ? rowToEvent(row) : undefined;

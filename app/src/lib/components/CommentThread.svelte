@@ -30,6 +30,25 @@
   // rather than squeezing itself into a sliver on the right edge of the drawer.
   $: indent = Math.min(depth, 4) * 22;
 
+  /** Every reply under this comment, however deep — the count shown on a collapsed thread, same idea as Reddit's "[+] N children" stub. */
+  function countDescendants(commentId: string): number {
+    const direct = allComments.filter((c) => c.parentCommentId === commentId);
+    return direct.length + direct.reduce((sum, c) => sum + countDescendants(c.id), 0);
+  }
+  $: descendantCount = countDescendants(comment.id);
+
+  // Depth past which a reply auto-collapses on first render, same idea as Reddit's own default
+  // for deep threads — past a certain point a reply chain is more likely to be two people going
+  // back and forth than something everyone reading the issue needs to see expanded by default.
+  // Only the *initial* state; the user can still expand/re-collapse anything by hand afterward.
+  const AUTO_COLLAPSE_DEPTH = 3;
+
+  // Collapsing a comment hides its body, actions, and every reply beneath it, leaving just the
+  // meta line — the standard fix for a thread that's grown too deep/long to stay all on screen
+  // (see CommentThread's parent doc comment). Local to this instance on purpose: collapsing one
+  // subtree shouldn't affect sibling threads, and there's no reason to persist it server-side.
+  let collapsed = depth >= AUTO_COLLAPSE_DEPTH;
+
   let editing = false;
   let editDraft = '';
   let submittingEdit = false;
@@ -73,13 +92,19 @@
   <div class="comment" style="margin-left:{indent}px">
     <Avatar userId={author.id} name={displayName(author)} avatarUrl={author.avatarUrl} kind={author.kind} size={depth === 0 ? 26 : 22} />
     <div class="comment-body">
-      <div class="comment-meta">
+      <button type="button" class="comment-meta" on:click={() => (collapsed = !collapsed)} aria-expanded={!collapsed}>
+        <Icon name={collapsed ? 'chevron' : 'chevdown'} size={9} />
         <span class="comment-name">{#if author.kind === 'agent'}<Icon name="robot" size={11} />{/if}{displayName(author)}</span>
         <span class="comment-time">{formatRelativeDate(comment.createdAt)}</span>
         {#if comment.editedAt}<span class="comment-edited">(edited)</span>{/if}
-      </div>
+        {#if collapsed}<span class="comment-collapsed-count">{descendantCount} {descendantCount === 1 ? 'reply' : 'replies'} hidden</span>{/if}
+      </button>
 
-      {#if editing}
+      {#if collapsed}
+        <!-- Body, actions, and every reply beneath this comment stay unmounted while
+             collapsed — not just visually hidden — so a long-collapsed thread doesn't pay for
+             rendering (or fetching) content nobody's looking at. -->
+      {:else if editing}
         <div class="edit-composer">
           <MarkdownEditor
             bind:value={editDraft}
@@ -105,41 +130,43 @@
         </div>
       {/if}
 
-      {#if replyingToId === comment.id}
-        <div class="reply-composer">
-          <MarkdownEditor
-            bind:value={draftReply}
-            rows={2}
-            autofocus
-            placeholder="Write a reply… (markdown supported)"
-            submitLabel="Reply"
-            showCancel
-            disabled={!draftReply.trim()}
-            submitting={submittingReply}
-            onSubmit={onSubmitReply}
-            onCancel={onCancelReply}
-            mentionUsers={users}
-          />
-        </div>
-      {/if}
+      {#if !collapsed}
+        {#if replyingToId === comment.id}
+          <div class="reply-composer">
+            <MarkdownEditor
+              bind:value={draftReply}
+              rows={2}
+              autofocus
+              placeholder="Write a reply… (markdown supported)"
+              submitLabel="Reply"
+              showCancel
+              disabled={!draftReply.trim()}
+              submitting={submittingReply}
+              onSubmit={onSubmitReply}
+              onCancel={onCancelReply}
+              mentionUsers={users}
+            />
+          </div>
+        {/if}
 
-      {#each children as child (child.id)}
-        <svelte:self
-          comment={child}
-          {allComments}
-          {users}
-          {currentUserId}
-          depth={depth + 1}
-          {replyingToId}
-          bind:draftReply
-          {submittingReply}
-          {onStartReply}
-          {onCancelReply}
-          {onSubmitReply}
-          {onEditComment}
-          {onDeleteComment}
-        />
-      {/each}
+        {#each children as child (child.id)}
+          <svelte:self
+            comment={child}
+            {allComments}
+            {users}
+            {currentUserId}
+            depth={depth + 1}
+            {replyingToId}
+            bind:draftReply
+            {submittingReply}
+            {onStartReply}
+            {onCancelReply}
+            {onSubmitReply}
+            {onEditComment}
+            {onDeleteComment}
+          />
+        {/each}
+      {/if}
     </div>
   </div>
 {/if}
@@ -147,7 +174,13 @@
 <style>
   .comment { display: flex; gap: 9px; margin-top: 14px; }
   .comment-body { flex: 1; min-width: 0; }
-  .comment-meta { display: flex; align-items: baseline; gap: 7px; margin-bottom: 3px; }
+  .comment-meta {
+    display: flex; align-items: baseline; gap: 7px; margin-bottom: 3px;
+    width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; border-radius: 4px;
+  }
+  .comment-meta:hover { background: var(--surface-2); }
+  .comment-meta :global(svg:first-child) { color: var(--text-3); flex: 0 0 auto; }
+  .comment-collapsed-count { font-size: 11px; color: var(--text-3); font-style: italic; }
   .comment-name { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--text); }
   .comment-name :global(svg) { color: var(--agent-accent); }
   .comment-time { font-size: 11px; color: var(--text-3); }

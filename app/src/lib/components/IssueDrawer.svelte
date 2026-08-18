@@ -18,6 +18,7 @@
     issueLinks,
     issueTypes,
     issuesStore,
+    labels,
     logWork,
     removeIssueLink,
     selectedIssueId,
@@ -29,10 +30,10 @@
     users,
     workflow,
   } from '../stores/workspace';
-  import { createBranch as apiCreateBranch, deleteBranch as apiDeleteBranch, getBranch, triggerAgent } from '../api';
-  import { displayName, priorityIcon, renderMarkdown, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
+  import { createBranch as apiCreateBranch, deleteBranch as apiDeleteBranch, fetchEventDetail, fetchIssueEvents, getBranch, triggerAgent, type ActivityEventSummary } from '../api';
+  import { describeEvent, describeEventType, displayName, formatRelativeDate, priorityIcon, renderMarkdown, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
   import { lineNumbers } from '../actions/lineNumbers';
-  import { STORY_POINT_VALUES, slugifyBranchName, type Branch, type IssueLinkType } from '$domain';
+  import { STORY_POINT_VALUES, slugifyBranchName, type Branch, type EventEnvelope, type IssueLinkType } from '$domain';
 
   let draftComment = '';
   let submittingComment = false;
@@ -78,6 +79,56 @@
     lastIssueId = issue.id;
     editingDescription = false;
     replyingToId = null;
+    activityTab = 'comments';
+  }
+
+  let activityTab: 'comments' | 'activity' = 'comments';
+
+  // The Activity tab is a query over the event log, not a live store — re-fetched whenever the
+  // drawer opens a different issue or this issue's own comment count changes (a decent proxy
+  // for "something new happened here" without wiring a dedicated live-update path for it). The
+  // list itself only carries summaries (see ActivityEventSummary) — a row's full detail is
+  // fetched lazily, only once that row is actually expanded, and cached in eventDetails so
+  // re-collapsing/re-expanding doesn't re-fetch.
+  let activityEvents: ActivityEventSummary[] = [];
+  let expandedEventIds = new Set<string>();
+  let eventDetails: Record<string, EventEnvelope | 'loading' | 'error'> = {};
+
+  $: if (issue) void loadActivity(issue.id, issueComments.length);
+  async function loadActivity(issueId: string, _commentCount: number) {
+    try {
+      activityEvents = (await fetchIssueEvents(issueId)).events;
+    } catch {
+      // Non-critical — the rest of the drawer still works without an activity feed.
+    }
+  }
+
+  async function toggleActivityItem(eventId: string) {
+    if (expandedEventIds.has(eventId)) {
+      expandedEventIds.delete(eventId);
+      expandedEventIds = expandedEventIds;
+      return;
+    }
+    expandedEventIds.add(eventId);
+    expandedEventIds = expandedEventIds;
+    if (eventDetails[eventId]) return; // already fetched (or in flight) — reuse it
+    eventDetails[eventId] = 'loading';
+    try {
+      eventDetails[eventId] = (await fetchEventDetail(eventId)).event;
+    } catch {
+      eventDetails[eventId] = 'error';
+    }
+  }
+
+  function actorLabel(actor: ActivityEventSummary['actor']): string {
+    if (actor.kind === 'user') return $users.find((u) => u.id === actor.userId)?.displayName ?? 'Someone';
+    if (actor.kind === 'automation') return 'An automation rule';
+    return 'The system';
+  }
+
+  /** The full `User` behind an event's actor, when it has one — an automation rule or the system has no avatar to show. */
+  function actorUser(actor: ActivityEventSummary['actor']) {
+    return actor.kind === 'user' ? $users.find((u) => u.id === actor.userId) : undefined;
   }
 
   /** Closes the drawer by clearing the selection. */
@@ -568,36 +619,81 @@
       </div>
 
       <div class="section">
-        <div class="section-label">Activity</div>
-        {#each topLevelComments as c (c.id)}
-          <CommentThread
-            comment={c}
-            allComments={issueComments}
-            users={$users}
-            currentUserId={$currentUser?.id}
-            {replyingToId}
-            bind:draftReply
-            {submittingReply}
-            onStartReply={startReply}
-            onCancelReply={cancelReply}
-            onSubmitReply={submitReply}
-            onEditComment={async (commentId, body) => { if (issue) await editComment(issue.id, commentId, body); }}
-            onDeleteComment={async (commentId) => { if (issue) await removeComment(issue.id, commentId); }}
-          />
-        {/each}
-
-        <div class="new-comment">
-          <MarkdownEditor
-            bind:value={draftComment}
-            rows={3}
-            placeholder="Add a comment… (markdown supported)"
-            submitLabel="Comment"
-            disabled={!draftComment.trim()}
-            submitting={submittingComment}
-            onSubmit={submitComment}
-            mentionUsers={$users}
-          />
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" aria-selected={activityTab === 'comments'} class:active={activityTab === 'comments'} on:click={() => (activityTab = 'comments')}>Comments</button>
+          <button type="button" role="tab" aria-selected={activityTab === 'activity'} class:active={activityTab === 'activity'} on:click={() => (activityTab = 'activity')}>Activity</button>
         </div>
+
+          {#if activityTab === 'activity'}
+            {#if activityEvents.length === 0}
+              <div class="activity-empty">Nothing logged yet.</div>
+            {:else}
+              <ul class="activity-list">
+                {#each [...activityEvents].reverse() as event (event.id)}
+                  {@const expanded = expandedEventIds.has(event.id)}
+                  {@const detail = eventDetails[event.id]}
+                  {@const user = actorUser(event.actor)}
+                  <li>
+                    <button type="button" class="activity-row" aria-expanded={expanded} on:click={() => toggleActivityItem(event.id)}>
+                      <Icon name={expanded ? 'chevdown' : 'chevron'} size={10} />
+                      {#if user}
+                        <Avatar userId={user.id} name={displayName(user)} avatarUrl={user.avatarUrl} kind={user.kind} size={18} />
+                      {:else}
+                        <div class="activity-system-avatar"><Icon name="gear" size={10} /></div>
+                      {/if}
+                      <span class="activity-actor">{actorLabel(event.actor)}</span>
+                      <span class="activity-desc">{describeEventType(event.type)}</span>
+                      <span class="activity-time">{formatRelativeDate(event.occurredAt)}</span>
+                    </button>
+                    {#if expanded}
+                      <div class="activity-detail">
+                        {#if detail === 'loading' || detail === undefined}
+                          Loading details…
+                        {:else if detail === 'error'}
+                          Couldn't load details for this event.
+                        {:else}
+                          <div>{describeEvent(detail, { workflow: $workflow, labels: $labels, users: $users })}</div>
+                          {#if (detail.payload.type === 'comment.created' || detail.payload.type === 'comment.edited') && detail.payload.body}
+                            <div class="activity-detail-body markdown">{@html renderMarkdown(detail.payload.body, $users)}</div>
+                          {/if}
+                        {/if}
+                      </div>
+                    {/if}
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+          {:else}
+            {#each topLevelComments as c (c.id)}
+              <CommentThread
+                comment={c}
+                allComments={issueComments}
+                users={$users}
+                currentUserId={$currentUser?.id}
+                {replyingToId}
+                bind:draftReply
+                {submittingReply}
+                onStartReply={startReply}
+                onCancelReply={cancelReply}
+                onSubmitReply={submitReply}
+                onEditComment={async (commentId, body) => { if (issue) await editComment(issue.id, commentId, body); }}
+                onDeleteComment={async (commentId) => { if (issue) await removeComment(issue.id, commentId); }}
+              />
+            {/each}
+
+            <div class="new-comment">
+              <MarkdownEditor
+                bind:value={draftComment}
+                rows={3}
+                placeholder="Add a comment… (markdown supported)"
+                submitLabel="Comment"
+                disabled={!draftComment.trim()}
+                submitting={submittingComment}
+                onSubmit={submitComment}
+                mentionUsers={$users}
+              />
+            </div>
+          {/if}
       </div>
     </div>
   </div>
@@ -688,6 +784,30 @@
   .agent-picker-option { gap: 6px; }
   .section-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin: 0 0 8px; }
   .section { margin-bottom: 20px; }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+  .tabs button {
+    font-size: 12px; font-weight: 600; color: var(--text-3); padding: 6px 4px 8px; margin-right: 14px;
+    border-bottom: 2px solid transparent; cursor: pointer;
+  }
+  .tabs button:hover { color: var(--text-2); }
+  .tabs button.active { color: var(--text); border-bottom-color: var(--accent); }
+  .activity-empty { font-size: 12px; color: var(--text-3); }
+  .activity-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; max-height: 320px; overflow-y: auto; }
+  .activity-list li { font-size: 12px; color: var(--text-2); line-height: 1.5; }
+  .activity-row {
+    display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; font: inherit; color: inherit;
+    padding: 4px 2px; border-radius: 4px; cursor: pointer;
+  }
+  .activity-row:hover { background: var(--surface-2); }
+  .activity-system-avatar {
+    width: 18px; height: 18px; border-radius: 50%; background: var(--surface-sunken);
+    display: inline-flex; align-items: center; justify-content: center; color: var(--text-3); flex: 0 0 auto;
+  }
+  .activity-actor { font-weight: 600; color: var(--text); }
+  .activity-desc { flex: 1; }
+  .activity-time { color: var(--text-3); }
+  .activity-detail { margin: 2px 2px 6px 24px; padding: 8px 10px; background: var(--surface-2); border-radius: 6px; font-size: 12px; color: var(--text-2); }
+  .activity-detail-body { margin-top: 6px; }
   .desc-view {
     display: block; width: 100%; text-align: left; font: inherit; background: var(--surface-2); border: 1px solid transparent;
     border-radius: 8px; padding: 8px; cursor: text; min-height: 40px;

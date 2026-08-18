@@ -4,6 +4,7 @@ import type {
   AgentApprovalPolicy,
   AgentBudget,
   AgentRun,
+  ActorRef,
   Attachment,
   AutomationAction,
   AutomationRule,
@@ -117,6 +118,29 @@ function get<T>(path: string): Promise<T> {
 /** Loads the read model for one project (plus every workspace-global list) — called on app start and whenever the active project switches. `projectId` omitted defaults to the server's first project. */
 export function fetchBootstrap(projectId?: string): Promise<Bootstrap> {
   return get<Bootstrap>(projectId ? `/bootstrap?projectId=${encodeURIComponent(projectId)}` : '/bootstrap');
+}
+
+/**
+ * A lightweight entry in an issue's Activity list — enough to render the collapsed row
+ * (who, what kind of thing, when) without the full payload. The full details (e.g. a status
+ * change's from/to names, a comment's complete body) are only fetched via
+ * {@link fetchEventDetail}, and only for the one entry the user actually expands.
+ */
+export interface ActivityEventSummary {
+  id: string;
+  occurredAt: string;
+  actor: ActorRef;
+  type: EventType;
+}
+
+/** Fetches the (lightweight) log of every event concerning one issue (oldest first) — powers its Activity tab. */
+export function fetchIssueEvents(issueId: string): Promise<{ events: ActivityEventSummary[] }> {
+  return get<{ events: ActivityEventSummary[] }>(`/issues/${issueId}/events`);
+}
+
+/** Fetches one event's full payload — called only when a user expands that Activity row. */
+export function fetchEventDetail(eventId: string): Promise<{ event: EventEnvelope }> {
+  return get<{ event: EventEnvelope }>(`/events/${eventId}`);
 }
 
 /** Fetches every event with `sequence` greater than the given one. */

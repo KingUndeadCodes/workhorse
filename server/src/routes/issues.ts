@@ -3,8 +3,9 @@ import { Hono } from 'hono';
 import type { ActorRef, FieldValue, Issue, IssueLinkType, IssuePriority, User } from '../domain';
 import { parseMentionedUserIds, slugifyBranchName, STORY_POINT_VALUES } from '../domain';
 import type { AuthVariables } from '../auth/middleware';
-import { agentRepo, engine, gitProviders, gitRepoLinkRepo, issueRepo, projectRepo, userRepo, workflowRepo } from '../container';
+import { agentRepo, engine, gitProviders, gitRepoLinkRepo, issueRepo, projectRepo, userRepo, workflowRepo, workspaceRepo } from '../container';
 import { persistState } from '../db/core';
+import { getEventsForIssue } from '../eventLog';
 
 export const issuesRouter = new Hono<{ Variables: AuthVariables }>();
 
@@ -184,6 +185,22 @@ issuesRouter.delete('/issues/:id', async (c) => {
 
   const event = await engine.emitEvent({ actor: actorFrom(c.get('user')), subject: { type: 'issue', id }, payload: { type: 'issue.deleted', issueId: id } });
   return c.json({ event });
+});
+
+/**
+ * GET /api/issues/:id/events -> `{ events }` — every logged event concerning this issue
+ * (status/field/assignee changes, comments and their edits, links, worklogs, branches, ...),
+ * oldest first. Powers the Activity tab. Deliberately lightweight (id/time/actor/type only,
+ * not the full payload) — the point of the list is a scannable feed, and a workspace with a
+ * long history shouldn't have to ship every changed field/comment body for every row just to
+ * render it. A row's full detail is a separate, per-event fetch (`GET /api/events/:id`),
+ * made only when a user actually expands that row.
+ */
+issuesRouter.get('/issues/:id/events', async (c) => {
+  const id = c.req.param('id');
+  const workspace = await workspaceRepo.getWorkspace();
+  const events = getEventsForIssue(workspace.id, id).map((e) => ({ id: e.id, occurredAt: e.occurredAt, actor: e.actor, type: e.payload.type }));
+  return c.json({ events });
 });
 
 /**

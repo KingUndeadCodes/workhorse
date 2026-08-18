@@ -3,7 +3,7 @@ import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js';
 import DOMPurify from 'dompurify';
 import { PROJECT_COLORS, replaceMentions, STORY_POINT_VALUES } from '$domain';
-import type { AutomationAction, FieldDefinition, Mentionable, User, Workflow } from '$domain';
+import type { AutomationAction, EventEnvelope, EventType, FieldDefinition, Label, Mentionable, User, Workflow } from '$domain';
 
 marked.setOptions({ breaks: true, gfm: true });
 // Syntax-highlights fenced code blocks (```js, ```python, ...) via highlight.js, tagging each
@@ -179,6 +179,135 @@ export function storyPointDueDateWarning(points: number, dueDate: string | undef
     return `${points} points typically takes up to ${maxDays < 1 ? `${maxDays * 24}h` : `${maxDays} day${maxDays === 1 ? '' : 's'}`}, but the due date is only ${Math.round(daysUntilDue)} day${Math.round(daysUntilDue) === 1 ? '' : 's'} away.`;
   }
   return null;
+}
+
+/**
+ * Generic one-line label for an Activity row's collapsed state — derived from the event's
+ * `type` alone, since the row list ({@link ActivityEventSummary} in api.ts) is deliberately
+ * sent without the full payload. Vaguer than {@link describeEvent} on purpose ("changed the
+ * status" rather than "changed status to In Progress") — the specifics only get fetched, and
+ * only get rendered, once a row is actually expanded.
+ */
+export function describeEventType(type: EventType): string {
+  switch (type) {
+    case 'issue.created':
+      return 'created this issue';
+    case 'issue.statusChanged':
+      return 'changed the status';
+    case 'issue.resolved':
+      return 'resolved this issue';
+    case 'issue.reopened':
+      return 'reopened this issue';
+    case 'issue.assigneesChanged':
+      return 'changed assignees';
+    case 'issue.agentAssigned':
+      return 'attached an AI agent';
+    case 'issue.agentUnassigned':
+      return 'removed an AI agent';
+    case 'issue.priorityChanged':
+      return 'changed priority';
+    case 'issue.labelsChanged':
+      return 'changed labels';
+    case 'issue.dueDateChanged':
+      return 'changed the due date';
+    case 'issue.sprintChanged':
+      return 'changed the sprint';
+    case 'issue.updated':
+      return 'updated this issue';
+    case 'issue.linked':
+      return 'linked another issue';
+    case 'issue.unlinked':
+      return 'removed a linked issue';
+    case 'issue.deleted':
+      return 'deleted this issue';
+    case 'issue.worklogAdded':
+      return 'logged work';
+    case 'issue.attachmentAdded':
+      return 'added an attachment';
+    case 'issue.branchCreated':
+      return 'created a branch';
+    case 'issue.branchDeleted':
+      return 'deleted the branch';
+    case 'comment.created':
+      return 'added a comment';
+    case 'comment.edited':
+      return 'edited a comment';
+    case 'comment.deleted':
+      return 'deleted a comment';
+    case 'comment.mentioned':
+      return 'mentioned someone in a comment';
+    default:
+      return type.replace(/[._]/g, ' ');
+  }
+}
+
+/**
+ * One-line human-readable summary of a logged event's full detail, e.g. "changed status to
+ * In Progress" or "added a comment". Needs the complete {@link EventEnvelope} (fetched only
+ * once a row is expanded, see {@link describeEventType} for the collapsed-row equivalent) —
+ * `who` said it is rendered separately by the caller (the actor is already resolved to a
+ * display string there); this only covers the "what". Falls back to a de-camel-cased version
+ * of the event's own type string for the long tail of event kinds that don't need a bespoke
+ * phrasing (repo file reads/writes, agent run lifecycle, project/sprint events reaching this
+ * issue indirectly, etc).
+ */
+export function describeEvent(event: EventEnvelope, ctx: { workflow: Workflow | null; labels: Label[]; users: User[] }): string {
+  const p = event.payload;
+  const statusName = (id: string) => ctx.workflow?.statuses.find((s) => s.id === id)?.name ?? id;
+  const labelName = (id: string) => ctx.labels.find((l) => l.id === id)?.name ?? id;
+  const userName = (id: string) => ctx.users.find((u) => u.id === id)?.displayName ?? id;
+  switch (p.type) {
+    case 'issue.created':
+      return 'created this issue';
+    case 'issue.statusChanged':
+      return `changed status from ${statusName(p.fromStatusId)} to ${statusName(p.toStatusId)}`;
+    case 'issue.resolved':
+      return `resolved this issue (${statusName(p.statusId)})`;
+    case 'issue.reopened':
+      return `reopened this issue (${statusName(p.statusId)})`;
+    case 'issue.assigneesChanged':
+      return p.toUserIds.length
+        ? `changed assignees from ${p.fromUserIds.map(userName).join(', ') || 'no one'} to ${p.toUserIds.map(userName).join(', ')}`
+        : `unassigned everyone (was ${p.fromUserIds.map(userName).join(', ') || 'no one'})`;
+    case 'issue.agentAssigned':
+      return 'attached an AI agent';
+    case 'issue.agentUnassigned':
+      return 'removed an AI agent';
+    case 'issue.priorityChanged':
+      return `changed priority from ${p.fromPriority} to ${p.toPriority}`;
+    case 'issue.labelsChanged':
+      return `changed labels from ${p.fromLabelIds.map(labelName).join(', ') || 'none'} to ${p.toLabelIds.map(labelName).join(', ') || 'none'}`;
+    case 'issue.dueDateChanged':
+      return p.toDueDate ? `set the due date to ${p.toDueDate}` : 'cleared the due date';
+    case 'issue.sprintChanged':
+      return p.toSprintId ? 'moved this issue to a sprint' : 'moved this issue out of its sprint';
+    case 'issue.updated':
+      return `updated ${Object.keys(p.changes).join(', ') || 'this issue'}`;
+    case 'issue.linked':
+      return 'linked another issue';
+    case 'issue.unlinked':
+      return 'removed a linked issue';
+    case 'issue.deleted':
+      return 'deleted this issue';
+    case 'issue.worklogAdded':
+      return `logged ${formatDuration(p.timeSpentSeconds)} of work`;
+    case 'issue.attachmentAdded':
+      return `attached ${p.fileName}`;
+    case 'issue.branchCreated':
+      return `created branch ${p.name}`;
+    case 'issue.branchDeleted':
+      return 'deleted the branch';
+    case 'comment.created':
+      return p.parentCommentId ? 'replied to a comment' : 'added a comment';
+    case 'comment.edited':
+      return 'edited a comment';
+    case 'comment.deleted':
+      return 'deleted a comment';
+    case 'comment.mentioned':
+      return 'mentioned someone in a comment';
+    default:
+      return p.type.replace(/[._]/g, ' ');
+  }
 }
 
 /** One-line human-readable summary of an automation/agent action, e.g. "→ In Progress" or `comment "Thanks!"` — shared between the Automations rule list and Agents' proposed/past-run displays. */
