@@ -25,12 +25,13 @@ them, instead of rebuilding from scratch.
   "4 days left" / "38 / 55 pts done" text, not derived from any sprint data. A real version
   would compute this from `Sprint`/`Issue.storyPoints`/`Issue.statusId` for the active sprint.
   and "· Checkout Revamp" hardcoded breadcrumb suffix.
-- **Fake multi-project sidebar list** (`Sidebar.svelte`) — hardcoded "Nimbus — Onboarding",
-  "Forge — Internal Tools", "Vault — Compliance" entries with no matching data (this app is
-  currently single-project) and no click handler. Re-add once the app actually supports
-  multiple projects.
 - **Hardcoded "6 members" workspace subtitle** (`Sidebar.svelte`) — replaced with a real count
   derived from `$users.length`.
 - **Hardcoded "Leon Slavin"/`u_leon` footer & search icon button** (`Sidebar.svelte`,
   `TopBar.svelte`) — the sidebar footer now shows the real `$currentUser`; the search button
   had no handler at all and was removed (re-add once there's an actual search feature).
+- **Fake multi-project sidebar list** (`Sidebar.svelte`) — previously hardcoded "Nimbus —
+  Onboarding", "Forge — Internal Tools", "Vault — Compliance" entries with no matching data or
+  click handler. **Resolved**: the sidebar now lists real projects from the `$projects` store,
+  supports switching between them, and has a working "create project" form (name/key). Kept
+  here as a changelog note rather than a still-open gap.
