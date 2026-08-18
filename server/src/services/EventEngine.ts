@@ -13,6 +13,7 @@ import type {
   FieldValue,
   Issue,
 } from '../domain';
+import { parseMentionedUserIds } from '../domain';
 import { appendEvent as appendEventToLog, getEventById } from '../eventLog';
 import type { AgentRepository } from '../repositories/AgentRepository';
 import type { AgentRunRepository } from '../repositories/AgentRunRepository';
@@ -676,12 +677,36 @@ export class EventEngine {
   private async runAgents(event: EventEnvelope): Promise<void> {
     const issue = await this.issueForEvent(event);
     if (!issue) return;
+
+    // If the triggering comment @-mentions one or more specific agents by name, only those
+    // agents are eligible to respond — otherwise every attached agent independently decides
+    // whether to react to the same comment, and a comment addressed to one bot (e.g.
+    // "@SlurBot ...") gets answered by a different one that merely happens to also be attached
+    // to the issue. A comment that mentions no agent (or isn't a comment at all) keeps the
+    // broad behavior: any attached, matching agent may react on its own judgment.
+    const body = event.payload.type === 'comment.created' || event.payload.type === 'comment.mentioned' || event.payload.type === 'comment.edited' ? event.payload.body : undefined;
+    let mentionedAgentIds: Set<string> | undefined;
+    if (body !== undefined) {
+      const users = await this.users.list();
+      const mentioned = parseMentionedUserIds(body, users).filter((uid) => users.find((u) => u.id === uid)?.kind === 'agent');
+      if (mentioned.length > 0) mentionedAgentIds = new Set(mentioned);
+    }
+
     for (const agent of await this.agents.list()) {
       if (!agent.enabled) continue;
       // An agent only reacts to an issue it's been explicitly attached to — a broad
       // `eventFilter` alone doesn't let an agent auto-react to issues nobody put it on.
       if (!issue.agentAssignments?.includes(agent.userId)) continue;
+      if (mentionedAgentIds && !mentionedAgentIds.has(agent.userId)) continue;
       if (agent.ignoreSelfTriggeredEvents && event.actor.kind === 'user' && event.actor.userId === agent.userId) continue;
+      // `comment.mentioned` always accompanies a `comment.created` for the very same comment
+      // (see routes/issues.ts, which emits both back-to-back for any comment that @-mentions
+      // someone). An agent whose filter includes `comment.created` already gets a run from that
+      // sibling event, so honoring `comment.mentioned` here too would post its reply twice.
+      // Agents that react *only* to being mentioned (comment.created not in their filter, e.g.
+      // one that should stay quiet unless addressed) still need `comment.mentioned` to fire —
+      // it's their only trigger for comments at all.
+      if (event.payload.type === 'comment.mentioned' && matchesFilter(agent.eventFilter, 'comment.created')) continue;
       if (!matchesFilter(agent.eventFilter, event.payload.type)) continue;
       if (!(await this.withinBudget(agent))) continue;
       await this.startAgentRun(agent, issue, event);

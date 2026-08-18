@@ -161,7 +161,7 @@
   .markdown :global(p) { margin: 0 0 8px; }
   .markdown :global(p:last-child) { margin-bottom: 0; }
   .markdown :global(ul), .markdown :global(ol) { margin: 0 0 8px; padding-left: 20px; }
-  .markdown :global(code) { font-family: 'Mono', ui-monospace, monospace; font-size: 11.5px; background: var(--surface-sunken); padding: 1px 4px; border-radius: 4px; }
+  .markdown :global(code) { font-family: 'Mono', ui-monospace, monospace; font-size: 11.5px; background: var(--surface-sunken); padding: 1px 4px; border-radius: 4px; font-variant-ligatures: none; font-feature-settings: 'liga' 0, 'calt' 0; }
   .markdown :global(pre) { background: var(--surface-sunken); border-radius: 6px; padding: 8px; overflow-x: auto; margin: 0 0 8px; }
   .markdown :global(pre code) { background: none; padding: 0; }
   .markdown :global(a) { color: var(--accent-strong); }
