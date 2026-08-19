@@ -112,7 +112,14 @@
                 <div class="cell-empty">No issues</div>
               {:else}
                 {#each cellIssues as issue (issue.id)}
-                  <IssueCard {issue} selected={issue.id === $selectedIssueId} onSelect={selectIssue} {doneStatusIds} />
+                  <IssueCard
+                    {issue}
+                    selected={issue.id === $selectedIssueId}
+                    onSelect={selectIssue}
+                    {doneStatusIds}
+                    {columns}
+                    onMove={(issueId, statusIds) => statusIds[0] && moveIssueToStatus(issueId, statusIds[0])}
+                  />
                 {/each}
               {/if}
             </div>
@@ -150,7 +157,14 @@
                 <div class="cell-empty">No issues</div>
               {:else}
                 {#each cellIssues as issue (issue.id)}
-                  <IssueCard {issue} selected={issue.id === $selectedIssueId} onSelect={selectIssue} {doneStatusIds} />
+                  <IssueCard
+                    {issue}
+                    selected={issue.id === $selectedIssueId}
+                    onSelect={selectIssue}
+                    {doneStatusIds}
+                    {columns}
+                    onMove={(issueId, statusIds) => statusIds[0] && moveIssueToStatus(issueId, statusIds[0])}
+                  />
                 {/each}
               {/if}
             </div>
@@ -203,7 +217,11 @@
     .board-wrap { padding: 12px 10px 20px; }
     .board-inner { min-width: 0; }
     .board-head { display: none; }
-    .swimlane-body { grid-template-columns: 1fr; gap: 10px; }
-    .cell-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-3); }
+    .swimlane-body { grid-template-columns: 1fr; gap: 12px; }
+    .cell-label { display: block; font-size: 12.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-3); margin-bottom: 2px; }
+    .cell { padding: 10px; gap: 10px; }
+    .swimlane-head { padding: 14px 4px 10px; gap: 12px; }
+    .epic-name { font-size: 13.5px; }
+    .epic-progress { font-size: 12px; }
   }
 </style>

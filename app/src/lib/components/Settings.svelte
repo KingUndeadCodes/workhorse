@@ -417,10 +417,20 @@
     .settings { flex-direction: column; overflow: auto; }
     .tabs {
       flex: 0 0 auto; flex-direction: row; overflow-x: auto; overflow-y: visible;
-      border-right: none; border-bottom: 1px solid var(--border); padding: 10px;
+      border-right: none; border-bottom: 1px solid var(--border); padding: 10px; gap: 4px;
     }
-    .tab { white-space: nowrap; }
+    .tab { white-space: nowrap; padding: 10px 14px; font-size: 13.5px; }
     .panel { padding: 16px; }
+    .row { padding: 11px 12px; font-size: 13.5px; }
+    .icon-btn { padding: 8px; }
+    .toggle { font-size: 13.5px; }
+    .appearance-row { padding: 18px 16px; gap: 18px; }
+    .theme-picker { gap: 18px; }
+    .add-form { flex-wrap: wrap; }
+    .add-form input, .add-form select { padding: 9px 11px; }
+    .add-form button { padding: 10px 14px; }
+    .rule-row { flex-wrap: wrap; }
+    .rule-row select, .rule-row input { padding: 8px 10px; }
   }
   .subsection-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin: 18px 0 8px; }
   .subsection-label:first-child { margin-top: 0; }

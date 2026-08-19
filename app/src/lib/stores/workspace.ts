@@ -70,9 +70,6 @@ export const loadError = writable<string | null>(null);
 /** Which top-level screen is showing: the board, sprint planning, admin settings, or the workspace view. */
 export const currentView = writable<'board' | 'backlog' | 'settings' | 'projectSettings' | 'workspace'>('board');
 
-/** Whether the off-canvas sidebar is open on narrow (mobile) viewports — irrelevant above the responsive breakpoint, where the sidebar is always visible. */
-export const mobileNavOpen = writable(false);
-
 /**
  * Settings tab to land on next time Settings mounts — set by the TopBar "New…" menu (e.g.
  * "New Label" should open Settings already on the Labels tab). Settings.svelte reads and

@@ -4,7 +4,7 @@
   import NewIssueModal from './NewIssueModal.svelte';
   import AccountSettingsModal from './AccountSettingsModal.svelte';
   import { currentUser, logout } from '../stores/auth';
-  import { currentView, featureFlags, issuesStore, mobileNavOpen, selectedIssueId, settingsJumpTab, sprints } from '../stores/workspace';
+  import { currentView, featureFlags, issuesStore, selectedIssueId, settingsJumpTab, sprints } from '../stores/workspace';
 
   const allTabs: { label: string; view: 'board' | 'backlog' }[] = [
     { label: 'Board', view: 'board' },
@@ -79,8 +79,8 @@
 
 <header class="topbar">
   <div class="crumb-tabs">
-    <button class="icon-btn menu-btn" title="Menu" on:click={() => ($mobileNavOpen = !$mobileNavOpen)}><Icon name="lines" /></button>
     <div class="crumb"><b>Workhorse</b><span>/</span><span>{activeSprint?.name ?? 'No active sprint'}</span></div>
+    <div class="mobile-brand"><Icon name="anvil" size={18} />Workhorse</div>
     <div class="view-tabs">
       {#each tabs as tab}
         <button class="view-tab" class:active={tab.view === $currentView && !selectedIssue} on:click={() => goToView(tab.view)}>{tab.label}</button>
@@ -145,6 +145,7 @@
   .crumb-tabs { display: flex; align-items: center; gap: 18px; min-width: 0; }
   .crumb { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-2); white-space: nowrap; }
   .crumb b { color: var(--text); font-weight: 600; }
+  .mobile-brand { display: none; }
   .view-tabs { display: flex; align-items: center; gap: 2px; background: var(--surface-sunken); border-radius: 8px; padding: 3px; }
   .view-tab { padding: 5px 12px; font-size: 12.5px; font-weight: 500; color: var(--text-2); border-radius: 6px; }
   .view-tab.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); font-weight: 600; }
@@ -156,11 +157,17 @@
   .topbar-right { display: flex; align-items: center; gap: 14px; flex: 0 0 auto; }
   .icon-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 7px; color: var(--text-2); }
   .icon-btn:hover { background: var(--surface-sunken); color: var(--text); }
+  /* --create-button-bg/--create-button-fg are optional per-theme colorSchemes keys in
+     ui.config.json (see index.html) — falls back to the normal accent colors when a scheme
+     omits them. Hover uses a brightness filter rather than a second configured color
+     (--accent-strong's role for the default case), since it has to work regardless of which
+     color source is live. */
   .new-issue-btn {
-    display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--accent-on);
-    background: var(--accent); padding: 7px 12px; border-radius: 7px; white-space: nowrap;
+    display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--create-button-fg, var(--accent-on));
+    background: var(--create-button-bg, var(--accent)); padding: 7px 12px; border-radius: 7px; white-space: nowrap;
+    transition: filter .1s ease;
   }
-  .new-issue-btn:hover { background: var(--accent-strong); }
+  .new-issue-btn:hover { filter: brightness(0.92); }
   .new-menu-wrap, .user-menu-wrap { position: relative; }
   .avatar-btn { display: flex; border-radius: 50%; }
   .avatar-btn:hover { opacity: 0.85; }
@@ -175,20 +182,31 @@
   .user-menu-email { font-size: 11px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .dropdown-item { width: 100%; text-align: left; font-size: 12.5px; color: var(--text-2); padding: 7px 10px; border-radius: 6px; }
   .dropdown-item:hover { background: var(--surface-sunken); color: var(--text); }
-  .menu-btn { display: none; flex: 0 0 auto; }
-
   @media (max-width: 768px) {
-    .topbar { padding: 0 10px; gap: 8px; }
-    .menu-btn { display: flex; }
+    .topbar { padding: 0 10px; gap: 8px; height: 58px; }
+    /* MobileNav's bottom tab bar replaces the old hamburger-triggered drawer below this width
+       — Board/Backlog/Projects/Settings are all one tap away there instead of a second tap
+       through a menu, so the icon-only project/workspace settings buttons (now reachable from
+       MobileNav's More sheet) stay hidden on mobile too. */
+    .icon-btn[title="Project settings"], .icon-btn[title="Workspace settings"] { display: none; }
     .crumb { display: none; }
+    /* Nothing else occupies the bar's left side on mobile (crumb hidden, tabs hidden below) —
+       shows the wordmark instead of leaving it blank, same identity Sidebar's .brand carries
+       on desktop. */
+    .mobile-brand { display: flex; align-items: center; gap: 7px; font-size: 14.5px; font-weight: 700; color: var(--text); white-space: nowrap; }
+    .mobile-brand :global(svg) { color: var(--accent); }
     .crumb-tabs { min-width: 0; overflow: hidden; }
     /* The sidebar's own nav already covers Board/Backlog on mobile — drop the duplicate
        tabs here so the space goes to the issue-key pill instead, which can't go anywhere else. */
     .view-tabs { display: none; }
-    .issue-pill { overflow: hidden; text-overflow: ellipsis; }
-  }
-  @media (max-width: 480px) {
-    .new-issue-label { display: none; }
-    .new-issue-btn { padding: 7px 9px; }
+    .issue-pill { overflow: hidden; text-overflow: ellipsis; font-size: 13px; padding: 6px 11px; }
+    /* MobileNav's own "New" tab already creates an issue one tap away — this dropdown's other
+       options (Sprint/Label/Component/Version) are just shortcuts to creation forms that already
+       live in Backlog/Settings/Project settings, all reachable from MobileNav's More sheet, so
+       nothing is lost by dropping the second, redundant "+" button here. */
+    .new-menu-wrap { display: none; }
+    .avatar-btn { padding: 8px; margin: -8px; }
+    .dropdown { min-width: 200px; padding: 8px; }
+    .dropdown-item { font-size: 14px; padding: 11px 12px; }
   }
 </style>

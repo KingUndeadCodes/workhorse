@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { currentView, currentProjectId, featureFlags, mobileNavOpen, projects, selectedIssueId, switchProject, createNewProject, workspace, users } from '../stores/workspace';
+  import { currentView, currentProjectId, featureFlags, projects, selectedIssueId, switchProject, createNewProject, workspace, users } from '../stores/workspace';
   import { splitHumansAndAgents } from '../util';
 
   // AI agents are User rows (kind: 'agent') so they can be assigned/mentioned like anyone else,
@@ -15,19 +15,16 @@
   // Sprints just got turned off while looking at the Backlog view — nothing to show there anymore.
   $: if (!$featureFlags.sprints && $currentView === 'backlog') $currentView = 'board';
 
-  /** Switching views always leaves the current ticket — Board/Backlog should show the list, not a stale drawer.
-   * Also closes the off-canvas sidebar, since on mobile a nav tap should return to content. */
+  /** Switching views always leaves the current ticket — Board/Backlog should show the list, not a stale drawer. */
   function goToView(view: 'board' | 'backlog') {
     $currentView = view;
     $selectedIssueId = null;
-    $mobileNavOpen = false;
   }
 
   async function selectProject(id: string) {
     if (id === $currentProjectId) return;
     $currentView = 'board';
     await switchProject(id);
-    $mobileNavOpen = false;
   }
 
   let showNewProjectForm = false;
@@ -53,14 +50,10 @@
   }
 </script>
 
-{#if $mobileNavOpen}
-  <button class="backdrop" aria-label="Close menu" on:click={() => ($mobileNavOpen = false)}></button>
-{/if}
-
-<aside class="sidebar" class:open={$mobileNavOpen}>
+<aside class="sidebar">
   <div class="brand"><Icon name="anvil" size={22} />Workhorse</div>
 
-  <button class="workspace" class:active={$currentView === 'workspace'} on:click={() => (($currentView = 'workspace'), ($mobileNavOpen = false))}>
+  <button class="workspace" class:active={$currentView === 'workspace'} on:click={() => ($currentView = 'workspace')}>
     <div class="workspace-dot"></div>
     <div class="workspace-text">
       <div class="workspace-name">{$workspace?.name ?? ''}</div>
@@ -170,17 +163,12 @@
   .proj-new-btn.ghost { color: var(--sidebar-text); background: var(--sidebar-active-bg); }
   .proj-new-btn:disabled { opacity: .5; }
   .proj-new-error { font-size: 11px; color: var(--critical); margin: 0; }
-  .backdrop { display: none; }
 
+  /* Below 768px, MobileNav's bottom tab bar replaces this Sidebar outright (Board/Backlog are
+     one tap away there, Projects/Settings live in its sheets) — so the old hamburger-triggered
+     slide-in drawer is fully disabled here rather than left reachable through a removed
+     trigger. Desktop's rules above are untouched. */
   @media (max-width: 768px) {
-    .backdrop {
-      display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, .45); border: none; padding: 0;
-      z-index: 39; cursor: default;
-    }
-    .sidebar {
-      position: fixed; inset: 0 auto 0 0; z-index: 40; transform: translateX(-100%);
-      transition: transform .18s ease; box-shadow: var(--shadow-lg);
-    }
-    .sidebar.open { transform: translateX(0); }
+    .sidebar { display: none; }
   }
 </style>

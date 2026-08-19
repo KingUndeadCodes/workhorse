@@ -11,6 +11,18 @@
   export let onSelect: (id: string) => void;
   /** Status ids whose category is 'done' — used so overdue styling doesn't apply to finished work. */
   export let doneStatusIds: Set<string> = new Set();
+  /**
+   * The board's columns, for the tap-to-move control — only rendered (via CSS, see
+   * `.move-trigger`'s media query) below the same width Board.svelte's own drag-and-drop
+   * columns collapse into a single stack. Native HTML5 drag-and-drop (this card's `draggable`
+   * below) never fires from a touch gesture on any mobile browser, so past that width dragging
+   * a card between statuses is simply impossible — this is the replacement interaction, not a
+   * bonus one.
+   */
+  export let columns: { id: string; name: string; statusIds: string[] }[] = [];
+  export let onMove: ((issueId: string, statusIds: string[]) => void) | undefined = undefined;
+
+  let showMoveMenu = false;
 
   const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -29,14 +41,34 @@
   function handleDragStart(e: DragEvent) {
     e.dataTransfer?.setData('text/issue-id', issue.id);
   }
+
+  function toggleMoveMenu(e: MouseEvent) {
+    e.stopPropagation();
+    showMoveMenu = !showMoveMenu;
+  }
+  function moveTo(statusIds: string[]) {
+    showMoveMenu = false;
+    onMove?.(issue.id, statusIds);
+  }
+  /** Svelte action: closes the move popover on any click outside it. */
+  function closeOnClickOutside(node: HTMLElement) {
+    function handleClick(event: MouseEvent) {
+      if (!node.contains(event.target as Node)) showMoveMenu = false;
+    }
+    document.addEventListener('click', handleClick, true);
+    return { destroy: () => document.removeEventListener('click', handleClick, true) };
+  }
 </script>
 
-<button
+<div
   class="card"
   class:selected
+  role="button"
+  tabindex="0"
   draggable="true"
   on:dragstart={handleDragStart}
   on:click={() => onSelect(issue.id)}
+  on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelect(issue.id)}
 >
   <div class="top">
     <div class="key-type">
@@ -45,9 +77,25 @@
       </span>
       <span class="key mono">{issue.key}</span>
     </div>
-    {#if $featureFlags.priority}
-      <span class="priority-flag {issue.priority}"><Icon name={priorityIcon(issue.priority)} size={11} /></span>
-    {/if}
+    <div class="top-right">
+      {#if $featureFlags.priority}
+        <span class="priority-flag {issue.priority}"><Icon name={priorityIcon(issue.priority)} size={11} /></span>
+      {/if}
+      {#if onMove && columns.length > 1}
+        <div class="move-wrap" use:closeOnClickOutside>
+          <button class="move-trigger" title="Move to…" on:click={toggleMoveMenu}><Icon name="chevron" size={10} /></button>
+          {#if showMoveMenu}
+            <div class="move-menu">
+              {#each columns as col (col.id)}
+                {#if !col.statusIds.includes(issue.statusId)}
+                  <button class="move-menu-item" on:click|stopPropagation={() => moveTo(col.statusIds)}>{col.name}</button>
+                {/if}
+              {/each}
+            </div>
+          {/if}
+        </div>
+      {/if}
+    </div>
   </div>
 
   <div class="title">{issue.title}</div>
@@ -91,7 +139,7 @@
       {/if}
     </div>
   </div>
-</button>
+</div>
 
 <style>
   .card {
@@ -100,8 +148,35 @@
     transition: box-shadow .12s ease, border-color .12s ease, transform .12s ease;
   }
   .card:hover { box-shadow: var(--shadow); border-color: var(--border-strong); transform: translateY(-1px); }
+  .card:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent); }
   .card.selected { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow); }
   .top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .top-right { display: flex; align-items: center; gap: 4px; }
+  /* Tap-to-move menu — the mobile replacement for drag-and-drop (native HTML5 DnD, used by the
+     column drop targets in Board.svelte, never fires from touch). Hidden by default so it
+     doesn't clutter the card anywhere drag-and-drop already works; shown only at the same width
+     Board.svelte's own columns stop being side-by-side and drag becomes the only way to move a
+     card — right when that stops being viable on a touchscreen. */
+  .move-wrap { position: relative; display: none; }
+  .move-trigger { color: var(--text-3); padding: 3px; border-radius: 5px; transform: rotate(90deg); }
+  .move-trigger:hover { background: var(--surface-2); color: var(--text-2); }
+  .move-menu {
+    position: absolute; top: calc(100% + 4px); right: 0; z-index: 10; min-width: 130px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-lg);
+    padding: 4px; display: flex; flex-direction: column; gap: 1px;
+  }
+  .move-menu-item { padding: 6px 8px; border-radius: 5px; font-size: 12px; color: var(--text-2); text-align: left; }
+  .move-menu-item:hover { background: var(--surface-2); color: var(--text); }
+  @media (max-width: 640px) {
+    .move-wrap { display: block; }
+    /* The move-trigger is a real tap target here (drag-and-drop doesn't work below this width
+       at all — see the doc comment on `columns`/`onMove` above), so it gets a proper ~36px hit
+       area instead of the icon-sized hover target that was fine for a mouse. */
+    .move-trigger { padding: 8px; margin: -8px -6px -8px 0; }
+    .card { padding: 13px 13px 12px; gap: 9px; }
+    .title { font-size: 13.5px; }
+    .key { font-size: 11.5px; }
+  }
   .key-type { display: flex; align-items: center; gap: 6px; }
   .type-icon { width: 14px; height: 14px; flex: 0 0 14px; border-radius: 3px; display: flex; align-items: center; justify-content: center; background: var(--success-soft); color: var(--success); }
   .type-icon.bug { background: var(--critical-soft); color: var(--critical); }

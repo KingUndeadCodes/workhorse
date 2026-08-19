@@ -64,7 +64,11 @@
   .workspace-view { flex: 1; overflow-y: auto; padding: 28px 32px; max-width: 640px; }
 
   @media (max-width: 640px) {
-    .workspace-view { padding: 18px; }
+    .workspace-view { padding: 16px; }
+    .member-row { padding: 12px; gap: 11px; }
+    .member-name { font-size: 14px; }
+    .member-email { font-size: 12.5px; }
+    .role-select, .role-badge { padding: 8px 10px; font-size: 12.5px; }
   }
   .header { margin-bottom: 22px; }
   h1 { font-size: 19px; font-weight: 700; color: var(--text); margin: 0 0 4px; }

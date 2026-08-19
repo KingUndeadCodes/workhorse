@@ -76,3 +76,11 @@ svg { display: block; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; border: 2px solid var(--bg); }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* Below 16px, focusing any text input auto-zooms the whole page on iOS Safari — happens on
+   every text/select/date/number field in the app, since most are sized for desktop density
+   (12-13px). Forcing 16px here at the mobile breakpoint is the only way to stop it; each
+   component's own mobile media query still separately enlarges padding/touch-target size. */
+@media (max-width: 768px) {
+  input, select, textarea { font-size: 16px !important; }
+}

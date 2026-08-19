@@ -24,7 +24,12 @@
          --preview-light-*/--preview-dark-* (also in the base :root, unconditionally) are a
          second, unscoped copy of both palettes — used by Settings' Appearance-tab theme picker
          to render an accurate mini preview of *both* options at once, since --bg/--accent/etc.
-         above only ever reflect whichever theme is currently active. -->
+         above only ever reflect whichever theme is currently active.
+
+         --create-button-bg/--create-button-fg are ordinary colorSchemes keys (like --accent) —
+         a per-theme override for the TopBar "+ New…" button. A scheme that omits them (they're
+         optional, unlike the rest of the palette) just leaves the CSS variable unset;
+         TopBar.svelte falls back to --accent/--accent-on via var(--create-button-bg, var(--accent)) in that case. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="{{UI_FONT_GOOGLE_URL}}" rel="stylesheet" />

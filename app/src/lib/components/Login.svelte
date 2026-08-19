@@ -127,4 +127,13 @@
   button.link:hover {
     color: var(--accent);
   }
+
+  @media (max-width: 480px) {
+    .auth-card { padding: 24px 20px; gap: 16px; }
+    h1 { font-size: 18px; }
+    label { font-size: 13px; }
+    input { padding: 11px 12px; }
+    button.primary { padding: 12px 0; font-size: 14px; }
+    button.link { padding: 6px 0; font-size: 12.5px; }
+  }
 </style>

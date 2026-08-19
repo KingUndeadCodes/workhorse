@@ -879,8 +879,26 @@
   .link-title { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 
   @media (max-width: 640px) {
-    .drawer-body { padding: 14px 14px 24px; }
-    .field-grid { grid-template-columns: 1fr; }
+    .drawer-body { padding: 14px 14px 28px; }
+    .field-grid { grid-template-columns: 1fr; gap: 14px; }
     .assignee-field { grid-column: auto; }
+    .drawer-head { padding: 12px 14px 10px; }
+    .icon-btn { width: 44px; height: 44px; }
+    .icon-btn.small { width: 32px; height: 32px; }
+    .title-input { font-size: 17px; }
+    /* Selects/inputs go from a cramped 30px desktop row to a real ~40px tap target; app.css
+       separately forces their font-size to 16px here to stop iOS auto-zoom-on-focus. */
+    .field-select, .field-input { height: 40px; padding: 0 10px; }
+    .field-label { font-size: 11px; }
+    .status-select { padding: 8px 12px; font-size: 12.5px; }
+    .assignee-chip, .agent-chip { padding: 5px 10px 5px 6px; font-size: 13px; }
+    .assignee-add { padding: 6px 12px; font-size: 13px; }
+    .chip-remove :global(svg) { width: 13px; height: 13px; }
+    .tabs button { padding: 9px 4px 10px; font-size: 13px; margin-right: 18px; }
+    .activity-row { padding: 8px 4px; }
+    .desc-view { padding: 11px; }
+    .inline-form { flex-wrap: wrap; }
+    .inline-input, .inline-select, .inline-btn { padding: 8px 10px; }
+    .advanced-toggle { padding: 8px 0; }
   }
 </style>

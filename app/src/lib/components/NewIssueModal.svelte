@@ -104,4 +104,16 @@
   .btn.ghost { color: var(--text-2); background: var(--surface-2); }
   .btn.primary { color: var(--accent-on); background: var(--accent); }
   .btn.primary:disabled { opacity: .5; }
+
+  @media (max-width: 640px) {
+    /* Anchored to the bottom instead of centered — leaves room above for the on-screen
+       keyboard and reads as a native mobile sheet rather than a shrunk desktop dialog. */
+    .backdrop { align-items: flex-end; }
+    .modal { width: 100%; max-height: calc(100vh - 60px); border-radius: 16px 16px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); }
+    .modal-title { font-size: 16px; }
+    .row { flex-direction: column; gap: 12px; }
+    .field input, .field select { padding: 10px 12px; }
+    .assignee-check { font-size: 13.5px; padding: 2px 0; }
+    .btn { padding: 11px 16px; font-size: 13.5px; }
+  }
 </style>

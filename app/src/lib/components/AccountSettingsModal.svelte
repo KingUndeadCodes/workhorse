@@ -115,4 +115,13 @@
   .btn.ghost { color: var(--text-2); background: var(--surface-2); }
   .btn.primary { color: var(--accent-on); background: var(--accent); }
   .btn.primary:disabled { opacity: .5; }
+
+  @media (max-width: 640px) {
+    .backdrop { align-items: flex-end; }
+    .modal { width: 100%; max-height: calc(100vh - 60px); border-radius: 16px 16px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); }
+    .modal-title { font-size: 16px; }
+    .field input { padding: 10px 12px; }
+    .btn { padding: 11px 16px; font-size: 13.5px; }
+    .btn.small { padding: 8px 12px; font-size: 12.5px; }
+  }
 </style>

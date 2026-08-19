@@ -284,4 +284,14 @@
     color: var(--text-3); border-right: 1px solid var(--border); padding-right: 8px;
   }
   .markdown :global(.hljs-ln-code) { vertical-align: top; padding-left: 10px; }
+
+  @media (max-width: 640px) {
+    .comment-name { font-size: 13.5px; }
+    .comment-time, .comment-collapsed-count, .comment-edited { font-size: 12px; }
+    .markdown { font-size: 13.5px; }
+    /* Reply/Edit/Delete were a row of small text links sized for a mouse — widened gap and
+       padding so adjacent actions don't get mistapped on a touchscreen. */
+    .comment-actions { gap: 16px; }
+    .reply-btn { font-size: 12.5px; padding: 6px 2px; }
+  }
 </style>

@@ -232,10 +232,20 @@
     .settings { flex-direction: column; overflow: auto; }
     .tabs {
       flex: 0 0 auto; flex-direction: row; overflow-x: auto; overflow-y: visible;
-      border-right: none; border-bottom: 1px solid var(--border); padding: 10px;
+      border-right: none; border-bottom: 1px solid var(--border); padding: 10px; gap: 4px;
     }
-    .tab { white-space: nowrap; }
+    .tab { white-space: nowrap; padding: 10px 14px; font-size: 13.5px; }
     .panel { padding: 16px; }
+    .row { padding: 11px 12px; font-size: 13.5px; }
+    .icon-btn { padding: 8px; }
+    .toggle { font-size: 13.5px; }
+    .field-row { flex-wrap: wrap; gap: 8px 12px; }
+    .field-row input[type='text'] { padding: 9px 11px; max-width: none; }
+    .swatch { width: 30px; height: 30px; }
+    .add-form { flex-wrap: wrap; }
+    .add-form input { padding: 9px 11px; }
+    .add-form button { padding: 10px 14px; }
+    .feature-list { grid-template-columns: 1fr; }
   }
   .section-hint { font-size: 12px; line-height: 1.5; color: var(--text-3); margin: 0 0 12px; max-width: 520px; }
   .subsection-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin: 18px 0 8px; }

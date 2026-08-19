@@ -1,6 +1,7 @@
 <script lang="ts">
   import Sidebar from './lib/components/Sidebar.svelte';
   import TopBar from './lib/components/TopBar.svelte';
+  import MobileNav from './lib/components/MobileNav.svelte';
   import Board from './lib/components/Board.svelte';
   import Backlog from './lib/components/Backlog.svelte';
   import Settings from './lib/components/Settings.svelte';
@@ -63,6 +64,7 @@
         <Settings />
       {/if}
     </div>
+    <MobileNav />
   </div>
 {/if}
 
@@ -78,6 +80,12 @@
     display: flex;
     flex-direction: column;
     background: var(--bg);
+  }
+  /* Reserves room for MobileNav's fixed bottom tab bar (~54px + safe-area inset) so the last
+     row of board/backlog/settings content isn't hidden underneath it. Desktop is untouched —
+     MobileNav renders nothing above 768px. */
+  @media (max-width: 768px) {
+    .main { padding-bottom: calc(54px + env(safe-area-inset-bottom)); }
   }
   .status-screen {
     height: 100vh;
