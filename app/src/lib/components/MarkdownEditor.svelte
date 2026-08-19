@@ -258,4 +258,16 @@
   .btn.primary { color: var(--accent-on); background: var(--accent); }
   .btn.primary:disabled { opacity: .5; }
   .btn.ghost { color: var(--text-2); background: var(--surface-2); }
+
+  @media (max-width: 640px) {
+    /* Toolbar icons and Submit/Cancel were sized for a mouse cursor (26x24 buttons) — grown
+       toward the ~40px tap-target minimum so formatting a reply from a phone doesn't mean
+       repeatedly missing the bold/italic/etc buttons. */
+    .toolbar { padding: 4px 6px; gap: 4px; }
+    .toolbar button { width: 34px; height: 34px; }
+    textarea { font-size: 16px; padding: 12px 10px; }
+    .footer { font-size: 11px; padding: 7px 10px; }
+    .actions { gap: 10px; }
+    .btn { padding: 10px 16px; font-size: 13.5px; }
+  }
 </style>

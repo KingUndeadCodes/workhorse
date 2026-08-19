@@ -65,7 +65,7 @@
 <style>
   .workspace-view { flex: 1; overflow-y: auto; padding: 28px 32px; max-width: 640px; }
 
-  @media (max-width: 640px) {
+  @media (max-width: 767px) {
     .workspace-view { padding: 16px; }
     .member-row { padding: 12px; gap: 11px; }
     .member-name { font-size: 14px; }

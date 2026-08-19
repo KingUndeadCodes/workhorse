@@ -3,6 +3,8 @@
   import Avatar from './Avatar.svelte';
   import MarkdownEditor from './MarkdownEditor.svelte';
   import CommentThread from './CommentThread.svelte';
+  import BottomSheet from './BottomSheet.svelte';
+  import { isMobile } from '../stores/viewport';
   import { currentUser } from '../stores/auth';
   import {
     addComment,
@@ -234,6 +236,10 @@
   function toggleAgentPicker() {
     showAgentPicker = !showAgentPicker;
   }
+  /** Desktop's popover only — on mobile the picker is a BottomSheet, which closes itself via its own backdrop/Escape handling. */
+  function closeAgentPickerOutside() {
+    if (!$isMobile) showAgentPicker = false;
+  }
   async function attachAgentChecked(agentUserId: string, e: Event) {
     const checkbox = e.currentTarget as HTMLInputElement;
     if (!issue) return;
@@ -419,33 +425,63 @@
       </div>
 
       <div class="field-grid">
-        <div class="field assignee-field" use:closeOnClickOutside={() => (showAssigneePicker = false)}>
-          <span class="field-label">{$t('issueDrawer.assigneesLabel')}</span>
-          <div class="assignee-control">
-            {#each issue.assigneeIds as uid (uid)}
-              {@const u = $users.find((usr) => usr.id === uid)}
-              {#if u}
-                <span class="assignee-chip">
-                  <Avatar userId={u.id} name={displayName(u)} avatarUrl={u.avatarUrl} kind={u.kind} size={16} />
-                  {displayName(u)}
-                  <button type="button" class="chip-remove" on:click={() => toggleAssignee(u.id)}><Icon name="x" size={10} /></button>
-                </span>
-              {/if}
-            {/each}
-            <button type="button" class="assignee-add" on:click={() => (showAssigneePicker = !showAssigneePicker)}>{$t('issueDrawer.addChip')}</button>
-            {#if showAssigneePicker}
-              <div class="assignee-popover">
-                {#each humanUsers as u (u.id)}
-                  <label class="assignee-option">
-                    <input type="checkbox" checked={issue.assigneeIds.includes(u.id)} on:change={() => toggleAssignee(u.id)} />
-                    <Avatar userId={u.id} name={u.displayName} avatarUrl={u.avatarUrl} size={16} />
-                    {u.displayName}
-                  </label>
-                {/each}
-              </div>
-            {/if}
+        {#if $isMobile}
+          <div class="field assignee-field">
+            <span class="field-label">{$t('issueDrawer.assigneesLabel')}</span>
+            <div class="assignee-control">
+              {#each issue.assigneeIds as uid (uid)}
+                {@const u = $users.find((usr) => usr.id === uid)}
+                {#if u}
+                  <span class="assignee-chip">
+                    <Avatar userId={u.id} name={displayName(u)} avatarUrl={u.avatarUrl} kind={u.kind} size={16} />
+                    {displayName(u)}
+                    <button type="button" class="chip-remove" on:click={() => toggleAssignee(u.id)}><Icon name="x" size={10} /></button>
+                  </span>
+                {/if}
+              {/each}
+              <button type="button" class="assignee-add" on:click={() => (showAssigneePicker = true)}>{$t('issueDrawer.addChip')}</button>
+            </div>
           </div>
-        </div>
+          <BottomSheet open={showAssigneePicker} title={$t('issueDrawer.assigneesLabel')} onClose={() => (showAssigneePicker = false)}>
+            <div class="sheet-picker-list">
+              {#each humanUsers as u (u.id)}
+                <label class="sheet-picker-option">
+                  <input type="checkbox" checked={issue.assigneeIds.includes(u.id)} on:change={() => toggleAssignee(u.id)} />
+                  <Avatar userId={u.id} name={u.displayName} avatarUrl={u.avatarUrl} size={20} />
+                  <span class="sheet-picker-label">{u.displayName}</span>
+                </label>
+              {/each}
+            </div>
+          </BottomSheet>
+        {:else}
+          <div class="field assignee-field" use:closeOnClickOutside={() => (showAssigneePicker = false)}>
+            <span class="field-label">{$t('issueDrawer.assigneesLabel')}</span>
+            <div class="assignee-control">
+              {#each issue.assigneeIds as uid (uid)}
+                {@const u = $users.find((usr) => usr.id === uid)}
+                {#if u}
+                  <span class="assignee-chip">
+                    <Avatar userId={u.id} name={displayName(u)} avatarUrl={u.avatarUrl} kind={u.kind} size={16} />
+                    {displayName(u)}
+                    <button type="button" class="chip-remove" on:click={() => toggleAssignee(u.id)}><Icon name="x" size={10} /></button>
+                  </span>
+                {/if}
+              {/each}
+              <button type="button" class="assignee-add" on:click={() => (showAssigneePicker = !showAssigneePicker)}>{$t('issueDrawer.addChip')}</button>
+              {#if showAssigneePicker}
+                <div class="assignee-popover">
+                  {#each humanUsers as u (u.id)}
+                    <label class="assignee-option">
+                      <input type="checkbox" checked={issue.assigneeIds.includes(u.id)} on:change={() => toggleAssignee(u.id)} />
+                      <Avatar userId={u.id} name={u.displayName} avatarUrl={u.avatarUrl} size={16} />
+                      {u.displayName}
+                    </label>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+          </div>
+        {/if}
         {#if $featureFlags.reporters}
           <div class="field">
             <span class="field-label">{$t('issueDrawer.reporterLabel')}</span>
@@ -513,7 +549,7 @@
         <p class="points-warning"><Icon name="clock" size={13} />{pointsDueDateWarning}</p>
       {/if}
 
-      <div class="section agents-section" use:closeOnClickOutside={() => (showAgentPicker = false)}>
+      <div class="section agents-section" use:closeOnClickOutside={closeAgentPickerOutside}>
         <div class="section-label">{$t('issueDrawer.aiAgentsLabel')}</div>
         {#if attachedAgents.length === 0}
           <p class="agents-hint">{$t('issueDrawer.agentsHint')}</p>
@@ -534,7 +570,7 @@
             </span>
           {/each}
           <button type="button" class="assignee-add" on:click={toggleAgentPicker}>{$t('issueDrawer.addChip')}</button>
-          {#if showAgentPicker}
+          {#if !$isMobile && showAgentPicker}
             <div class="assignee-popover">
               {#if unattachedAgents.length === 0}
                 <div class="agents-empty">{$t('issueDrawer.noMoreAgents')}</div>
@@ -551,6 +587,23 @@
           {/if}
         </div>
       </div>
+
+      <BottomSheet open={$isMobile && showAgentPicker} title={$t('issueDrawer.aiAgentsLabel')} onClose={() => (showAgentPicker = false)}>
+        {#if unattachedAgents.length === 0}
+          <div class="agents-empty">{$t('issueDrawer.noMoreAgents')}</div>
+        {:else}
+          <div class="sheet-picker-list">
+            {#each unattachedAgents as a (a.id)}
+              <label class="sheet-picker-option">
+                <input type="checkbox" on:change={(e) => attachAgentChecked(a.id, e)} />
+                <Avatar userId={a.id} name={displayName(a)} kind={a.kind} size={20} />
+                <Icon name="robot" size={12} />
+                <span class="sheet-picker-label">{displayName(a)}</span>
+              </label>
+            {/each}
+          </div>
+        {/if}
+      </BottomSheet>
 
       {#if $gitRepoLink}
         <div class="section">
@@ -774,6 +827,13 @@
   .assignee-option { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text); padding: 5px 6px; border-radius: 5px; cursor: pointer; }
   .assignee-option:hover { background: var(--surface-2); }
   .agents-section { position: relative; }
+  /* Mobile equivalent of .assignee-popover/.assignee-option — same checkbox-list content, sized
+     for a BottomSheet's touch rows instead of a mouse-hover popover. */
+  .sheet-picker-list { display: flex; flex-direction: column; gap: 2px; }
+  .sheet-picker-option { display: flex; align-items: center; gap: 10px; padding: 11px 8px; border-radius: 10px; font-size: 14px; color: var(--text); }
+  .sheet-picker-option:active { background: var(--surface-sunken); }
+  .sheet-picker-option input[type="checkbox"] { width: 18px; height: 18px; flex: 0 0 auto; }
+  .sheet-picker-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .branch-row { display: inline-flex; align-items: center; gap: 6px; }
   .branch-link {
     display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--accent-strong);
@@ -887,7 +947,7 @@
   .link-type { color: var(--text-3); text-transform: capitalize; flex: 0 0 auto; }
   .link-title { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 
-  @media (max-width: 640px) {
+  @media (max-width: 767px) {
     .drawer-body { padding: 14px 14px 28px; }
     .field-grid { grid-template-columns: 1fr; gap: 14px; }
     .assignee-field { grid-column: auto; }
@@ -898,8 +958,17 @@
     /* Selects/inputs go from a cramped 30px desktop row to a real ~40px tap target; app.css
        separately forces their font-size to 16px here to stop iOS auto-zoom-on-focus. */
     .field-select, .field-input { height: 40px; padding: 0 10px; }
+    /* A date value ("MM/DD/YYYY") is short and fixed-width — letting it stretch to the full
+       grid column (like Priority/Sprint's longer option text legitimately needs to) just reads
+       as an oversized field for what it holds, so it gets its own narrower cap instead. */
+    .field-input[type="date"] { max-width: 165px; padding: 0 8px; }
     .field-label { font-size: 11px; }
-    .status-select { padding: 8px 12px; font-size: 12.5px; }
+    /* app.css forces every select to 16px below this width (iOS zoom-on-focus prevention),
+       which the status pill can't opt out of — but its inline `width: {n}ch` (index.svelte's
+       key-row markup) was sized assuming the desktop 11.5px font, so at 16px the same character
+       count blew the pill up far past what its text needs. `!important` cancels that inline
+       style so the pill sizes to its actual (larger) rendered text instead of compounding both. */
+    .status-select { padding: 3px 9px; width: auto !important; }
     .assignee-chip, .agent-chip { padding: 5px 10px 5px 6px; font-size: 13px; }
     .assignee-add { padding: 6px 12px; font-size: 13px; }
     .chip-remove :global(svg) { width: 13px; height: 13px; }

@@ -3,6 +3,7 @@
   import TopBar from './lib/components/TopBar.svelte';
   import MobileNav from './lib/components/MobileNav.svelte';
   import Board from './lib/components/Board.svelte';
+  import MobileBoard from './lib/components/MobileBoard.svelte';
   import Backlog from './lib/components/Backlog.svelte';
   import Settings from './lib/components/Settings.svelte';
   import ProjectSettings from './lib/components/ProjectSettings.svelte';
@@ -12,6 +13,7 @@
   import { currentUser } from './lib/stores/auth';
   import { currentView, initWorkspace, loaded, loadError, selectedIssueId } from './lib/stores/workspace';
   import { connectWebSocket, disconnectWebSocket } from './lib/ws';
+  import { isMobile } from './lib/stores/viewport';
   import { t } from './lib/i18n';
 
   // Kicks off the one API call that populates every store in workspace.ts, once there's a
@@ -54,7 +56,7 @@
       {#if $selectedIssueId && ($currentView === 'board' || $currentView === 'backlog')}
         <IssueDrawer />
       {:else if $currentView === 'board'}
-        <Board />
+        {#if $isMobile}<MobileBoard />{:else}<Board />{/if}
       {:else if $currentView === 'backlog'}
         <Backlog />
       {:else if $currentView === 'workspace'}

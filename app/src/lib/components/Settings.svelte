@@ -13,6 +13,7 @@
     workflow,
   } from '../stores/workspace';
   import { theme, type Theme } from '../stores/theme';
+  import { isMobile } from '../stores/viewport';
   import { locale, t, tn, SUPPORTED_LOCALES, type Locale } from '../i18n';
 
   const THEME_OPTIONS: { id: Theme; labelKey: string }[] = [
@@ -334,7 +335,11 @@
       </form>
 
       <div class="subsection-label">{$t('settings.workflowLabel')}</div>
-      <WorkflowDiagram />
+      {#if $isMobile}
+        <p class="workflow-mobile-notice">{$t('settings.workflowDesktopOnly')}</p>
+      {:else}
+        <WorkflowDiagram />
+      {/if}
     {:else if activeTab === 'Automations'}
       <div class="list">
         {#each $automationRules as rule (rule.id)}
@@ -458,6 +463,7 @@
     .row { padding: 11px 12px; font-size: 13.5px; }
     .icon-btn { padding: 8px; }
     .toggle { font-size: 13.5px; }
+    .toggle input[type="checkbox"] { width: 18px; height: 18px; }
     .appearance-row { padding: 18px 16px; gap: 18px; }
     .theme-picker { gap: 18px; }
     .add-form { flex-wrap: wrap; }
@@ -543,6 +549,10 @@
   .language-disclaimer {
     font-size: 12px; line-height: 1.5; color: var(--warning); background: var(--warning-soft);
     border-radius: 8px; padding: 9px 12px; margin: 14px 0 0; max-width: 560px;
+  }
+  .workflow-mobile-notice {
+    font-size: 12.5px; line-height: 1.5; color: var(--text-2); background: var(--surface-2);
+    border: 1px dashed var(--border); border-radius: 8px; padding: 16px; margin: 0; max-width: 480px;
   }
   .icon-btn { color: var(--text-3); padding: 4px; border-radius: 6px; margin-left: auto; }
   .icon-btn:hover { background: var(--surface); color: var(--critical); }

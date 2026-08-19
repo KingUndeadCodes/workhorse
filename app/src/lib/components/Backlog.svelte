@@ -1,7 +1,8 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import IssueCard from './IssueCard.svelte';
-  import { completeSprint, createSprint, featureFlags, issueTypes, issuesStore, selectedIssueId, sprints, startSprint, statusCategories, workflow } from '../stores/workspace';
+  import { board, completeSprint, createSprint, featureFlags, issueTypes, issuesStore, moveIssueToStatus, selectedIssueId, sprints, startSprint, statusCategories, workflow } from '../stores/workspace';
+  import { isMobile } from '../stores/viewport';
   import { t, tn } from '../i18n';
 
   let newSprintName = '';
@@ -16,9 +17,18 @@
   );
   $: backlogIssues = trackedIssues.filter((i) => !i.sprintId);
   $: orderedSprints = [...$sprints].sort((a, b) => (a.state === 'active' ? -1 : b.state === 'active' ? 1 : 0));
+  // Empty on desktop, so IssueCard's move-trigger (gated on `columns.length > 1`) never renders
+  // there — Backlog has no drag-and-drop today, so desktop behavior stays exactly as it was.
+  // On mobile this closes a real functional gap: Backlog previously had zero way to change an
+  // issue's status at all, on any viewport.
+  $: mobileMoveColumns = $isMobile ? ($board?.columns ?? []) : [];
 
   function selectIssue(id: string) {
     $selectedIssueId = id;
+  }
+
+  function moveIssue(issueId: string, statusIds: string[]) {
+    if (statusIds[0]) moveIssueToStatus(issueId, statusIds[0]);
   }
 
   async function submitNewSprint() {
@@ -53,7 +63,15 @@
       </div>
       <div class="issue-list">
         {#each sprintIssues as issue (issue.id)}
-          <IssueCard {issue} selected={issue.id === $selectedIssueId} onSelect={selectIssue} {doneStatusIds} />
+          <IssueCard
+          {issue}
+          selected={issue.id === $selectedIssueId}
+          onSelect={selectIssue}
+          {doneStatusIds}
+          columns={mobileMoveColumns}
+          onMove={moveIssue}
+          moveMenuMode="sheet"
+        />
         {:else}
           <div class="empty">{$t('backlog.noIssuesInSprint')}</div>
         {/each}
@@ -69,7 +87,15 @@
     </div>
     <div class="issue-list">
       {#each backlogIssues as issue (issue.id)}
-        <IssueCard {issue} selected={issue.id === $selectedIssueId} onSelect={selectIssue} {doneStatusIds} />
+        <IssueCard
+          {issue}
+          selected={issue.id === $selectedIssueId}
+          onSelect={selectIssue}
+          {doneStatusIds}
+          columns={mobileMoveColumns}
+          onMove={moveIssue}
+          moveMenuMode="sheet"
+        />
       {:else}
         <div class="empty">{$t('backlog.nothingUnscheduled')}</div>
       {/each}
@@ -101,4 +127,20 @@
   .new-sprint input { flex: 1; font: inherit; font-size: 12.5px; color: var(--text); background: none; border: none; outline: none; }
   .new-sprint button { font-size: 12px; font-weight: 600; color: var(--accent-strong); background: var(--accent-soft); padding: 6px 10px; border-radius: 6px; }
   .new-sprint button:disabled { opacity: .5; }
+
+  @media (max-width: 767px) {
+    .backlog { padding: 12px 12px 24px; gap: 20px; }
+    .issue-list { grid-template-columns: 1fr; }
+    .sprint-name { font-size: 14.5px; }
+    .sprint-goal { font-size: 12.5px; }
+    .sprint-state { padding: 4px 9px; font-size: 11px; }
+    /* Start/Complete Sprint were compact inline buttons sized for a mouse — full-width and
+       taller gives them a real tap target and keeps them from getting lost in the wrapped
+       .sprint-head row on a narrow screen. */
+    .sprint-head { gap: 8px 10px; }
+    .btn { flex: 1 0 100%; padding: 11px 0; font-size: 13px; text-align: center; }
+    .new-sprint { padding: 13px; }
+    .new-sprint input { font-size: 16px; }
+    .new-sprint button { padding: 9px 13px; font-size: 13px; }
+  }
 </style>

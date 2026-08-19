@@ -247,4 +247,26 @@
   .run-status.status-pending, .run-status.status-awaitingApproval { color: var(--warning); background: var(--warning-soft); }
   .run-summary { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
   .failure-reason { font-size: 11.5px; color: var(--critical); margin: 0 0 4px; }
+
+  @media (max-width: 767px) {
+    /* .agent-card-head packs avatar/name/model-chip/token-chip/toggle/chevron into one row —
+       fine with a mouse's precision and a wide desktop panel, but too many small tap targets
+       crammed together on a phone. Wrapping instead of truncating harder keeps every control
+       reachable rather than hiding the ones that lose the squeeze. */
+    .agent-card-head { flex-wrap: wrap; padding: 13px 12px; gap: 8px 10px; }
+    .agent-name { font-size: 13.5px; }
+    /* .agent-info still shares its wrap "line" with the avatar unless forced to the full row
+       width — otherwise it flex-shrinks to a sliver next to the avatar and its now-`normal`
+       white-space wraps the description one character per line. */
+    .agent-info { flex-basis: 100%; }
+    .agent-instructions { white-space: normal; }
+    .model-chip { font-size: 11px; padding: 4px 10px; }
+    .toggle { font-size: 12.5px; }
+    .toggle input[type="checkbox"] { width: 18px; height: 18px; }
+    .pending-card { padding: 12px; }
+    .pending-actions { gap: 18px; }
+    .text-btn { padding: 6px 2px; font-size: 13px; }
+    .run-row { flex-wrap: wrap; }
+    .run-time { margin-left: 0; }
+  }
 </style>

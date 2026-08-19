@@ -4,7 +4,8 @@
   import NewIssueModal from './NewIssueModal.svelte';
   import AccountSettingsModal from './AccountSettingsModal.svelte';
   import { currentUser, logout } from '../stores/auth';
-  import { currentView, featureFlags, issuesStore, selectedIssueId, settingsJumpTab, sprints } from '../stores/workspace';
+  import { currentView, featureFlags, issuesStore, selectedIssueId, sprints } from '../stores/workspace';
+  import { goToNewCatalogItem, goToNewSprint } from '../actions/quickCreate';
   import { t } from '../i18n';
 
   const allTabs: { labelKey: string; view: 'board' | 'backlog' }[] = [
@@ -65,14 +66,12 @@
 
   function newSprint() {
     showNewMenu = false;
-    goToView('backlog');
+    goToNewSprint();
   }
 
-  function newCatalogItem(tab: string) {
+  function newCatalogItem(tab: 'Labels' | 'Components' | 'Versions') {
     showNewMenu = false;
-    $settingsJumpTab = tab;
-    // Components/Versions live in project settings now; Labels stays in workspace settings.
-    $currentView = tab === 'Components' || tab === 'Versions' ? 'projectSettings' : 'settings';
+    goToNewCatalogItem(tab);
   }
 </script>
 

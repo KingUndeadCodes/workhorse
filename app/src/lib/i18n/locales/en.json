@@ -145,6 +145,7 @@
     "categoryNamePlaceholder": "Category name (e.g. Resolving Differences)",
     "addCategoryButton": "Add category",
     "workflowLabel": "Workflow",
+    "workflowDesktopOnly": "The workflow diagram is a drag-and-drop editing canvas built for a mouse — open Settings on a desktop browser to edit statuses and transitions.",
     "ruleNamePlaceholder": "Rule name",
     "triggerLabel": "Trigger",
     "conditionsLabel": "Conditions (optional — runs unconditionally if none)",
@@ -259,6 +260,10 @@
     "continueThread": {
       "one": "Continue thread ({count} more reply)",
       "other": "Continue thread ({count} more replies)"
+    },
+    "showReplies": {
+      "one": "Show {count} reply",
+      "other": "Show {count} replies"
     },
     "replyPlaceholder": "Write a reply… (markdown supported)",
     "replyButton": "Reply"

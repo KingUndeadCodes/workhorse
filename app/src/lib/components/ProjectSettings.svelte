@@ -253,6 +253,8 @@
     .add-form input { padding: 9px 11px; }
     .add-form button { padding: 10px 14px; }
     .feature-list { grid-template-columns: 1fr; }
+    .toggle { font-size: 13.5px; }
+    .toggle input[type="checkbox"] { width: 18px; height: 18px; }
   }
   .section-hint { font-size: 12px; line-height: 1.5; color: var(--text-3); margin: 0 0 12px; max-width: 520px; }
   .subsection-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin: 18px 0 8px; }

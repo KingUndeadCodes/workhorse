@@ -2,6 +2,7 @@
   import type { Issue } from '$domain';
   import Icon from './Icon.svelte';
   import Avatar from './Avatar.svelte';
+  import BottomSheet from './BottomSheet.svelte';
   import { issueTypes, users, labels, featureFlags } from '../stores/workspace';
   import { displayName, priorityIcon, storyPointColor, typeIcon } from '../util';
   import { t } from '../i18n';
@@ -22,6 +23,15 @@
    */
   export let columns: { id: string; name: string; statusIds: string[] }[] = [];
   export let onMove: ((issueId: string, statusIds: string[]) => void) | undefined = undefined;
+  /**
+   * `'dropdown'` (default, Board.svelte's usage): the trigger and its popover only appear via
+   * CSS below 640px, matching Board.svelte's own swimlane-collapse breakpoint — unchanged
+   * desktop behavior. `'sheet'` (MobileBoard.svelte/Backlog.svelte's mobile usage): the trigger
+   * always renders and its column list opens in a BottomSheet instead of the absolutely-
+   * positioned popover — used by callers that already know, via `$isMobile`, that they only
+   * ever mount below the app's mobile breakpoint, so there's no CSS-visibility gap to bridge.
+   */
+  export let moveMenuMode: 'dropdown' | 'sheet' = 'dropdown';
 
   let showMoveMenu = false;
 
@@ -83,18 +93,31 @@
         <span class="priority-flag {issue.priority}"><Icon name={priorityIcon(issue.priority)} size={11} /></span>
       {/if}
       {#if onMove && columns.length > 1}
-        <div class="move-wrap" use:closeOnClickOutside>
-          <button class="move-trigger" title={$t('issueCard.moveToTitle')} on:click={toggleMoveMenu}><Icon name="chevron" size={10} /></button>
-          {#if showMoveMenu}
-            <div class="move-menu">
+        {#if moveMenuMode === 'sheet'}
+          <button class="move-trigger sheet-trigger" title={$t('issueCard.moveToTitle')} on:click|stopPropagation={toggleMoveMenu}><Icon name="chevron" size={10} /></button>
+          <BottomSheet open={showMoveMenu} title={$t('issueCard.moveToTitle')} onClose={() => (showMoveMenu = false)}>
+            <div class="move-sheet-list">
               {#each columns as col (col.id)}
                 {#if !col.statusIds.includes(issue.statusId)}
-                  <button class="move-menu-item" on:click|stopPropagation={() => moveTo(col.statusIds)}>{col.name}</button>
+                  <button type="button" class="move-sheet-item" on:click|stopPropagation={() => moveTo(col.statusIds)}>{col.name}</button>
                 {/if}
               {/each}
             </div>
-          {/if}
-        </div>
+          </BottomSheet>
+        {:else}
+          <div class="move-wrap" use:closeOnClickOutside>
+            <button class="move-trigger" title={$t('issueCard.moveToTitle')} on:click={toggleMoveMenu}><Icon name="chevron" size={10} /></button>
+            {#if showMoveMenu}
+              <div class="move-menu">
+                {#each columns as col (col.id)}
+                  {#if !col.statusIds.includes(issue.statusId)}
+                    <button class="move-menu-item" on:click|stopPropagation={() => moveTo(col.statusIds)}>{col.name}</button>
+                  {/if}
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {/if}
       {/if}
     </div>
   </div>
@@ -168,6 +191,17 @@
   }
   .move-menu-item { padding: 6px 8px; border-radius: 5px; font-size: 12px; color: var(--text-2); text-align: left; }
   .move-menu-item:hover { background: var(--surface-2); color: var(--text); }
+  /* Sheet mode's trigger isn't gated by the dropdown mode's `display:none`/media-query pair
+     above — callers passing `moveMenuMode="sheet"` already only ever mount below the app's
+     mobile breakpoint (see the `moveMenuMode` prop doc comment), so the trigger should just
+     always be a real tap target here, sized the same as the dropdown mode's mobile CSS below. */
+  .sheet-trigger { padding: 8px; margin: -8px -6px -8px 0; }
+  .move-sheet-list { display: flex; flex-direction: column; gap: 2px; }
+  .move-sheet-item {
+    padding: 13px 10px; border-radius: 10px; font-size: 14.5px; font-weight: 500; color: var(--text);
+    text-align: left; width: 100%;
+  }
+  .move-sheet-item:active { background: var(--surface-sunken); }
   @media (max-width: 640px) {
     .move-wrap { display: block; }
     /* The move-trigger is a real tap target here (drag-and-drop doesn't work below this width

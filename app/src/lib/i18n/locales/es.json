@@ -145,6 +145,7 @@
     "categoryNamePlaceholder": "Nombre de la categoría (p. ej., Resolving Differences)",
     "addCategoryButton": "Añadir categoría",
     "workflowLabel": "Workflow",
+    "workflowDesktopOnly": "El diagrama de flujo de trabajo es un lienzo de edición mediante arrastrar y soltar, diseñado para ratón — abre Ajustes en un navegador de escritorio para editar estados y transiciones.",
     "ruleNamePlaceholder": "Nombre de la regla",
     "triggerLabel": "Disparador",
     "conditionsLabel": "Condiciones (opcional — sin ellas la regla siempre se ejecuta)",
@@ -259,6 +260,10 @@
     "continueThread": {
       "one": "Continuar el hilo ({count} respuesta más)",
       "other": "Continuar el hilo ({count} respuestas más)"
+    },
+    "showReplies": {
+      "one": "Mostrar {count} respuesta",
+      "other": "Mostrar {count} respuestas"
     },
     "replyPlaceholder": "Escribe una respuesta… (se admite markdown)",
     "replyButton": "Responder"

@@ -35,6 +35,7 @@
   import MarkdownEditor from './MarkdownEditor.svelte';
   import { displayName, formatRelativeDate, renderMarkdown } from '../util';
   import { lineNumbers } from '../actions/lineNumbers';
+  import { isMobile } from '../stores/viewport';
   import { locale, t, tn } from '../i18n';
   import type { User } from '$domain';
 
@@ -64,8 +65,10 @@
   $: childrenByParent = getChildrenByParent(allComments);
   $: children = [...(childrenByParent.get(comment.id) ?? [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   // Indentation is capped, not unbounded — a very deep thread should still stay readable
-  // rather than squeezing itself into a sliver on the right edge of the drawer.
-  $: indent = Math.min(depth, 4) * 22;
+  // rather than squeezing itself into a sliver on the right edge of the drawer. The per-level
+  // pixel amount lives in CSS (see --depth below), not here, so the mobile breakpoint can use a
+  // tighter indent on narrow screens without this needing to know the viewport width.
+  $: depthLevel = Math.min(depth, 4);
 
   /** Every reply under this comment, however deep — the count shown on a collapsed thread, same idea as Reddit's "[+] N children" stub. */
   function countDescendants(commentId: string, map: Map<string, Comment[]>): number {
@@ -89,6 +92,18 @@
   const MAX_WINDOW_DEPTH = 4;
   let continued = false;
   $: atWindowEdge = windowDepth + 1 >= MAX_WINDOW_DEPTH && !continued;
+
+  // On mobile every comment's replies start hidden behind a "Show N replies" tap, same shape
+  // as the "Continue thread" stub above but user-initiated rather than depth-triggered — a
+  // thread with several replies at every level otherwise dumps the whole conversation on
+  // screen at once, which reads fine on a wide desktop drawer but buries the top-level comment
+  // a mobile reader actually opened the thread for. Desktop is unaffected: `$isMobile` gates
+  // this off entirely there, so children always render immediately like before.
+  let repliesRevealed = false;
+  function revealRepliesAndReply() {
+    repliesRevealed = true;
+    onStartReply(comment.id);
+  }
 
   let editing = false;
   let editDraft = '';
@@ -130,7 +145,7 @@
 </script>
 
 {#if author}
-  <div class="comment" style="margin-left:{indent}px">
+  <div class="comment" style="--depth:{depthLevel}">
     <Avatar userId={author.id} name={displayName(author)} avatarUrl={author.avatarUrl} kind={author.kind} size={depth === 0 ? 26 : 22} />
     <div class="comment-body">
       <button type="button" class="comment-meta" on:click={() => (collapsed = !collapsed)} aria-expanded={!collapsed}>
@@ -163,7 +178,7 @@
       {:else}
         <div class="comment-text markdown" use:lineNumbers={commentHtml}>{@html commentHtml}</div>
         <div class="comment-actions">
-          <button class="reply-btn" on:click={() => onStartReply(comment.id)}><Icon name="reply" size={12} />{$t('commentThread.reply')}</button>
+          <button class="reply-btn" on:click={revealRepliesAndReply}><Icon name="reply" size={12} />{$t('commentThread.reply')}</button>
           {#if comment.authorId === currentUserId}
             <button class="reply-btn" on:click={startEdit}><Icon name="pencil" size={12} />{$t('commentThread.edit')}</button>
             <button class="reply-btn" on:click={handleDelete} disabled={deleting}><Icon name="trash" size={12} />{deleting ? $t('commentThread.deleting') : $t('commentThread.delete')}</button>
@@ -195,6 +210,11 @@
             <Icon name="chevron" size={9} />
             {$tn('commentThread.continueThread', children.length)}
           </button>
+        {:else if children.length > 0 && $isMobile && !repliesRevealed}
+          <button type="button" class="continue-thread" on:click={() => (repliesRevealed = true)} aria-expanded="false">
+            <Icon name="chevron" size={9} />
+            {$tn('commentThread.showReplies', children.length)}
+          </button>
         {:else}
           {#each children as child (child.id)}
             <svelte:self
@@ -221,7 +241,7 @@
 {/if}
 
 <style>
-  .comment { display: flex; gap: 9px; margin-top: 14px; }
+  .comment { display: flex; gap: 9px; margin-top: 14px; margin-left: calc(var(--depth) * 22px); }
   .comment-body { flex: 1; min-width: 0; }
   .comment-meta {
     display: flex; align-items: baseline; gap: 7px; margin-bottom: 3px;
@@ -287,12 +307,20 @@
   .markdown :global(.hljs-ln-code) { vertical-align: top; padding-left: 10px; }
 
   @media (max-width: 640px) {
+    /* Nesting still needs to read as nesting, but 22px/level eats too much of a ~375px
+       viewport by depth 3-4, squeezing body text into a sliver — tighter per-level indent
+       than desktop, capped the same way via --depth. */
+    .comment { gap: 8px; margin-left: calc(var(--depth) * 12px); }
     .comment-name { font-size: 13.5px; }
     .comment-time, .comment-collapsed-count, .comment-edited { font-size: 12px; }
     .markdown { font-size: 13.5px; }
+    /* The whole meta row is the collapse toggle — give it real tap height instead of
+       hugging the text, same idea as the reply/edit/delete row below. */
+    .comment-meta { padding: 6px 4px; margin: 0 0 2px -4px; }
     /* Reply/Edit/Delete were a row of small text links sized for a mouse — widened gap and
        padding so adjacent actions don't get mistapped on a touchscreen. */
-    .comment-actions { gap: 16px; }
-    .reply-btn { font-size: 12.5px; padding: 6px 2px; }
+    .comment-actions { gap: 18px; }
+    .reply-btn { font-size: 12.5px; padding: 8px 2px; }
+    .continue-thread { padding: 8px 10px; font-size: 12.5px; }
   }
 </style>

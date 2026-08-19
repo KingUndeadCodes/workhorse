@@ -220,4 +220,19 @@
   .btn.primary { color: var(--accent-on); background: var(--accent); }
   .btn.primary:disabled { opacity: .5; cursor: default; }
   .btn.ghost { color: var(--text-2); background: var(--surface-2); }
+
+  @media (max-width: 767px) {
+    .agent-form { max-width: none; gap: 12px; }
+    .agent-form > input { padding: 10px 12px; font-size: 16px; }
+    .agent-form-label select, .agent-form-label input { padding: 10px 12px; font-size: 16px; }
+    .check-grid { gap: 12px 16px; }
+    .check-option, .radio-option { font-size: 13.5px; gap: 8px; }
+    .check-option input[type="checkbox"], .radio-option input[type="radio"] { width: 18px; height: 18px; }
+    /* Two number-input columns were fine at desktop width; a phone-portrait budget field needs
+       its full label visible next to the input, which the 1fr/1fr split didn't leave room for. */
+    .budget-grid { grid-template-columns: 1fr; gap: 12px; }
+    .budget-field input { padding: 9px 11px; font-size: 16px; }
+    .form-actions { gap: 10px; }
+    .btn { padding: 10px 16px; font-size: 13.5px; }
+  }
 </style>

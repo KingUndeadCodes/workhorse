@@ -11,6 +11,7 @@
    * media query below, so it never touches desktop layout.
    */
   import Icon from './Icon.svelte';
+  import BottomSheet from './BottomSheet.svelte';
   import NewIssueModal from './NewIssueModal.svelte';
   import AccountSettingsModal from './AccountSettingsModal.svelte';
   import { currentUser, logout } from '../stores/auth';
@@ -26,6 +27,8 @@
     workspace,
   } from '../stores/workspace';
   import { splitHumansAndAgents } from '../util';
+  import { isMobile } from '../stores/viewport';
+  import { goToNewCatalogItem, goToNewSprint } from '../actions/quickCreate';
   import { t, tn } from '../i18n';
 
   const primaryTabs: { icon: string; labelKey: string; view: 'board' | 'backlog' }[] = [
@@ -42,9 +45,23 @@
   }
 
   let showNewIssue = false;
+  let showNewCreate = false;
   let showProjects = false;
   let showMore = false;
   let showAccountSettings = false;
+
+  function openNewIssue() {
+    showNewCreate = false;
+    showNewIssue = true;
+  }
+  function createNewSprint() {
+    showNewCreate = false;
+    goToNewSprint();
+  }
+  function createNewCatalogItem(tab: 'Labels' | 'Components' | 'Versions') {
+    showNewCreate = false;
+    goToNewCatalogItem(tab);
+  }
 
   async function selectProject(id: string) {
     showProjects = false;
@@ -101,7 +118,7 @@
     </button>
   {/each}
 
-  <button type="button" class="nav-btn create-btn" on:click={() => (showNewIssue = true)}>
+  <button type="button" class="nav-btn create-btn" on:click={() => (showNewCreate = true)}>
     <span class="create-circle"><Icon name="plus" size={18} /></span>
     <span>{$t('mobileNav.newTab')}</span>
   </button>
@@ -122,78 +139,98 @@
   </button>
 </nav>
 
-{#if showProjects}
-  <div class="sheet-backdrop" role="button" tabindex="0" on:click={() => (showProjects = false)} on:keydown={(e) => e.key === 'Escape' && (showProjects = false)}>
-    <div class="sheet" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true" aria-label={$t('mobileNav.projectsTab')} tabindex="-1">
-      <div class="sheet-handle"></div>
-      <div class="sheet-title">{$workspace?.name ?? ''}</div>
-      <div class="sheet-list">
-        {#each $projects as p (p.id)}
-          <button type="button" class="sheet-row" class:active={p.id === $currentProjectId} on:click={() => selectProject(p.id)}>
-            <span class="proj-dot" style="background:{p.color}"></span>
-            <span class="sheet-row-label">{p.name}</span>
-            {#if p.id === $currentProjectId}<Icon name="check" size={14} />{/if}
-          </button>
-        {/each}
-      </div>
-      {#if showNewProjectForm}
-        <form class="new-project-form" on:submit|preventDefault={submitNewProject}>
-          <input class="new-project-input" type="text" placeholder={$t('sidebar.newProjectPlaceholder')} bind:value={newProjectName} />
-          <input class="new-project-input" type="text" placeholder={$t('sidebar.newProjectKeyPlaceholder')} bind:value={newProjectKey} />
-          <div class="new-project-actions">
-            <button type="button" class="sheet-btn ghost" on:click={() => (showNewProjectForm = false)}>{$t('common.cancel')}</button>
-            <button type="submit" class="sheet-btn primary" disabled={creatingProject}>{creatingProject ? $t('common.creating') : $t('common.create')}</button>
-          </div>
-          {#if newProjectError}<p class="new-project-error">{newProjectError}</p>{/if}
-        </form>
-      {:else}
-        <button type="button" class="sheet-row add-row" on:click={() => (showNewProjectForm = true)}>
-          <Icon name="plus" size={14} />
-          <span class="sheet-row-label">{$t('mobileNav.newProjectRow')}</span>
-        </button>
-      {/if}
-    </div>
+<BottomSheet open={showNewCreate && $isMobile} title={$t('mobileNav.newTab')} onClose={() => (showNewCreate = false)}>
+  <div class="sheet-list">
+    <button type="button" class="sheet-row" on:click={openNewIssue}>
+      <Icon name="plus" size={15} />
+      <span class="sheet-row-label">{$t('topBar.newIssue')}</span>
+    </button>
+    {#if $featureFlags.sprints}
+      <button type="button" class="sheet-row" on:click={createNewSprint}>
+        <Icon name="list" size={15} />
+        <span class="sheet-row-label">{$t('topBar.newSprint')}</span>
+      </button>
+    {/if}
+    {#if $featureFlags.labels}
+      <button type="button" class="sheet-row" on:click={() => createNewCatalogItem('Labels')}>
+        <Icon name="gear" size={15} />
+        <span class="sheet-row-label">{$t('topBar.newLabel')}</span>
+      </button>
+    {/if}
+    {#if $featureFlags.componentsAndVersions}
+      <button type="button" class="sheet-row" on:click={() => createNewCatalogItem('Components')}>
+        <Icon name="grid" size={15} />
+        <span class="sheet-row-label">{$t('topBar.newComponent')}</span>
+      </button>
+      <button type="button" class="sheet-row" on:click={() => createNewCatalogItem('Versions')}>
+        <Icon name="grid" size={15} />
+        <span class="sheet-row-label">{$t('topBar.newVersion')}</span>
+      </button>
+    {/if}
   </div>
-{/if}
+</BottomSheet>
 
-{#if showMore}
-  <div class="sheet-backdrop" role="button" tabindex="0" on:click={() => (showMore = false)} on:keydown={(e) => e.key === 'Escape' && (showMore = false)}>
-    <div class="sheet" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true" aria-label={$t('mobileNav.moreTab')} tabindex="-1">
-      <div class="sheet-handle"></div>
-      {#if $currentUser}
-        <div class="more-user-row">
-          <div class="more-user-avatar">{$currentUser.displayName.slice(0, 1).toUpperCase()}</div>
-          <div class="more-user-info">
-            <div class="more-user-name">{$currentUser.displayName}</div>
-            <div class="more-user-email">{$currentUser.email}</div>
-          </div>
-        </div>
-      {/if}
-      <div class="sheet-list">
-        <button type="button" class="sheet-row" on:click={() => goTo('workspace')}>
-          <Icon name="bars" size={15} />
-          <span class="sheet-row-label">{$workspace?.name ?? ''} · {$tn('common.members', memberCount)}</span>
-        </button>
-        <button type="button" class="sheet-row" on:click={() => goTo('projectSettings')}>
-          <Icon name="grid" size={15} />
-          <span class="sheet-row-label">{$t('mobileNav.projectSettingsRow')}</span>
-        </button>
-        <button type="button" class="sheet-row" on:click={() => goTo('settings')}>
-          <Icon name="gear" size={15} />
-          <span class="sheet-row-label">{$t('mobileNav.workspaceSettingsRow')}</span>
-        </button>
-        <button type="button" class="sheet-row" on:click={() => ((showMore = false), (showAccountSettings = true))}>
-          <Icon name="pencil" size={15} />
-          <span class="sheet-row-label">{$t('mobileNav.accountSettingsRow')}</span>
-        </button>
-        <button type="button" class="sheet-row danger" on:click={handleLogout}>
-          <Icon name="x" size={15} />
-          <span class="sheet-row-label">{$t('mobileNav.logOutRow')}</span>
-        </button>
+<BottomSheet open={showProjects && $isMobile} title={$workspace?.name ?? ''} onClose={() => (showProjects = false)}>
+  <div class="sheet-list">
+    {#each $projects as p (p.id)}
+      <button type="button" class="sheet-row" class:active={p.id === $currentProjectId} on:click={() => selectProject(p.id)}>
+        <span class="proj-dot" style="background:{p.color}"></span>
+        <span class="sheet-row-label">{p.name}</span>
+        {#if p.id === $currentProjectId}<Icon name="check" size={14} />{/if}
+      </button>
+    {/each}
+  </div>
+  {#if showNewProjectForm}
+    <form class="new-project-form" on:submit|preventDefault={submitNewProject}>
+      <input class="new-project-input" type="text" placeholder={$t('sidebar.newProjectPlaceholder')} bind:value={newProjectName} />
+      <input class="new-project-input" type="text" placeholder={$t('sidebar.newProjectKeyPlaceholder')} bind:value={newProjectKey} />
+      <div class="new-project-actions">
+        <button type="button" class="sheet-btn ghost" on:click={() => (showNewProjectForm = false)}>{$t('common.cancel')}</button>
+        <button type="submit" class="sheet-btn primary" disabled={creatingProject}>{creatingProject ? $t('common.creating') : $t('common.create')}</button>
+      </div>
+      {#if newProjectError}<p class="new-project-error">{newProjectError}</p>{/if}
+    </form>
+  {:else}
+    <button type="button" class="sheet-row add-row" on:click={() => (showNewProjectForm = true)}>
+      <Icon name="plus" size={14} />
+      <span class="sheet-row-label">{$t('mobileNav.newProjectRow')}</span>
+    </button>
+  {/if}
+</BottomSheet>
+
+<BottomSheet open={showMore && $isMobile} onClose={() => (showMore = false)}>
+  {#if $currentUser}
+    <div class="more-user-row">
+      <div class="more-user-avatar">{$currentUser.displayName.slice(0, 1).toUpperCase()}</div>
+      <div class="more-user-info">
+        <div class="more-user-name">{$currentUser.displayName}</div>
+        <div class="more-user-email">{$currentUser.email}</div>
       </div>
     </div>
+  {/if}
+  <div class="sheet-list">
+    <button type="button" class="sheet-row" on:click={() => goTo('workspace')}>
+      <Icon name="bars" size={15} />
+      <span class="sheet-row-label">{$workspace?.name ?? ''} · {$tn('common.members', memberCount)}</span>
+    </button>
+    <button type="button" class="sheet-row" on:click={() => goTo('projectSettings')}>
+      <Icon name="grid" size={15} />
+      <span class="sheet-row-label">{$t('mobileNav.projectSettingsRow')}</span>
+    </button>
+    <button type="button" class="sheet-row" on:click={() => goTo('settings')}>
+      <Icon name="gear" size={15} />
+      <span class="sheet-row-label">{$t('mobileNav.workspaceSettingsRow')}</span>
+    </button>
+    <button type="button" class="sheet-row" on:click={() => ((showMore = false), (showAccountSettings = true))}>
+      <Icon name="pencil" size={15} />
+      <span class="sheet-row-label">{$t('mobileNav.accountSettingsRow')}</span>
+    </button>
+    <button type="button" class="sheet-row danger" on:click={handleLogout}>
+      <Icon name="x" size={15} />
+      <span class="sheet-row-label">{$t('mobileNav.logOutRow')}</span>
+    </button>
   </div>
-{/if}
+</BottomSheet>
 
 {#if showNewIssue}
   <NewIssueModal onClose={() => (showNewIssue = false)} />
@@ -207,8 +244,6 @@
   /* Hidden entirely above the mobile breakpoint — this component only ever renders below it,
      but the guard stays here too since App.svelte mounts it unconditionally. */
   .mobile-nav { display: none; }
-  .sheet-backdrop { display: none; }
-
   @media (max-width: 768px) {
     .mobile-nav {
       position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
@@ -234,17 +269,6 @@
       margin-bottom: 1px;
     }
 
-    .sheet-backdrop {
-      display: flex; align-items: flex-end; position: fixed; inset: 0; z-index: 50;
-      background: rgba(10, 12, 18, 0.5);
-    }
-    .sheet {
-      width: 100%; max-height: 75vh; overflow-y: auto; background: var(--surface);
-      border-radius: 18px 18px 0 0; padding: 10px 16px calc(16px + env(safe-area-inset-bottom));
-      display: flex; flex-direction: column; gap: 10px;
-    }
-    .sheet-handle { width: 36px; height: 4px; border-radius: 99px; background: var(--border-strong); margin: 2px auto 4px; }
-    .sheet-title { font-size: 15px; font-weight: 700; color: var(--text); padding: 0 4px; }
     .sheet-list { display: flex; flex-direction: column; gap: 2px; }
     .sheet-row {
       display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
