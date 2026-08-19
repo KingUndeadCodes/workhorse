@@ -36,7 +36,10 @@
     <!-- Applies a saved light/dark choice before first paint, so it doesn't flash the wrong
          theme while waiting for src/main.ts (which sets this same attribute — see
          src/lib/stores/theme.ts) to load and run. Has to be synchronous and inline, not a
-         module script, to run before the browser paints anything. -->
+         module script, to run before the browser paints anything. A saved value of "system" (or
+         nothing saved yet) deliberately leaves data-theme unset here too, same as theme.ts —
+         the prefers-color-scheme media query above already renders the right thing with zero
+         JS needed for that case. -->
     <script>
       (function () {
         var saved = localStorage.getItem('workhorse-theme');

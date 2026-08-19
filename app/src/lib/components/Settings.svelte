@@ -17,6 +17,7 @@
   const THEME_OPTIONS: { id: Theme; label: string }[] = [
     { id: 'light', label: 'Light' },
     { id: 'dark', label: 'Dark' },
+    { id: 'system', label: 'Match Browser' },
   ];
   import * as api from '../api';
   import { describeAutomationAction, splitHumansAndAgents } from '../util';
@@ -221,7 +222,7 @@
       <div class="appearance-row">
         <div class="appearance-copy">
           <span class="row-name">Theme</span>
-          <span class="row-hint">Switches between light and dark for this browser. Defaults to your system setting until you choose one here.</span>
+          <span class="row-hint">Switches between light and dark for this browser, or follows it live if you pick Match Browser.</span>
         </div>
         <div class="theme-picker">
           {#each THEME_OPTIONS as opt (opt.id)}
@@ -233,12 +234,17 @@
               on:click={() => theme.set(opt.id)}
             >
               <span class="theme-preview theme-preview-{opt.id}">
-                <span class="theme-preview-sidebar"></span>
-                <span class="theme-preview-content">
-                  <span class="theme-preview-bar"></span>
-                  <span class="theme-preview-bar short"></span>
-                  <span class="theme-preview-accent"></span>
-                </span>
+                {#if opt.id === 'system'}
+                  <span class="theme-preview-half theme-preview-half-light"><Icon name="sun" size={13} /></span>
+                  <span class="theme-preview-half theme-preview-half-dark"><Icon name="moon" size={13} /></span>
+                {:else}
+                  <span class="theme-preview-sidebar"></span>
+                  <span class="theme-preview-content">
+                    <span class="theme-preview-bar"></span>
+                    <span class="theme-preview-bar short"></span>
+                    <span class="theme-preview-accent"></span>
+                  </span>
+                {/if}
               </span>
               <span class="theme-option-footer">
                 <span class="theme-option-check"><Icon name="check" size={11} /></span>
@@ -458,6 +464,11 @@
   .theme-preview-accent { display: block; width: 34%; height: 14px; border-radius: 7px; margin-top: auto; }
   .theme-preview-light .theme-preview-accent { background: var(--preview-light-accent); }
   .theme-preview-dark .theme-preview-accent { background: var(--preview-dark-accent); }
+  /* "Match Browser" preview: split down the middle instead of showing one fixed palette, since
+     which side is actually live depends on the OS setting, not a stored choice. */
+  .theme-preview-half { flex: 1; display: flex; align-items: center; justify-content: center; }
+  .theme-preview-half-light { background: var(--preview-light-bg); color: var(--preview-light-text-3); }
+  .theme-preview-half-dark { background: var(--preview-dark-bg); color: var(--preview-dark-text-3); }
   .theme-option-footer { display: flex; align-items: center; gap: 7px; }
   .theme-option-check {
     width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center;

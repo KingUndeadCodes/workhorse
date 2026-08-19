@@ -6,14 +6,14 @@
   // file renders is the inverse of the app theme — the *dark* mark needs a light background
   // to read, and vice versa — so it follows the theme store, not the agent's own identity.
   import { avatarColor, initials } from '../util';
-  import { theme } from '../stores/theme';
+  import { resolvedTheme } from '../stores/theme';
   export let userId: string;
   export let name: string;
   export let avatarUrl: string | undefined = undefined;
   export let size = 20;
   export let kind: string = 'human';
 
-  $: agentMarkSrc = $theme === 'dark' ? '/agents/ollama-light.svg' : '/agents/ollama-dark.svg';
+  $: agentMarkSrc = $resolvedTheme === 'dark' ? '/agents/ollama-light.svg' : '/agents/ollama-dark.svg';
 </script>
 
 {#if kind === 'agent'}
