@@ -13,17 +13,27 @@
     workflow,
   } from '../stores/workspace';
   import { theme, type Theme } from '../stores/theme';
+  import { locale, t, tn, SUPPORTED_LOCALES, type Locale } from '../i18n';
 
-  const THEME_OPTIONS: { id: Theme; label: string }[] = [
-    { id: 'light', label: 'Light' },
-    { id: 'dark', label: 'Dark' },
-    { id: 'system', label: 'Match Browser' },
+  const THEME_OPTIONS: { id: Theme; labelKey: string }[] = [
+    { id: 'light', labelKey: 'settings.appearance.themeLight' },
+    { id: 'dark', labelKey: 'settings.appearance.themeDark' },
+    { id: 'system', labelKey: 'settings.appearance.themeSystem' },
   ];
   import * as api from '../api';
   import { describeAutomationAction, splitHumansAndAgents } from '../util';
   import type { AutomationAction, AutomationCondition, EventType, FilterOp } from '$domain';
 
   const tabs = ['Appearance', 'Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Webhooks'] as const;
+  const TAB_LABEL_KEYS: Record<(typeof tabs)[number], string> = {
+    Appearance: 'settings.tabs.appearance',
+    Labels: 'settings.tabs.labels',
+    Fields: 'settings.tabs.fields',
+    Workflow: 'settings.tabs.workflow',
+    Automations: 'settings.tabs.automations',
+    Agents: 'settings.tabs.agents',
+    Webhooks: 'settings.tabs.webhooks',
+  };
   let activeTab: (typeof tabs)[number] = 'Labels';
 
   // Lets the TopBar "New…" menu open Settings already on the relevant tab (e.g. "New Label").
@@ -88,7 +98,7 @@
       await api.deleteStatusCategory(id);
       statusCategories.update((l) => l.filter((c) => c.id !== id));
     } catch (err) {
-      categoryError = err instanceof Error ? err.message : 'Failed to delete category';
+      categoryError = err instanceof Error ? err.message : $t('settings.failedDeleteCategory');
     }
   }
   // ---- Automations ----
@@ -213,7 +223,7 @@
 <div class="settings">
   <nav class="tabs">
     {#each tabs as tab}
-      <button class="tab" class:active={tab === activeTab} on:click={() => (activeTab = tab)}>{tab}</button>
+      <button class="tab" class:active={tab === activeTab} on:click={() => (activeTab = tab)}>{$t(TAB_LABEL_KEYS[tab])}</button>
     {/each}
   </nav>
 
@@ -221,8 +231,8 @@
     {#if activeTab === 'Appearance'}
       <div class="appearance-row">
         <div class="appearance-copy">
-          <span class="row-name">Theme</span>
-          <span class="row-hint">Switches between light and dark for this browser, or follows it live if you pick Match Browser.</span>
+          <span class="row-name">{$t('settings.appearance.themeLabel')}</span>
+          <span class="row-hint">{$t('settings.appearance.themeHint')}</span>
         </div>
         <div class="theme-picker">
           {#each THEME_OPTIONS as opt (opt.id)}
@@ -248,11 +258,35 @@
               </span>
               <span class="theme-option-footer">
                 <span class="theme-option-check"><Icon name="check" size={11} /></span>
-                <span class="theme-option-label">{opt.label}</span>
+                <span class="theme-option-label">{$t(opt.labelKey)}</span>
               </span>
             </button>
           {/each}
         </div>
+      </div>
+
+      <div class="appearance-row">
+        <div class="appearance-copy">
+          <span class="row-name">{$t('settings.appearance.languageLabel')}</span>
+          <span class="row-hint">{$t('settings.appearance.languageHint')}</span>
+        </div>
+        <div class="language-picker">
+          {#each SUPPORTED_LOCALES as opt (opt.id)}
+            <button
+              type="button"
+              class="language-option"
+              class:active={$locale === opt.id}
+              aria-pressed={$locale === opt.id}
+              on:click={() => locale.set(opt.id)}
+            >
+              <span class="language-option-check"><Icon name="check" size={11} /></span>
+              <span class="language-option-label">{opt.label}</span>
+            </button>
+          {/each}
+        </div>
+        {#if $locale !== 'en'}
+          <p class="language-disclaimer">{$t('settings.appearance.nonEnglishDisclaimer')}</p>
+        {/if}
       </div>
     {:else if activeTab === 'Labels'}
       <div class="list">
@@ -261,8 +295,8 @@
         {/each}
       </div>
       <form class="add-form" on:submit|preventDefault={addLabel}>
-        <input type="text" placeholder="Label name" bind:value={newLabelName} />
-        <button type="submit">Add label</button>
+        <input type="text" placeholder={$t('settings.labelNamePlaceholder')} bind:value={newLabelName} />
+        <button type="submit">{$t('settings.addLabelButton')}</button>
       </form>
     {:else if activeTab === 'Fields'}
       <div class="list">
@@ -271,13 +305,13 @@
         {/each}
       </div>
       <form class="add-form column" on:submit|preventDefault={addField}>
-        <input type="text" placeholder="Field name (e.g. Severity)" bind:value={newFieldName} />
-        <input type="text" placeholder="Machine key (e.g. severity)" bind:value={newFieldKey} />
-        <input type="text" placeholder="Options, comma-separated (e.g. Low, Medium, High)" bind:value={newFieldOptions} />
-        <button type="submit">Add field</button>
+        <input type="text" placeholder={$t('settings.fieldNamePlaceholder')} bind:value={newFieldName} />
+        <input type="text" placeholder={$t('settings.fieldKeyPlaceholder')} bind:value={newFieldKey} />
+        <input type="text" placeholder={$t('settings.fieldOptionsPlaceholder')} bind:value={newFieldOptions} />
+        <button type="submit">{$t('settings.addFieldButton')}</button>
       </form>
     {:else if activeTab === 'Workflow'}
-      <div class="subsection-label">Status categories</div>
+      <div class="subsection-label">{$t('settings.statusCategoriesLabel')}</div>
       {#if categoryError}<p class="error">{categoryError}</p>{/if}
       <div class="list">
         {#each $statusCategories as cat (cat.id)}
@@ -290,16 +324,16 @@
         {/each}
       </div>
       <form class="add-form" on:submit|preventDefault={addCategory}>
-        <input type="text" placeholder="Category name (e.g. Resolving Differences)" bind:value={newCategoryName} />
+        <input type="text" placeholder={$t('settings.categoryNamePlaceholder')} bind:value={newCategoryName} />
         <select bind:value={newCategoryType}>
           <option value="todo">todo</option>
           <option value="inProgress">inProgress</option>
           <option value="done">done</option>
         </select>
-        <button type="submit">Add category</button>
+        <button type="submit">{$t('settings.addCategoryButton')}</button>
       </form>
 
-      <div class="subsection-label">Workflow</div>
+      <div class="subsection-label">{$t('settings.workflowLabel')}</div>
       <WorkflowDiagram />
     {:else if activeTab === 'Automations'}
       <div class="list">
@@ -308,26 +342,26 @@
             <div class="row">
               <span class="row-name">{rule.name}</span>
               <span class="row-tag">on {Array.isArray(rule.eventFilter) ? rule.eventFilter.join(', ') : 'all events'}</span>
-              <label class="toggle"><input type="checkbox" checked={rule.enabled} on:change={(e) => toggleRule(rule.id, (e.target as HTMLInputElement).checked)} />enabled</label>
+              <label class="toggle"><input type="checkbox" checked={rule.enabled} on:change={(e) => toggleRule(rule.id, (e.target as HTMLInputElement).checked)} />{$t('settings.enabledLabel')}</label>
               <button class="icon-btn" on:click={() => removeRule(rule.id)}><Icon name="trash" size={13} /></button>
             </div>
             {#if rule.conditions.length}
               <p class="rule-detail">if {rule.conditions.map((c) => `${c.field} ${c.op} ${JSON.stringify(c.value)}`).join(' and ')}</p>
             {/if}
-            <p class="rule-detail">{rule.actions.map((a) => describeAutomationAction(a, { workflow: $workflow, users: $users, fieldDefinitions: $fieldDefinitions })).join('; ')}</p>
+            <p class="rule-detail">{rule.actions.map((a) => describeAutomationAction(a, { workflow: $workflow, users: $users, fieldDefinitions: $fieldDefinitions }, $t)).join('; ')}</p>
           </div>
         {/each}
       </div>
       <form class="add-form column" on:submit|preventDefault={addRule}>
-        <input type="text" placeholder="Rule name" bind:value={newRuleName} />
+        <input type="text" placeholder={$t('settings.ruleNamePlaceholder')} bind:value={newRuleName} />
         <label class="agent-form-label">
-          Trigger
+          {$t('settings.triggerLabel')}
           <select bind:value={newRuleTrigger}>
-            {#each commonEventTypes as t}<option value={t}>{t}</option>{/each}
+            {#each commonEventTypes as eventType}<option value={eventType}>{eventType}</option>{/each}
           </select>
         </label>
 
-        <span class="agent-form-label">Conditions (optional — runs unconditionally if none)</span>
+        <span class="agent-form-label">{$t('settings.conditionsLabel')}</span>
         {#each newRuleConditions as condition, i}
           <div class="rule-row">
             <select bind:value={condition.field}>
@@ -337,53 +371,53 @@
               {#each FILTER_OPS as op}<option value={op}>{op}</option>{/each}
             </select>
             {#if condition.op !== 'isEmpty'}
-              <input type="text" placeholder="value" bind:value={condition.value} />
+              <input type="text" placeholder={$t('settings.valuePlaceholder')} bind:value={condition.value} />
             {/if}
             <button type="button" class="icon-btn" on:click={() => removeCondition(i)}><Icon name="x" size={13} /></button>
           </div>
         {/each}
-        <button type="button" class="text-btn add-row-btn" on:click={addCondition}>+ Add condition</button>
+        <button type="button" class="text-btn add-row-btn" on:click={addCondition}>{$t('settings.addConditionButton')}</button>
 
-        <span class="agent-form-label">Actions</span>
+        <span class="agent-form-label">{$t('settings.actionsLabel')}</span>
         {#each newRuleActions as action, i}
           <div class="rule-row">
             <select bind:value={action.type}>
-              {#each AUTOMATION_ACTION_TYPES as t}<option value={t}>{t}</option>{/each}
+              {#each AUTOMATION_ACTION_TYPES as actionType}<option value={actionType}>{actionType}</option>{/each}
             </select>
             {#if action.type === 'transitionStatus'}
               <select bind:value={action.toStatusId}>
-                <option value="" disabled>status…</option>
+                <option value="" disabled>{$t('settings.statusPlaceholder')}</option>
                 {#each $workflow?.statuses ?? [] as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
               </select>
             {:else if action.type === 'assignTo'}
               <select bind:value={action.userId}>
-                <option value="" disabled>user…</option>
+                <option value="" disabled>{$t('settings.userPlaceholder')}</option>
                 {#each assignableUsers as u (u.id)}<option value={u.id}>{u.displayName}</option>{/each}
               </select>
             {:else if action.type === 'addComment'}
-              <input type="text" placeholder="Comment body" bind:value={action.body} />
+              <input type="text" placeholder={$t('settings.commentBodyPlaceholder')} bind:value={action.body} />
             {:else if action.type === 'setField'}
               <select bind:value={action.fieldId}>
-                <option value="" disabled>field…</option>
+                <option value="" disabled>{$t('settings.fieldPlaceholder')}</option>
                 {#each $fieldDefinitions as f (f.id)}<option value={f.id}>{f.name}</option>{/each}
               </select>
-              <input type="text" placeholder="value" bind:value={action.value} />
+              <input type="text" placeholder={$t('settings.valuePlaceholder')} bind:value={action.value} />
             {:else if action.type === 'readRepoFile'}
-              <input type="text" placeholder="path/to/file.ts" bind:value={action.path} />
+              <input type="text" placeholder={$t('settings.pathPlaceholder')} bind:value={action.path} />
             {:else if action.type === 'writeRepoFile'}
-              <input type="text" placeholder="path/to/file.ts" bind:value={action.path} />
-              <input type="text" placeholder="branch name" bind:value={action.branchName} />
-              <input type="text" placeholder="file content" bind:value={action.content} />
-              <input type="text" placeholder="commit message (optional)" bind:value={action.commitMessage} />
+              <input type="text" placeholder={$t('settings.pathPlaceholder')} bind:value={action.path} />
+              <input type="text" placeholder={$t('settings.branchNamePlaceholder')} bind:value={action.branchName} />
+              <input type="text" placeholder={$t('settings.fileContentPlaceholder')} bind:value={action.content} />
+              <input type="text" placeholder={$t('settings.commitMessagePlaceholder')} bind:value={action.commitMessage} />
             {/if}
             {#if newRuleActions.length > 1}
               <button type="button" class="icon-btn" on:click={() => removeAction(i)}><Icon name="x" size={13} /></button>
             {/if}
           </div>
         {/each}
-        <button type="button" class="text-btn add-row-btn" on:click={addAction}>+ Add action</button>
+        <button type="button" class="text-btn add-row-btn" on:click={addAction}>{$t('settings.addActionButton')}</button>
 
-        <button type="submit" disabled={!newRuleName.trim() || !newRuleActions.every(actionIsComplete) || !newRuleConditions.every(conditionIsComplete)}>Add rule</button>
+        <button type="submit" disabled={!newRuleName.trim() || !newRuleActions.every(actionIsComplete) || !newRuleConditions.every(conditionIsComplete)}>{$t('settings.addRuleButton')}</button>
       </form>
     {:else if activeTab === 'Agents'}
       <AgentsSettings />
@@ -392,14 +426,14 @@
         {#each $webhookSubscriptions as hook (hook.id)}
           <div class="row">
             <span class="row-name">{hook.targetUrl}</span>
-            <label class="toggle"><input type="checkbox" checked={hook.enabled} on:change={(e) => toggleWebhook(hook.id, (e.target as HTMLInputElement).checked)} />enabled</label>
+            <label class="toggle"><input type="checkbox" checked={hook.enabled} on:change={(e) => toggleWebhook(hook.id, (e.target as HTMLInputElement).checked)} />{$t('settings.enabledLabel')}</label>
             <button class="icon-btn" on:click={() => removeWebhook(hook.id)}><Icon name="trash" size={13} /></button>
           </div>
         {/each}
       </div>
       <form class="add-form" on:submit|preventDefault={addWebhook}>
-        <input type="text" placeholder="https://your-service.example/webhook" bind:value={newWebhookUrl} />
-        <button type="submit">Add webhook</button>
+        <input type="text" placeholder={$t('settings.webhookUrlPlaceholder')} bind:value={newWebhookUrl} />
+        <button type="submit">{$t('settings.addWebhookButton')}</button>
       </form>
     {/if}
   </div>
@@ -444,6 +478,7 @@
     display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 900px;
     padding: 24px 28px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
   }
+  .appearance-row + .appearance-row { margin-top: 20px; }
   .appearance-copy { display: flex; flex-direction: column; gap: 5px; }
   .row-name { font-size: 15px; }
   .row-hint { color: var(--text-3); font-size: 12.5px; max-width: 480px; }
@@ -487,6 +522,28 @@
   .theme-option.active .theme-option-check { background: var(--accent); border-color: var(--accent); color: var(--accent-on); }
   .theme-option-label { font-size: 13px; color: var(--text-2); }
   .theme-option.active .theme-option-label { color: var(--text); font-weight: 600; }
+
+  /* Simpler than the theme picker above — a language has no meaningful "preview" the way a
+     color scheme does, so this is just a row of selectable pills reusing the same
+     check-and-label footer pattern instead of a big preview swatch. */
+  .language-picker { display: flex; flex-wrap: wrap; gap: 10px; }
+  .language-option {
+    display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px;
+    background: var(--surface-sunken); border: 1px solid var(--border); transition: border-color .12s ease;
+  }
+  .language-option:hover { border-color: var(--border-strong); }
+  .language-option.active { border-color: var(--accent); background: var(--accent-soft); }
+  .language-option-check {
+    width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: var(--surface); border: 1px solid var(--border-strong); color: transparent; transition: all .12s ease;
+  }
+  .language-option.active .language-option-check { background: var(--accent); border-color: var(--accent); color: var(--accent-on); }
+  .language-option-label { font-size: 13px; color: var(--text-2); }
+  .language-option.active .language-option-label { color: var(--text); font-weight: 600; }
+  .language-disclaimer {
+    font-size: 12px; line-height: 1.5; color: var(--warning); background: var(--warning-soft);
+    border-radius: 8px; padding: 9px 12px; margin: 14px 0 0; max-width: 560px;
+  }
   .icon-btn { color: var(--text-3); padding: 4px; border-radius: 6px; margin-left: auto; }
   .icon-btn:hover { background: var(--surface); color: var(--critical); }
   .text-btn { font-size: 12px; font-weight: 600; color: var(--accent-strong); }

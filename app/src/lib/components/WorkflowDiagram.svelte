@@ -17,6 +17,7 @@
   import * as api from '../api';
   import { statusCategories, workflow } from '../stores/workspace';
   import type { StatusCategory, WorkflowStatus, WorkflowTransition } from '$domain';
+  import { t } from '../i18n';
 
   /**
    * Mirrors WorkflowRepository.hasPathFromEveryTodoToDone on the server — checked here too
@@ -167,7 +168,7 @@
     const keptEdges = edgesToDelete.filter((edge) => {
       const remaining = transitions.filter((t) => t.id !== edge.id);
       const ok = hasPathFromEveryTodoToDone(statuses, categoryById, remaining);
-      if (!ok) deleteError = 'Deleting this transition would remove the only path from To Do to Done';
+      if (!ok) deleteError = $t('workflowDiagram.pathErrorTransition');
       return ok;
     });
 
@@ -176,7 +177,7 @@
       const remainingStatuses = statuses.filter((s) => s.id !== node.id);
       const remainingTransitions = transitions.filter((t) => t.fromStatusId !== node.id && t.toStatusId !== node.id);
       const ok = hasPathFromEveryTodoToDone(remainingStatuses, categoryById, remainingTransitions);
-      if (!ok) deleteError = 'Deleting this status would remove the only path from To Do to Done';
+      if (!ok) deleteError = $t('workflowDiagram.pathErrorStatus');
       return ok;
     });
 
@@ -192,7 +193,7 @@
       } catch (err) {
         // A race with something else (e.g. another client) — the client-side check above
         // passed, but the server disagreed. Nothing to visually undo here; just surface it.
-        deleteError = err instanceof Error ? err.message : 'Failed to delete transition';
+        deleteError = err instanceof Error ? err.message : $t('workflowDiagram.failedDeleteTransition');
       }
     }
     const removedStatusIds = new Set<string>();
@@ -201,7 +202,7 @@
         await api.deleteWorkflowStatus(node.id);
         removedStatusIds.add(node.id);
       } catch (err) {
-        deleteError = err instanceof Error ? err.message : 'Failed to delete status';
+        deleteError = err instanceof Error ? err.message : $t('workflowDiagram.failedDeleteStatus');
       }
     }
     workflow.update((w) =>
@@ -251,20 +252,20 @@
       await api.deleteWorkflowTransition(id);
       workflow.update((w) => (w ? { ...w, transitions: w.transitions.filter((t) => t.id !== id) } : w));
     } catch (err) {
-      deleteError = err instanceof Error ? err.message : 'Failed to delete transition';
+      deleteError = err instanceof Error ? err.message : $t('workflowDiagram.failedDeleteTransition');
     }
   }
 </script>
 
 <div class="toolbar">
   <form class="inline-form" onsubmit={(e) => (e.preventDefault(), addStatus())}>
-    <input class="inline-input" type="text" placeholder="New status name" bind:value={newStatusName} />
+    <input class="inline-input" type="text" placeholder={$t('workflowDiagram.newStatusPlaceholder')} bind:value={newStatusName} />
     <select class="inline-select" bind:value={newStatusCategoryId}>
       {#each categories as cat (cat.id)}<option value={cat.id}>{cat.name}</option>{/each}
     </select>
-    <button class="inline-btn" type="submit">Add status</button>
+    <button class="inline-btn" type="submit">{$t('workflowDiagram.addStatusButton')}</button>
   </form>
-  <div class="hint">Drag from a status's edge to another to connect them. Select a status or transition and press Delete/Backspace to remove it — To Do and Done statuses can't be deleted.</div>
+  <div class="hint">{$t('workflowDiagram.dragHint')}</div>
 </div>
 {#if deleteError}<p class="delete-error">{deleteError}</p>{/if}
 
@@ -277,34 +278,34 @@
 
 {#if editingId}
   <div class="edit-panel">
-    <div class="edit-title">Edit status</div>
+    <div class="edit-title">{$t('workflowDiagram.editStatusTitle')}</div>
     <label class="field">
-      <span>Name</span>
+      <span>{$t('workflowDiagram.nameLabel')}</span>
       <input type="text" bind:value={editName} />
     </label>
     <label class="field">
-      <span>Color (hex, optional)</span>
+      <span>{$t('workflowDiagram.colorLabel')}</span>
       <input type="text" placeholder="#3b82f6" bind:value={editColor} />
     </label>
     <div class="edit-actions">
-      <button type="button" class="inline-btn ghost" onclick={cancelEdit}>Cancel</button>
-      <button type="button" class="inline-btn" disabled={!editName.trim() || savingEdit} onclick={saveEdit}>{savingEdit ? 'Saving…' : 'Save'}</button>
+      <button type="button" class="inline-btn ghost" onclick={cancelEdit}>{$t('common.cancel')}</button>
+      <button type="button" class="inline-btn" disabled={!editName.trim() || savingEdit} onclick={saveEdit}>{savingEdit ? $t('workflowDiagram.savingButton') : $t('common.save')}</button>
     </div>
   </div>
 {/if}
 
-<div class="subsection-label">Transitions from any status</div>
+<div class="subsection-label">{$t('workflowDiagram.transitionsFromAnyLabel')}</div>
 <div class="list">
-  {#each globalTransitions as t (t.id)}
-    <div class="row"><span class="row-name">{t.name}</span><span class="row-tag">→ {statusName(t.toStatusId)}</span><button class="icon-btn small" onclick={() => removeGlobalTransition(t.id)}><Icon name="x" size={12} /></button></div>
+  {#each globalTransitions as gt (gt.id)}
+    <div class="row"><span class="row-name">{gt.name}</span><span class="row-tag">→ {statusName(gt.toStatusId)}</span><button class="icon-btn small" onclick={() => removeGlobalTransition(gt.id)}><Icon name="x" size={12} /></button></div>
   {/each}
 </div>
 <form class="add-form" onsubmit={(e) => (e.preventDefault(), addGlobalTransition())}>
-  <input type="text" placeholder="Transition name (e.g. Reopen)" bind:value={newGlobalName} />
+  <input type="text" placeholder={$t('workflowDiagram.transitionNamePlaceholder')} bind:value={newGlobalName} />
   <select bind:value={newGlobalTargetId}>
     {#each statuses as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
   </select>
-  <button type="submit">Add global transition</button>
+  <button type="submit">{$t('workflowDiagram.addGlobalTransitionButton')}</button>
 </form>
 
 <style>

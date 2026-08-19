@@ -2,6 +2,7 @@
   import Avatar from './Avatar.svelte';
   import { currentUser, setCurrentUser } from '../stores/auth';
   import { updateProfile } from '../api';
+  import { t } from '../i18n';
 
   export let onClose: () => void;
 
@@ -20,7 +21,7 @@
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      error = 'Please choose an image file';
+      error = $t('accountSettingsModal.invalidImage');
       return;
     }
     const img = new Image();
@@ -54,7 +55,7 @@
       setCurrentUser(user);
       onClose();
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to update account';
+      error = err instanceof Error ? err.message : $t('accountSettingsModal.failedUpdate');
     } finally {
       submitting = false;
     }
@@ -68,29 +69,29 @@
   on:click={onClose}
   on:keydown={(e) => e.key === 'Escape' && onClose()}
 >
-  <div class="modal" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true" aria-label="Account settings" tabindex="-1">
-    <h2 class="modal-title">Account settings</h2>
+  <div class="modal" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true" aria-label={$t('accountSettingsModal.title')} tabindex="-1">
+    <h2 class="modal-title">{$t('accountSettingsModal.title')}</h2>
     <form on:submit|preventDefault={submit}>
       <div class="avatar-row">
-        <Avatar userId={$currentUser?.id ?? ''} name={displayName || 'You'} avatarUrl={avatarUrl ?? undefined} size={64} />
+        <Avatar userId={$currentUser?.id ?? ''} name={displayName || $t('accountSettingsModal.youFallback')} avatarUrl={avatarUrl ?? undefined} size={64} />
         <div class="avatar-actions">
-          <button type="button" class="btn ghost small" on:click={() => fileInput.click()}>Upload picture</button>
-          {#if avatarUrl}<button type="button" class="btn ghost small" on:click={removePicture}>Remove</button>{/if}
+          <button type="button" class="btn ghost small" on:click={() => fileInput.click()}>{$t('accountSettingsModal.uploadPicture')}</button>
+          {#if avatarUrl}<button type="button" class="btn ghost small" on:click={removePicture}>{$t('accountSettingsModal.removePicture')}</button>{/if}
           <input bind:this={fileInput} type="file" accept="image/*" on:change={handleFile} hidden />
         </div>
       </div>
       <label class="field">
-        <span>Name</span>
-        <input type="text" bind:value={displayName} placeholder="Your name" />
+        <span>{$t('accountSettingsModal.nameLabel')}</span>
+        <input type="text" bind:value={displayName} placeholder={$t('accountSettingsModal.namePlaceholder')} />
       </label>
       <label class="field">
-        <span>Email</span>
-        <input type="email" bind:value={email} placeholder="you@example.com" />
+        <span>{$t('accountSettingsModal.emailLabel')}</span>
+        <input type="email" bind:value={email} placeholder={$t('accountSettingsModal.emailPlaceholder')} />
       </label>
       {#if error}<p class="error">{error}</p>{/if}
       <div class="actions">
-        <button type="button" class="btn ghost" on:click={onClose}>Cancel</button>
-        <button type="submit" class="btn primary" disabled={!displayName.trim() || !email.trim() || submitting}>{submitting ? 'Saving…' : 'Save changes'}</button>
+        <button type="button" class="btn ghost" on:click={onClose}>{$t('common.cancel')}</button>
+        <button type="submit" class="btn primary" disabled={!displayName.trim() || !email.trim() || submitting}>{submitting ? $t('accountSettingsModal.savingButton') : $t('accountSettingsModal.saveButton')}</button>
       </div>
     </form>
   </div>

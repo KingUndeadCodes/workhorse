@@ -3,6 +3,7 @@
   // bottom) and "edit an existing agent" (expanded inline on its card) — same fields, same
   // validation, just a different initial value and submit handler.
   import type { Agent, AgentApprovalPolicy, AgentBudget, AutomationAction, EventType } from '$domain';
+  import { t } from '../i18n';
 
   export let initial: {
     name: string;
@@ -24,11 +25,11 @@
   export let availableRuntimes: string[] = [];
 
   const AGENT_MODELS = ['llama3.1', 'qwen2.5', 'mistral'];
-  const CONTEXT_SCOPES: { value: Agent['contextScope']; label: string; hint: string }[] = [
-    { value: 'thread', label: 'Thread', hint: 'Just this comment thread' },
-    { value: 'ticket', label: 'Ticket', hint: 'Thread + this ticket’s own details (default)' },
-    { value: 'project', label: 'Project', hint: 'Ticket + other open tickets in this project' },
-    { value: 'workspace', label: 'Workspace', hint: 'Project + the rest of the workspace' },
+  const CONTEXT_SCOPES: { value: Agent['contextScope']; key: string }[] = [
+    { value: 'thread', key: 'thread' },
+    { value: 'ticket', key: 'ticket' },
+    { value: 'project', key: 'project' },
+    { value: 'workspace', key: 'workspace' },
   ];
   const AGENT_ACTION_TYPES: AutomationAction['type'][] = ['transitionStatus', 'assignTo', 'addComment', 'setField', 'readRepoFile', 'writeRepoFile'];
   const EVENT_TRIGGER_OPTIONS: EventType[] = [
@@ -99,38 +100,38 @@
 </script>
 
 <form class="agent-form" on:submit|preventDefault={submit}>
-  <input type="text" placeholder="Agent name" bind:value={name} />
-  <input type="text" placeholder="Instructions — what should this agent do with a ticket?" bind:value={description} />
+  <input type="text" placeholder={$t('agentForm.namePlaceholder')} bind:value={name} />
+  <input type="text" placeholder={$t('agentForm.instructionsPlaceholder')} bind:value={description} />
   {#if availableRuntimes.length > 1}
     <label class="agent-form-label">
-      Runtime
+      {$t('agentForm.runtimeLabel')}
       <select bind:value={runtime}>
         {#each availableRuntimes as r}<option value={r}>{r}</option>{/each}
       </select>
     </label>
   {/if}
   <label class="agent-form-label">
-    Model
+    {$t('agentForm.modelLabel')}
     <input type="text" placeholder="llama3.1" list="agent-model-suggestions" bind:value={model} />
   </label>
   <label class="agent-form-label">
-    Context scope
+    {$t('agentForm.contextScopeLabel')}
     <select bind:value={contextScope}>
-      {#each CONTEXT_SCOPES as s}<option value={s.value}>{s.label} — {s.hint}</option>{/each}
+      {#each CONTEXT_SCOPES as s}<option value={s.value}>{$t(`agentForm.contextScopes.${s.key}.label`)} — {$t(`agentForm.contextScopes.${s.key}.hint`)}</option>{/each}
     </select>
   </label>
 
-  <span class="agent-form-label">Reacts to</span>
+  <span class="agent-form-label">{$t('agentForm.reactsToLabel')}</span>
   <div class="check-grid">
-    {#each EVENT_TRIGGER_OPTIONS as t}
+    {#each EVENT_TRIGGER_OPTIONS as eventType}
       <label class="check-option">
-        <input type="checkbox" checked={eventFilter.includes(t)} on:change={() => (eventFilter = toggleInArray(eventFilter, t))} />
-        {t}
+        <input type="checkbox" checked={eventFilter.includes(eventType)} on:change={() => (eventFilter = toggleInArray(eventFilter, eventType))} />
+        {eventType}
       </label>
     {/each}
   </div>
 
-  <span class="agent-form-label">Allowed actions</span>
+  <span class="agent-form-label">{$t('agentForm.allowedActionsLabel')}</span>
   <div class="check-grid">
     {#each AGENT_ACTION_TYPES as type}
       <label class="check-option">
@@ -140,19 +141,19 @@
     {/each}
   </div>
 
-  <span class="agent-form-label">Approval</span>
+  <span class="agent-form-label">{$t('agentForm.approvalLabel')}</span>
   <div class="approval-choices">
     <label class="radio-option">
       <input type="radio" name="approval-{initial.name}" value="autoApplyAll" checked={approvalMode === 'autoApplyAll'} on:change={() => (approvalMode = 'autoApplyAll')} />
-      Auto-apply everything
+      {$t('agentForm.autoApplyAll')}
     </label>
     <label class="radio-option">
       <input type="radio" name="approval-{initial.name}" value="requireApprovalForAll" checked={approvalMode === 'requireApprovalForAll'} on:change={() => (approvalMode = 'requireApprovalForAll')} />
-      Require approval for everything
+      {$t('agentForm.requireApprovalForAll')}
     </label>
     <label class="radio-option">
       <input type="radio" name="approval-{initial.name}" value="requireApprovalFor" checked={approvalMode === 'requireApprovalFor'} on:change={() => (approvalMode = 'requireApprovalFor')} />
-      Require approval only for…
+      {$t('agentForm.requireApprovalFor')}
     </label>
     {#if approvalMode === 'requireApprovalFor'}
       <div class="check-grid nested">
@@ -166,22 +167,22 @@
     {/if}
   </div>
 
-  <span class="agent-form-label">Budget (optional — blank = unlimited)</span>
+  <span class="agent-form-label">{$t('agentForm.budgetLabel')}</span>
   <div class="budget-grid">
-    <label class="budget-field">Max runs / hour<input type="number" min="1" placeholder="∞" bind:value={maxRunsPerHour} /></label>
-    <label class="budget-field">Max runs / day<input type="number" min="1" placeholder="∞" bind:value={maxRunsPerDay} /></label>
-    <label class="budget-field">Max actions / run<input type="number" min="1" placeholder="∞" bind:value={maxActionsPerRun} /></label>
-    <label class="budget-field">Max spend / day<input type="number" min="0" step="0.01" placeholder="∞" bind:value={maxSpendPerDay} /></label>
+    <label class="budget-field">{$t('agentForm.maxRunsPerHour')}<input type="number" min="1" placeholder="∞" bind:value={maxRunsPerHour} /></label>
+    <label class="budget-field">{$t('agentForm.maxRunsPerDay')}<input type="number" min="1" placeholder="∞" bind:value={maxRunsPerDay} /></label>
+    <label class="budget-field">{$t('agentForm.maxActionsPerRun')}<input type="number" min="1" placeholder="∞" bind:value={maxActionsPerRun} /></label>
+    <label class="budget-field">{$t('agentForm.maxSpendPerDay')}<input type="number" min="0" step="0.01" placeholder="∞" bind:value={maxSpendPerDay} /></label>
   </div>
 
   <label class="check-option ignore-self-toggle">
     <input type="checkbox" bind:checked={ignoreSelfTriggeredEvents} />
-    Ignore this agent's own events (recommended — prevents it retriggering itself)
+    {$t('agentForm.ignoreSelfEvents')}
   </label>
 
   <div class="form-actions">
     <button type="submit" class="btn primary" disabled={!valid || submitting}>{submitting ? '…' : submitLabel}</button>
-    {#if onCancel}<button type="button" class="btn ghost" on:click={onCancel}>Cancel</button>{/if}
+    {#if onCancel}<button type="button" class="btn ghost" on:click={onCancel}>{$t('common.cancel')}</button>{/if}
   </div>
   <datalist id="agent-model-suggestions">
     {#each AGENT_MODELS as m}<option value={m}></option>{/each}

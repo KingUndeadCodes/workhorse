@@ -5,6 +5,7 @@
   import { agentRuns, agents, fieldDefinitions, issuesStore, users, workflow } from '../stores/workspace';
   import * as api from '../api';
   import { describeAutomationAction, formatRelativeDate } from '../util';
+  import { locale, t, tn } from '../i18n';
   import type { Agent, AgentRun, AgentRunStatus, AutomationAction, EventType } from '$domain';
 
   $: pendingRuns = $agentRuns.filter((r) => r.status === 'awaitingApproval');
@@ -61,13 +62,7 @@
     return `${n}`;
   }
 
-  const STATUS_LABEL: Record<AgentRunStatus, string> = {
-    pending: 'Pending',
-    awaitingApproval: 'Awaiting approval',
-    applied: 'Applied',
-    rejected: 'Rejected',
-    failed: 'Failed',
-  };
+  $: statusLabel = (status: AgentRunStatus) => $t(`agentsSettings.statusLabels.${status}`);
 
   const emptyDraft = () => ({
     name: '',
@@ -92,38 +87,34 @@
       <div class="pending-card">
         <div class="pending-head">
           <Avatar userId={run.agentUserId} name={agent?.name ?? run.agentUserId} kind="agent" size={20} />
-          <span class="agent-name">{agent?.name ?? run.agentUserId}<span class="ai-badge">AI</span></span>
+          <span class="agent-name">{agent?.name ?? run.agentUserId}<span class="ai-badge">{$t('agentsSettings.aiBadge')}</span></span>
           {#if runIssue}<span class="issue-key mono">{runIssue.key}</span>{/if}
-          <span class="run-time">{formatRelativeDate(run.startedAt)}</span>
+          <span class="run-time">{formatRelativeDate(run.startedAt, $t, $tn, $locale)}</span>
         </div>
         {#if run.rationale}<p class="rationale">{run.rationale}</p>{/if}
         {#if run.proposedActions.length}
           <ul class="proposed-actions">
             {#each run.proposedActions as action}
-              <li>{describeAutomationAction(action, { workflow: $workflow, users: $users, fieldDefinitions: $fieldDefinitions })}</li>
+              <li>{describeAutomationAction(action, { workflow: $workflow, users: $users, fieldDefinitions: $fieldDefinitions }, $t)}</li>
             {/each}
           </ul>
         {/if}
         <div class="pending-actions">
-          <button class="text-btn" on:click={() => approveRun(run.id)}>Approve</button>
-          <button class="text-btn danger" on:click={() => rejectRun(run.id)}>Reject</button>
+          <button class="text-btn" on:click={() => approveRun(run.id)}>{$t('agentsSettings.approveButton')}</button>
+          <button class="text-btn danger" on:click={() => rejectRun(run.id)}>{$t('agentsSettings.rejectButton')}</button>
         </div>
       </div>
     {/each}
   </div>
 {/if}
 
-<div class="subsection-label">Agents</div>
-<p class="section-hint">
-  Agents work tickets on a teammate's behalf — attach one to an issue (from the issue's AI Agents section) and it can
-  comment, change status, reassign, or update fields as it makes progress, always attributed back to the human it's
-  acting for. Its Instructions are what actually drive its decisions each time it's triggered.
-</p>
+<div class="subsection-label">{$t('agentsSettings.agentsLabel')}</div>
+<p class="section-hint">{$t('agentsSettings.hint')}</p>
 
 {#if $agents.length === 0}
   <div class="empty-state">
     <Icon name="robot" size={28} />
-    <p>No agents yet — create one below to start automating ticket work.</p>
+    <p>{$t('agentsSettings.noAgentsYet')}</p>
   </div>
 {:else}
   <div class="agent-list">
@@ -138,12 +129,12 @@
         >
           <span class="avatar-ring"><Avatar userId={agent.userId} name={agent.name} kind="agent" size={30} /></span>
           <div class="agent-info">
-            <span class="agent-name">{agent.name}<span class="ai-badge">AI</span><span class="status-dot" class:enabled={agent.enabled}></span></span>
+            <span class="agent-name">{agent.name}<span class="ai-badge">{$t('agentsSettings.aiBadge')}</span><span class="status-dot" class:enabled={agent.enabled}></span></span>
             <span class="agent-instructions">{agent.description ?? ''}</span>
           </div>
           <span class="model-chip mono">{agent.model}</span>
           {#if totalTokensFor(agent.userId) > 0}
-            <span class="model-chip mono" title="Total tokens used across every run">{formatTokenCount(totalTokensFor(agent.userId))} tok</span>
+            <span class="model-chip mono" title={$t('agentsSettings.totalTokensTitle')}>{formatTokenCount(totalTokensFor(agent.userId))} tok</span>
           {/if}
           <label class="toggle">
             <input
@@ -151,7 +142,7 @@
               checked={agent.enabled}
               on:click|stopPropagation
               on:change={(e) => toggleAgent(agent.userId, (e.target as HTMLInputElement).checked)}
-            />enabled
+            />{$t('settings.enabledLabel')}
           </label>
           <Icon name={expandedAgentId === agent.userId ? 'chevup' : 'chevdown'} size={12} />
         </div>
@@ -173,22 +164,22 @@
                 budget: agent.budget,
                 ignoreSelfTriggeredEvents: agent.ignoreSelfTriggeredEvents,
               }}
-              submitLabel="Save"
+              submitLabel={$t('agentsSettings.saveButton')}
               onSubmit={(values) => saveAgent(agent.userId, values)}
               onCancel={() => (expandedAgentId = null)}
             />
 
             {#if recent.length}
-              <div class="subsection-label">Recent activity</div>
+              <div class="subsection-label">{$t('agentsSettings.recentActivity')}</div>
               <div class="run-list">
                 {#each recent as run (run.id)}
                   <div class="run-row">
-                    <span class="run-status status-{run.status}">{STATUS_LABEL[run.status]}</span>
+                    <span class="run-status status-{run.status}">{statusLabel(run.status)}</span>
                     <span class="run-summary">
-                      {run.proposedActions.length ? run.proposedActions.map((a) => describeAutomationAction(a, { workflow: $workflow, users: $users, fieldDefinitions: $fieldDefinitions })).join('; ') : '—'}
+                      {run.proposedActions.length ? run.proposedActions.map((a) => describeAutomationAction(a, { workflow: $workflow, users: $users, fieldDefinitions: $fieldDefinitions }, $t)).join('; ') : '—'}
                     </span>
                     {#if run.tokenUsage}<span class="run-tokens mono">{formatTokenCount(run.tokenUsage)} tok</span>{/if}
-                    <span class="run-time">{formatRelativeDate(run.startedAt)}</span>
+                    <span class="run-time">{formatRelativeDate(run.startedAt, $t, $tn, $locale)}</span>
                   </div>
                   {#if run.failureReason}<p class="failure-reason">{run.failureReason}</p>{/if}
                 {/each}
@@ -201,8 +192,8 @@
   </div>
 {/if}
 
-<div class="subsection-label">Add agent</div>
-<AgentForm {availableRuntimes} initial={emptyDraft()} submitLabel="Add agent" onSubmit={createAgent} />
+<div class="subsection-label">{$t('agentsSettings.addAgentLabel')}</div>
+<AgentForm {availableRuntimes} initial={emptyDraft()} submitLabel={$t('agentsSettings.addAgentButton')} onSubmit={createAgent} />
 
 <style>
   .subsection-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin: 18px 0 8px; }

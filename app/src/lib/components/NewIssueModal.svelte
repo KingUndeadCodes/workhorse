@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createIssue, issueTypes, users, featureFlags } from '../stores/workspace';
   import { splitHumansAndAgents } from '../util';
+  import { t } from '../i18n';
 
   export let onClose: () => void;
 
@@ -27,7 +28,7 @@
       await createIssue({ title: title.trim(), issueTypeId, priority, assigneeIds });
       onClose();
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to create issue';
+      error = err instanceof Error ? err.message : $t('newIssueModal.failedCreate');
     } finally {
       submitting = false;
     }
@@ -41,23 +42,23 @@
   on:click={onClose}
   on:keydown={(e) => e.key === 'Escape' && onClose()}
 >
-  <div class="modal" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true" aria-label="Create issue" tabindex="-1">
-    <h2 class="modal-title">New issue</h2>
+  <div class="modal" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true" aria-label={$t('newIssueModal.title')} tabindex="-1">
+    <h2 class="modal-title">{$t('newIssueModal.title')}</h2>
     <form on:submit|preventDefault={submit}>
       <label class="field">
-        <span>Title</span>
-        <input type="text" bind:value={title} placeholder="What needs to be done?" />
+        <span>{$t('newIssueModal.titleFieldLabel')}</span>
+        <input type="text" bind:value={title} placeholder={$t('newIssueModal.titlePlaceholder')} />
       </label>
       <div class="row">
         <label class="field">
-          <span>Type</span>
+          <span>{$t('newIssueModal.typeLabel')}</span>
           <select bind:value={issueTypeId}>
-            {#each $issueTypes.filter((t) => t.name !== 'Epic') as t (t.id)}<option value={t.id}>{t.name}</option>{/each}
+            {#each $issueTypes.filter((it) => it.name !== 'Epic') as issueType (issueType.id)}<option value={issueType.id}>{issueType.name}</option>{/each}
           </select>
         </label>
         {#if $featureFlags.priority}
           <label class="field">
-            <span>Priority</span>
+            <span>{$t('newIssueModal.priorityLabel')}</span>
             <select bind:value={priority}>
               {#each ['highest', 'high', 'medium', 'low', 'lowest'] as p}<option value={p}>{p}</option>{/each}
             </select>
@@ -65,7 +66,7 @@
         {/if}
       </div>
       <label class="field">
-        <span>Assignees</span>
+        <span>{$t('newIssueModal.assigneesLabel')}</span>
         <div class="assignee-checks">
           {#each humanUsers as u (u.id)}
             <label class="assignee-check">
@@ -77,8 +78,8 @@
       </label>
       {#if error}<p class="error">{error}</p>{/if}
       <div class="actions">
-        <button type="button" class="btn ghost" on:click={onClose}>Cancel</button>
-        <button type="submit" class="btn primary" disabled={!title.trim() || submitting}>{submitting ? 'Creating…' : 'Create issue'}</button>
+        <button type="button" class="btn ghost" on:click={onClose}>{$t('common.cancel')}</button>
+        <button type="submit" class="btn primary" disabled={!title.trim() || submitting}>{submitting ? $t('newIssueModal.creatingButton') : $t('newIssueModal.createButton')}</button>
       </div>
     </form>
   </div>

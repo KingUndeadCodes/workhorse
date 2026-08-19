@@ -5,6 +5,12 @@ import DOMPurify from 'dompurify';
 import { PROJECT_COLORS, replaceMentions, STORY_POINT_VALUES } from '$domain';
 import type { AutomationAction, Comment, EventEnvelope, EventType, FieldDefinition, Label, Mentionable, User, Workflow } from '$domain';
 
+/** The resolved value of the `t`/`tn` i18n stores (see `lib/i18n/index.ts`) — plain functions,
+ * not stores, since these are called from ordinary functions below rather than `.svelte`
+ * markup. Callers pass `$t`/`$tn` from their own component. */
+type Translate = (key: string, params?: Record<string, string | number>) => string;
+type TranslatePlural = (key: string, count: number, params?: Record<string, string | number>) => string;
+
 marked.setOptions({ breaks: true, gfm: true });
 // Syntax-highlights fenced code blocks (```js, ```python, ...) via highlight.js, tagging each
 // token with an .hljs-* class. No hardcoded theme here — the colors for those classes live in
@@ -140,17 +146,17 @@ export function typeIcon(typeName: string): string {
   return 'story';
 }
 
-/** Formats an ISO timestamp as "today", "N days ago", or a locale date beyond a month. */
-export function formatRelativeDate(iso: string): string {
+/** Formats an ISO timestamp as "today", "N days ago", or a locale date beyond a month.
+ * `localeId` only affects that last, `toLocaleDateString` case — pass the active `Locale`. */
+export function formatRelativeDate(iso: string, t: Translate, tn: TranslatePlural, localeId = 'en'): string {
   const then = new Date(iso).getTime();
   const now = Date.now();
   const diffMs = now - then;
   const dayMs = 24 * 60 * 60 * 1000;
   const days = Math.round(diffMs / dayMs);
-  if (days <= 0) return 'today';
-  if (days === 1) return '1 day ago';
-  if (days < 30) return `${days} days ago`;
-  return new Date(iso).toLocaleDateString();
+  if (days <= 0) return t('relativeDate.today');
+  if (days < 30) return tn('relativeDate.daysAgo', days);
+  return new Date(iso).toLocaleDateString(localeId);
 }
 
 /** Formats a duration in seconds as whole or one-decimal hours, e.g. "6h" or "2.5h". */
@@ -190,15 +196,16 @@ const STORY_POINT_MAX_DAYS: Record<StoryPointValue, number> = {
  * points? Returns a warning string if the due date is sooner than the size's typical
  * effort would need, else `null`. Purely advisory — never used to block saving.
  */
-export function storyPointDueDateWarning(points: number, dueDate: string | undefined, today: Date = new Date()): string | null {
+export function storyPointDueDateWarning(points: number, dueDate: string | undefined, t: Translate, tn: TranslatePlural, today: Date = new Date()): string | null {
   if (!dueDate) return null;
   const maxDays = STORY_POINT_MAX_DAYS[points as StoryPointValue];
   if (maxDays === undefined) return null;
   const dayMs = 24 * 60 * 60 * 1000;
   const daysUntilDue = (new Date(`${dueDate}T00:00:00`).getTime() - new Date(today.toDateString()).getTime()) / dayMs;
-  if (daysUntilDue < 0) return `This due date has already passed, but the issue is still estimated at ${points} points.`;
+  if (daysUntilDue < 0) return t('storyPointWarning.pastDue', { points });
   if (daysUntilDue < maxDays) {
-    return `${points} points typically takes up to ${maxDays < 1 ? `${maxDays * 24}h` : `${maxDays} day${maxDays === 1 ? '' : 's'}`}, but the due date is only ${Math.round(daysUntilDue)} day${Math.round(daysUntilDue) === 1 ? '' : 's'} away.`;
+    const maxDuration = maxDays < 1 ? t('storyPointWarning.hoursDuration', { hours: maxDays * 24 }) : tn('storyPointWarning.daysDuration', maxDays);
+    return t('storyPointWarning.tooSoon', { points, maxDuration, daysUntilDue: tn('storyPointWarning.daysDuration', Math.round(daysUntilDue)) });
   }
   return null;
 }
@@ -210,54 +217,54 @@ export function storyPointDueDateWarning(points: number, dueDate: string | undef
  * status" rather than "changed status to In Progress") — the specifics only get fetched, and
  * only get rendered, once a row is actually expanded.
  */
-export function describeEventType(type: EventType): string {
+export function describeEventType(type: EventType, t: Translate): string {
   switch (type) {
     case 'issue.created':
-      return 'created this issue';
+      return t('activity.eventType.issueCreated');
     case 'issue.statusChanged':
-      return 'changed the status';
+      return t('activity.eventType.issueStatusChanged');
     case 'issue.resolved':
-      return 'resolved this issue';
+      return t('activity.eventType.issueResolved');
     case 'issue.reopened':
-      return 'reopened this issue';
+      return t('activity.eventType.issueReopened');
     case 'issue.assigneesChanged':
-      return 'changed assignees';
+      return t('activity.eventType.issueAssigneesChanged');
     case 'issue.agentAssigned':
-      return 'attached an AI agent';
+      return t('activity.eventType.issueAgentAssigned');
     case 'issue.agentUnassigned':
-      return 'removed an AI agent';
+      return t('activity.eventType.issueAgentUnassigned');
     case 'issue.priorityChanged':
-      return 'changed priority';
+      return t('activity.eventType.issuePriorityChanged');
     case 'issue.labelsChanged':
-      return 'changed labels';
+      return t('activity.eventType.issueLabelsChanged');
     case 'issue.dueDateChanged':
-      return 'changed the due date';
+      return t('activity.eventType.issueDueDateChanged');
     case 'issue.sprintChanged':
-      return 'changed the sprint';
+      return t('activity.eventType.issueSprintChanged');
     case 'issue.updated':
-      return 'updated this issue';
+      return t('activity.eventType.issueUpdated');
     case 'issue.linked':
-      return 'linked another issue';
+      return t('activity.eventType.issueLinked');
     case 'issue.unlinked':
-      return 'removed a linked issue';
+      return t('activity.eventType.issueUnlinked');
     case 'issue.deleted':
-      return 'deleted this issue';
+      return t('activity.eventType.issueDeleted');
     case 'issue.worklogAdded':
-      return 'logged work';
+      return t('activity.eventType.issueWorklogAdded');
     case 'issue.attachmentAdded':
-      return 'added an attachment';
+      return t('activity.eventType.issueAttachmentAdded');
     case 'issue.branchCreated':
-      return 'created a branch';
+      return t('activity.eventType.issueBranchCreated');
     case 'issue.branchDeleted':
-      return 'deleted the branch';
+      return t('activity.eventType.issueBranchDeleted');
     case 'comment.created':
-      return 'added a comment';
+      return t('activity.eventType.commentCreated');
     case 'comment.edited':
-      return 'edited a comment';
+      return t('activity.eventType.commentEdited');
     case 'comment.deleted':
-      return 'deleted a comment';
+      return t('activity.eventType.commentDeleted');
     case 'comment.mentioned':
-      return 'mentioned someone in a comment';
+      return t('activity.eventType.commentMentioned');
     default:
       return type.replace(/[._]/g, ' ');
   }
@@ -273,79 +280,82 @@ export function describeEventType(type: EventType): string {
  * phrasing (repo file reads/writes, agent run lifecycle, project/sprint events reaching this
  * issue indirectly, etc).
  */
-export function describeEvent(event: EventEnvelope, ctx: { workflow: Workflow | null; labels: Label[]; users: User[] }): string {
+export function describeEvent(event: EventEnvelope, ctx: { workflow: Workflow | null; labels: Label[]; users: User[] }, t: Translate): string {
   const p = event.payload;
   const statusName = (id: string) => ctx.workflow?.statuses.find((s) => s.id === id)?.name ?? id;
   const labelName = (id: string) => ctx.labels.find((l) => l.id === id)?.name ?? id;
   const userName = (id: string) => ctx.users.find((u) => u.id === id)?.displayName ?? id;
   switch (p.type) {
     case 'issue.created':
-      return 'created this issue';
+      return t('activity.event.issueCreated');
     case 'issue.statusChanged':
-      return `changed status from ${statusName(p.fromStatusId)} to ${statusName(p.toStatusId)}`;
+      return t('activity.event.issueStatusChanged', { from: statusName(p.fromStatusId), to: statusName(p.toStatusId) });
     case 'issue.resolved':
-      return `resolved this issue (${statusName(p.statusId)})`;
+      return t('activity.event.issueResolved', { status: statusName(p.statusId) });
     case 'issue.reopened':
-      return `reopened this issue (${statusName(p.statusId)})`;
+      return t('activity.event.issueReopened', { status: statusName(p.statusId) });
     case 'issue.assigneesChanged':
       return p.toUserIds.length
-        ? `changed assignees from ${p.fromUserIds.map(userName).join(', ') || 'no one'} to ${p.toUserIds.map(userName).join(', ')}`
-        : `unassigned everyone (was ${p.fromUserIds.map(userName).join(', ') || 'no one'})`;
+        ? t('activity.event.assigneesChangedTo', { from: p.fromUserIds.map(userName).join(', ') || t('activity.event.noOne'), to: p.toUserIds.map(userName).join(', ') })
+        : t('activity.event.assigneesUnassignedAll', { from: p.fromUserIds.map(userName).join(', ') || t('activity.event.noOne') });
     case 'issue.agentAssigned':
-      return 'attached an AI agent';
+      return t('activity.event.issueAgentAssigned');
     case 'issue.agentUnassigned':
-      return 'removed an AI agent';
+      return t('activity.event.issueAgentUnassigned');
     case 'issue.priorityChanged':
-      return `changed priority from ${p.fromPriority} to ${p.toPriority}`;
+      return t('activity.event.issuePriorityChanged', { from: p.fromPriority, to: p.toPriority });
     case 'issue.labelsChanged':
-      return `changed labels from ${p.fromLabelIds.map(labelName).join(', ') || 'none'} to ${p.toLabelIds.map(labelName).join(', ') || 'none'}`;
+      return t('activity.event.issueLabelsChanged', {
+        from: p.fromLabelIds.map(labelName).join(', ') || t('activity.event.labelsNone'),
+        to: p.toLabelIds.map(labelName).join(', ') || t('activity.event.labelsNone'),
+      });
     case 'issue.dueDateChanged':
-      return p.toDueDate ? `set the due date to ${p.toDueDate}` : 'cleared the due date';
+      return p.toDueDate ? t('activity.event.dueDateSet', { date: p.toDueDate }) : t('activity.event.dueDateCleared');
     case 'issue.sprintChanged':
-      return p.toSprintId ? 'moved this issue to a sprint' : 'moved this issue out of its sprint';
+      return p.toSprintId ? t('activity.event.sprintSet') : t('activity.event.sprintCleared');
     case 'issue.updated':
-      return `updated ${Object.keys(p.changes).join(', ') || 'this issue'}`;
+      return t('activity.event.issueUpdated', { fields: Object.keys(p.changes).join(', ') || t('activity.event.issueUpdatedFallback') });
     case 'issue.linked':
-      return 'linked another issue';
+      return t('activity.event.issueLinked');
     case 'issue.unlinked':
-      return 'removed a linked issue';
+      return t('activity.event.issueUnlinked');
     case 'issue.deleted':
-      return 'deleted this issue';
+      return t('activity.event.issueDeleted');
     case 'issue.worklogAdded':
-      return `logged ${formatDuration(p.timeSpentSeconds)} of work`;
+      return t('activity.event.worklogAdded', { duration: formatDuration(p.timeSpentSeconds) });
     case 'issue.attachmentAdded':
-      return `attached ${p.fileName}`;
+      return t('activity.event.attachmentAdded', { fileName: p.fileName });
     case 'issue.branchCreated':
-      return `created branch ${p.name}`;
+      return t('activity.event.branchCreated', { name: p.name });
     case 'issue.branchDeleted':
-      return 'deleted the branch';
+      return t('activity.event.branchDeleted');
     case 'comment.created':
-      return p.parentCommentId ? 'replied to a comment' : 'added a comment';
+      return p.parentCommentId ? t('activity.event.commentReplied') : t('activity.event.commentCreated');
     case 'comment.edited':
-      return 'edited a comment';
+      return t('activity.event.commentEdited');
     case 'comment.deleted':
-      return 'deleted a comment';
+      return t('activity.event.commentDeleted');
     case 'comment.mentioned':
-      return 'mentioned someone in a comment';
+      return t('activity.event.commentMentioned');
     default:
       return p.type.replace(/[._]/g, ' ');
   }
 }
 
 /** One-line human-readable summary of an automation/agent action, e.g. "→ In Progress" or `comment "Thanks!"` — shared between the Automations rule list and Agents' proposed/past-run displays. */
-export function describeAutomationAction(a: AutomationAction, ctx: { workflow: Workflow | null; users: User[]; fieldDefinitions: FieldDefinition[] }): string {
+export function describeAutomationAction(a: AutomationAction, ctx: { workflow: Workflow | null; users: User[]; fieldDefinitions: FieldDefinition[] }, t: Translate): string {
   switch (a.type) {
     case 'transitionStatus':
-      return `→ ${ctx.workflow?.statuses.find((s) => s.id === a.toStatusId)?.name ?? a.toStatusId}`;
+      return t('automation.action.transitionStatus', { status: ctx.workflow?.statuses.find((s) => s.id === a.toStatusId)?.name ?? a.toStatusId });
     case 'assignTo':
-      return `assign ${ctx.users.find((u) => u.id === a.userId)?.displayName ?? a.userId}`;
+      return t('automation.action.assignTo', { name: ctx.users.find((u) => u.id === a.userId)?.displayName ?? a.userId });
     case 'addComment':
-      return `comment "${a.body.length > 30 ? `${a.body.slice(0, 30)}…` : a.body}"`;
+      return t('automation.action.addComment', { body: a.body.length > 30 ? `${a.body.slice(0, 30)}…` : a.body });
     case 'setField':
-      return `set ${ctx.fieldDefinitions.find((f) => f.id === a.fieldId)?.name ?? a.fieldId} = ${JSON.stringify(a.value)}`;
+      return t('automation.action.setField', { field: ctx.fieldDefinitions.find((f) => f.id === a.fieldId)?.name ?? a.fieldId, value: JSON.stringify(a.value) });
     case 'readRepoFile':
-      return `read ${a.path}`;
+      return t('automation.action.readRepoFile', { path: a.path });
     case 'writeRepoFile':
-      return `write ${a.path} → branch "${a.branchName}"`;
+      return t('automation.action.writeRepoFile', { path: a.path, branch: a.branchName });
   }
 }

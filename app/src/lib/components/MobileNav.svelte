@@ -26,12 +26,13 @@
     workspace,
   } from '../stores/workspace';
   import { splitHumansAndAgents } from '../util';
+  import { t, tn } from '../i18n';
 
-  const primaryTabs: { icon: string; label: string; view: 'board' | 'backlog' }[] = [
-    { icon: 'columns', label: 'Board', view: 'board' },
-    { icon: 'list', label: 'Backlog', view: 'backlog' },
+  const primaryTabs: { icon: string; labelKey: string; view: 'board' | 'backlog' }[] = [
+    { icon: 'columns', labelKey: 'nav.board', view: 'board' },
+    { icon: 'list', labelKey: 'nav.backlog', view: 'backlog' },
   ];
-  $: tabs = $featureFlags.sprints ? primaryTabs : primaryTabs.filter((t) => t.view !== 'backlog');
+  $: tabs = $featureFlags.sprints ? primaryTabs : primaryTabs.filter((tab) => tab.view !== 'backlog');
   $: viewingIssue = $currentView === 'board' || $currentView === 'backlog';
   $: memberCount = splitHumansAndAgents($users).humans.length;
 
@@ -69,7 +70,7 @@
       newProjectKey = '';
       showNewProjectForm = false;
     } catch (err) {
-      newProjectError = err instanceof Error ? err.message : 'Failed to create project';
+      newProjectError = err instanceof Error ? err.message : $t('sidebar.failedCreateProject');
     } finally {
       creatingProject = false;
     }
@@ -96,18 +97,18 @@
       on:click={() => goToView(tab.view)}
     >
       <Icon name={tab.icon} size={19} />
-      <span>{tab.label}</span>
+      <span>{$t(tab.labelKey)}</span>
     </button>
   {/each}
 
   <button type="button" class="nav-btn create-btn" on:click={() => (showNewIssue = true)}>
     <span class="create-circle"><Icon name="plus" size={18} /></span>
-    <span>New</span>
+    <span>{$t('mobileNav.newTab')}</span>
   </button>
 
   <button type="button" class="nav-btn" class:active={showProjects} on:click={() => (showProjects = true)}>
     <Icon name="grid" size={19} />
-    <span>Projects</span>
+    <span>{$t('mobileNav.projectsTab')}</span>
   </button>
 
   <button
@@ -117,15 +118,15 @@
     on:click={() => (showMore = true)}
   >
     <Icon name="gear" size={19} />
-    <span>More</span>
+    <span>{$t('mobileNav.moreTab')}</span>
   </button>
 </nav>
 
 {#if showProjects}
   <div class="sheet-backdrop" role="button" tabindex="0" on:click={() => (showProjects = false)} on:keydown={(e) => e.key === 'Escape' && (showProjects = false)}>
-    <div class="sheet" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true" aria-label="Switch project" tabindex="-1">
+    <div class="sheet" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true" aria-label={$t('mobileNav.projectsTab')} tabindex="-1">
       <div class="sheet-handle"></div>
-      <div class="sheet-title">{$workspace?.name ?? 'Workspace'}</div>
+      <div class="sheet-title">{$workspace?.name ?? ''}</div>
       <div class="sheet-list">
         {#each $projects as p (p.id)}
           <button type="button" class="sheet-row" class:active={p.id === $currentProjectId} on:click={() => selectProject(p.id)}>
@@ -137,18 +138,18 @@
       </div>
       {#if showNewProjectForm}
         <form class="new-project-form" on:submit|preventDefault={submitNewProject}>
-          <input class="new-project-input" type="text" placeholder="Project name" bind:value={newProjectName} />
-          <input class="new-project-input" type="text" placeholder="Key (e.g. MOB)" bind:value={newProjectKey} />
+          <input class="new-project-input" type="text" placeholder={$t('sidebar.newProjectPlaceholder')} bind:value={newProjectName} />
+          <input class="new-project-input" type="text" placeholder={$t('sidebar.newProjectKeyPlaceholder')} bind:value={newProjectKey} />
           <div class="new-project-actions">
-            <button type="button" class="sheet-btn ghost" on:click={() => (showNewProjectForm = false)}>Cancel</button>
-            <button type="submit" class="sheet-btn primary" disabled={creatingProject}>{creatingProject ? 'Creating…' : 'Create'}</button>
+            <button type="button" class="sheet-btn ghost" on:click={() => (showNewProjectForm = false)}>{$t('common.cancel')}</button>
+            <button type="submit" class="sheet-btn primary" disabled={creatingProject}>{creatingProject ? $t('common.creating') : $t('common.create')}</button>
           </div>
           {#if newProjectError}<p class="new-project-error">{newProjectError}</p>{/if}
         </form>
       {:else}
         <button type="button" class="sheet-row add-row" on:click={() => (showNewProjectForm = true)}>
           <Icon name="plus" size={14} />
-          <span class="sheet-row-label">New project</span>
+          <span class="sheet-row-label">{$t('mobileNav.newProjectRow')}</span>
         </button>
       {/if}
     </div>
@@ -157,7 +158,7 @@
 
 {#if showMore}
   <div class="sheet-backdrop" role="button" tabindex="0" on:click={() => (showMore = false)} on:keydown={(e) => e.key === 'Escape' && (showMore = false)}>
-    <div class="sheet" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true" aria-label="More" tabindex="-1">
+    <div class="sheet" on:click|stopPropagation on:keydown|stopPropagation role="dialog" aria-modal="true" aria-label={$t('mobileNav.moreTab')} tabindex="-1">
       <div class="sheet-handle"></div>
       {#if $currentUser}
         <div class="more-user-row">
@@ -171,23 +172,23 @@
       <div class="sheet-list">
         <button type="button" class="sheet-row" on:click={() => goTo('workspace')}>
           <Icon name="bars" size={15} />
-          <span class="sheet-row-label">{$workspace?.name ?? 'Workspace'} · {memberCount} {memberCount === 1 ? 'member' : 'members'}</span>
+          <span class="sheet-row-label">{$workspace?.name ?? ''} · {$tn('common.members', memberCount)}</span>
         </button>
         <button type="button" class="sheet-row" on:click={() => goTo('projectSettings')}>
           <Icon name="grid" size={15} />
-          <span class="sheet-row-label">Project settings</span>
+          <span class="sheet-row-label">{$t('mobileNav.projectSettingsRow')}</span>
         </button>
         <button type="button" class="sheet-row" on:click={() => goTo('settings')}>
           <Icon name="gear" size={15} />
-          <span class="sheet-row-label">Workspace settings</span>
+          <span class="sheet-row-label">{$t('mobileNav.workspaceSettingsRow')}</span>
         </button>
         <button type="button" class="sheet-row" on:click={() => ((showMore = false), (showAccountSettings = true))}>
           <Icon name="pencil" size={15} />
-          <span class="sheet-row-label">Account settings</span>
+          <span class="sheet-row-label">{$t('mobileNav.accountSettingsRow')}</span>
         </button>
         <button type="button" class="sheet-row danger" on:click={handleLogout}>
           <Icon name="x" size={15} />
-          <span class="sheet-row-label">Log out</span>
+          <span class="sheet-row-label">{$t('mobileNav.logOutRow')}</span>
         </button>
       </div>
     </div>
@@ -213,7 +214,10 @@
       position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
       display: flex; align-items: stretch; justify-content: space-around;
       background: var(--surface); border-top: 1px solid var(--border);
-      padding-bottom: env(safe-area-inset-bottom);
+      /* A flat env(safe-area-inset-bottom) leaves the bar's labels sitting flush against the
+         home indicator on gesture-nav iPhones — no breathing room at all below the text. The
+         extra 8px is a fixed minimum gap on top of whatever the safe area itself provides. */
+      padding-bottom: calc(8px + env(safe-area-inset-bottom));
       box-shadow: 0 -2px 12px rgba(0, 0, 0, .06);
     }
     .nav-btn {
@@ -226,7 +230,7 @@
     .create-btn { color: var(--text-2); }
     .create-circle {
       width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      background: var(--create-button-bg, var(--accent)); color: var(--create-button-fg, var(--accent-on));
+      background: var(--component-create-button-bg, var(--accent)); color: var(--component-create-button-fg, var(--accent-on));
       margin-bottom: 1px;
     }
 

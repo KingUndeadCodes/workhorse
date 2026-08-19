@@ -1,0 +1,499 @@
+{
+  "common": {
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "saving": "Сохранение…",
+    "create": "Создать",
+    "creating": "Создание…",
+    "add": "Добавить",
+    "delete": "Удалить",
+    "deleting": "Удаление…",
+    "edit": "Изменить",
+    "remove": "Убрать",
+    "members": {
+      "one": "{count} участник",
+      "few": "{count} участника",
+      "many": "{count} участников",
+      "other": "{count} участника"
+    },
+    "priority": {
+      "highest": "наивысший",
+      "high": "высокий",
+      "medium": "средний",
+      "low": "низкий",
+      "lowest": "наименьший"
+    }
+  },
+  "nav": {
+    "board": "Доска",
+    "backlog": "Бэклог"
+  },
+  "topBar": {
+    "workhorseBrand": "Workhorse",
+    "noActiveSprint": "Нет активного спринта",
+    "newButton": "Создать…",
+    "newIssue": "Задача",
+    "newSprint": "Спринт",
+    "newLabel": "Метка",
+    "newComponent": "Компонент",
+    "newVersion": "Версия",
+    "projectSettingsTitle": "Настройки проекта",
+    "workspaceSettingsTitle": "Настройки рабочего пространства",
+    "accountSettings": "Настройки аккаунта",
+    "logOut": "Выйти"
+  },
+  "sidebar": {
+    "newProjectPlaceholder": "Название проекта",
+    "newProjectKeyPlaceholder": "Ключ (например, MOB)",
+    "newProjectButton": "Новый проект",
+    "projectsLabel": "Проекты",
+    "failedCreateProject": "Не удалось создать проект"
+  },
+  "mobileNav": {
+    "newTab": "Создать",
+    "projectsTab": "Проекты",
+    "moreTab": "Ещё",
+    "newProjectRow": "Новый проект",
+    "projectSettingsRow": "Настройки проекта",
+    "workspaceSettingsRow": "Настройки рабочего пространства",
+    "accountSettingsRow": "Настройки аккаунта",
+    "logOutRow": "Выйти"
+  },
+  "board": {
+    "noEpic": "Без эпика",
+    "noIssues": "Нет задач"
+  },
+  "issueCard": {
+    "moveToTitle": "Переместить в…"
+  },
+  "issueDrawer": {
+    "descriptionLabel": "Описание",
+    "descriptionPlaceholder": "Добавьте описание… (поддерживается markdown)",
+    "assigneesLabel": "Исполнители",
+    "addChip": "+ Добавить",
+    "reporterLabel": "Автор",
+    "unassigned": "Не назначен",
+    "priorityLabel": "Приоритет",
+    "storyPointsLabel": "Story Points",
+    "sprintLabel": "Спринт",
+    "noSprint": "Нет спринта",
+    "dueDateLabel": "Срок выполнения",
+    "aiAgentsLabel": "ИИ-агенты",
+    "agentsHint": "Подключите агента, чтобы он поработал над этой задачей.",
+    "runNowTitle": "Запустить сейчас",
+    "runNowButton": "Запустить",
+    "runningButton": "…",
+    "noMoreAgents": "Больше нет доступных агентов",
+    "branchLabel": "Ветка",
+    "createBranchButton": "+ Создать ветку",
+    "advancedToggle": "Дополнительно",
+    "linkedIssuesLabel": "Связанные задачи",
+    "relationRelatesTo": "связана с",
+    "relationBlocks": "блокирует",
+    "relationDuplicates": "дублирует",
+    "relationClones": "клонирует",
+    "relationCauses": "вызывает",
+    "relationInverse": "{type} (обратная связь)",
+    "issueKeyPlaceholder": "Ключ задачи (например, ATL-131)",
+    "linkButton": "Связать",
+    "timeTrackingLabel": "Учёт времени",
+    "loggedSuffix": "{hours} ч. затрачено",
+    "estimateSuffix": "{hours} ч. оценка",
+    "hoursPlaceholder": "Часы",
+    "workNotePlaceholder": "Над чем вы работали? (необязательно)",
+    "logButton": "Записать",
+    "commentsTab": "Комментарии",
+    "activityTab": "Активность",
+    "nothingLoggedYet": "Пока ничего не зафиксировано.",
+    "loadingDetails": "Загрузка данных…",
+    "couldntLoadDetails": "Не удалось загрузить данные о событии.",
+    "runAgentConfirm": "Запустить «{name}» для этой задачи сейчас?",
+    "failedAttachAgent": "Не удалось подключить агента",
+    "failedLoadBranch": "Не удалось загрузить ветку",
+    "failedCreateBranch": "Не удалось создать ветку",
+    "actorSomeone": "Кто-то",
+    "actorAutomationRule": "Правило автоматизации",
+    "actorSystem": "Система",
+    "commentPlaceholder": "Добавьте комментарий… (поддерживается markdown)",
+    "commentSubmitLabel": "Комментировать"
+  },
+  "settings": {
+    "tabs": {
+      "appearance": "Внешний вид",
+      "labels": "Метки",
+      "fields": "Поля",
+      "workflow": "Workflow",
+      "automations": "Автоматизации",
+      "agents": "Агенты",
+      "webhooks": "Вебхуки"
+    },
+    "appearance": {
+      "themeLabel": "Тема",
+      "themeHint": "Переключает между светлой и тёмной темой для этого браузера или следует системной теме в реальном времени, если выбрано «Как в браузере».",
+      "themeLight": "Светлая",
+      "themeDark": "Тёмная",
+      "themeSystem": "Как в браузере",
+      "languageLabel": "Язык",
+      "languageHint": "Выберите язык интерфейса Workhorse.",
+      "nonEnglishDisclaimer": "Это переводит только интерфейс самого приложения — пожалуйста, оставляйте названия задач, описания, комментарии, метки и остальной контент на английском языке, чтобы вся команда могла их прочитать."
+    },
+    "labelNamePlaceholder": "Название метки",
+    "addLabelButton": "Добавить метку",
+    "fieldNamePlaceholder": "Название поля (например, Severity)",
+    "fieldKeyPlaceholder": "Машинный ключ (например, severity)",
+    "fieldOptionsPlaceholder": "Варианты через запятую (например, Low, Medium, High)",
+    "addFieldButton": "Добавить поле",
+    "statusCategoriesLabel": "Категории статусов",
+    "categoryNamePlaceholder": "Название категории (например, Resolving Differences)",
+    "addCategoryButton": "Добавить категорию",
+    "workflowLabel": "Workflow",
+    "ruleNamePlaceholder": "Название правила",
+    "triggerLabel": "Триггер",
+    "conditionsLabel": "Условия (необязательно — без них правило выполняется всегда)",
+    "valuePlaceholder": "значение",
+    "addConditionButton": "+ Добавить условие",
+    "actionsLabel": "Действия",
+    "addActionButton": "+ Добавить действие",
+    "addRuleButton": "Добавить правило",
+    "commentBodyPlaceholder": "Текст комментария",
+    "pathPlaceholder": "путь/к/файлу.ts",
+    "branchNamePlaceholder": "имя ветки",
+    "fileContentPlaceholder": "содержимое файла",
+    "commitMessagePlaceholder": "сообщение коммита (необязательно)",
+    "statusPlaceholder": "статус…",
+    "userPlaceholder": "пользователь…",
+    "fieldPlaceholder": "поле…",
+    "enabledLabel": "включено",
+    "webhookUrlPlaceholder": "https://your-service.example/webhook",
+    "addWebhookButton": "Добавить вебхук",
+    "failedDeleteCategory": "Не удалось удалить категорию"
+  },
+  "projectSettings": {
+    "tabs": {
+      "project": "Проект",
+      "components": "Компоненты",
+      "versions": "Версии",
+      "git": "Git"
+    },
+    "nameLabel": "Название",
+    "keyLabel": "Ключ",
+    "keyHint": "Ключ нельзя изменить — он используется в ключе каждой задачи (например, «{key}-142»).",
+    "colorLabel": "Цвет",
+    "featuresLabel": "Функции",
+    "featuresHint": "Отключите то, что не нужно этому проекту — ничего не удаляется, и включить обратно можно в любой момент.",
+    "features": {
+      "reporters": "Авторы",
+      "storyPoints": "Story Points",
+      "dueDates": "Сроки выполнения",
+      "timeTracking": "Учёт времени",
+      "priority": "Приоритет",
+      "componentsAndVersions": "Компоненты и версии",
+      "sprints": "Спринты",
+      "labels": "Метки"
+    },
+    "archiveButton": "Архивировать проект",
+    "archiveConfirm": "Архивировать «{name}»? Проект останется в рабочем пространстве, но будет скрыт из переключателя проектов.",
+    "componentNamePlaceholder": "Название компонента",
+    "addComponentButton": "Добавить компонент",
+    "versionNamePlaceholder": "Название версии (например, v3.5.0)",
+    "addVersionButton": "Добавить версию",
+    "released": "Выпущена",
+    "unreleased": "Не выпущена",
+    "releaseButton": "Выпустить",
+    "gitHint": "Свяжите проект с git-репозиторием, чтобы создавать настоящие ветки для задач прямо из карточки задачи.",
+    "noGitProviderHint": "На сервере не настроен ни один git-провайдер, поэтому пока не с чем связываться — см. server/src/services/GitProvider.ts.",
+    "ownerPlaceholder": "Владелец",
+    "repoPlaceholder": "Репозиторий",
+    "defaultBranchPlaceholder": "Ветка по умолчанию (main)",
+    "accessTokenPlaceholder": "Токен доступа",
+    "linkRepoButton": "Связать репозиторий",
+    "linkingRepoButton": "Связывание…",
+    "failedLinkRepo": "Не удалось связать репозиторий",
+    "defaultBranchSuffix": "ветка по умолчанию: {branch}"
+  },
+  "workspaceView": {
+    "youBadge": "вы",
+    "canManageRoles": "вы можете управлять ролями",
+    "roles": {
+      "owner": "владелец",
+      "admin": "администратор",
+      "member": "участник",
+      "guest": "гость"
+    }
+  },
+  "newIssueModal": {
+    "title": "Новая задача",
+    "titleFieldLabel": "Заголовок",
+    "titlePlaceholder": "Что нужно сделать?",
+    "typeLabel": "Тип",
+    "priorityLabel": "Приоритет",
+    "assigneesLabel": "Исполнители",
+    "failedCreate": "Не удалось создать задачу",
+    "createButton": "Создать задачу",
+    "creatingButton": "Создание…"
+  },
+  "accountSettingsModal": {
+    "title": "Настройки аккаунта",
+    "uploadPicture": "Загрузить фото",
+    "removePicture": "Удалить",
+    "nameLabel": "Имя",
+    "namePlaceholder": "Ваше имя",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "invalidImage": "Пожалуйста, выберите файл изображения",
+    "failedUpdate": "Не удалось обновить аккаунт",
+    "saveButton": "Сохранить изменения",
+    "savingButton": "Сохранение…",
+    "youFallback": "Вы"
+  },
+  "commentThread": {
+    "reply": "Ответить",
+    "edit": "Изменить",
+    "delete": "Удалить",
+    "deleting": "Удаление…",
+    "deleteConfirm": "Удалить этот комментарий? Это действие необратимо.",
+    "deleteConfirmWithReplies": "Удалить этот комментарий и все ответы на него? Это действие необратимо.",
+    "edited": "(изменено)",
+    "repliesHidden": {
+      "one": "{count} ответ скрыт",
+      "few": "{count} ответа скрыто",
+      "many": "{count} ответов скрыто",
+      "other": "{count} ответа скрыто"
+    },
+    "continueThread": {
+      "one": "Продолжить обсуждение (ещё {count} ответ)",
+      "few": "Продолжить обсуждение (ещё {count} ответа)",
+      "many": "Продолжить обсуждение (ещё {count} ответов)",
+      "other": "Продолжить обсуждение (ещё {count} ответа)"
+    },
+    "replyPlaceholder": "Напишите ответ… (поддерживается markdown)",
+    "replyButton": "Ответить"
+  },
+  "markdownEditor": {
+    "boldTitle": "Жирный",
+    "italicTitle": "Курсив",
+    "codeTitle": "Код",
+    "linkTitle": "Ссылка",
+    "listTitle": "Маркированный список",
+    "quoteTitle": "Цитата",
+    "boldPlaceholder": "жирный текст",
+    "italicPlaceholder": "курсивный текст",
+    "codePlaceholder": "код",
+    "linkPlaceholder": "текст ссылки",
+    "markdownSupported": "Поддерживается markdown",
+    "wordCount": {
+      "one": "{count} слово",
+      "few": "{count} слова",
+      "many": "{count} слов",
+      "other": "{count} слова"
+    }
+  },
+  "login": {
+    "logInTitle": "Вход",
+    "signUpTitle": "Создать аккаунт",
+    "displayNameLabel": "Отображаемое имя",
+    "displayNamePlaceholder": "Ada Lovelace",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "Пароль",
+    "pleaseWait": "Пожалуйста, подождите…",
+    "logInButton": "Войти",
+    "signUpButton": "Зарегистрироваться",
+    "toggleToSignUp": "Нет аккаунта? Зарегистрироваться",
+    "toggleToLogIn": "Уже есть аккаунт? Войти",
+    "genericError": "что-то пошло не так"
+  },
+  "app": {
+    "apiErrorTitle": "Не удалось подключиться к API Workhorse",
+    "serverRunningHint": "Сервер запущен?",
+    "loadingWorkspace": "Загрузка рабочего пространства…"
+  },
+  "backlog": {
+    "startSprintButton": "Начать спринт",
+    "completeSprintButton": "Завершить спринт",
+    "noIssuesInSprint": "В этом спринте пока нет задач.",
+    "nothingUnscheduled": "Нет незапланированных задач — всё уже в спринтах.",
+    "newSprintPlaceholder": "Название нового спринта…",
+    "createSprintButton": "Создать спринт",
+    "backlogLabel": "Бэклог",
+    "pointsSuffix": "{done}/{total} SP",
+    "issuesCount": {
+      "one": "{count} задача",
+      "few": "{count} задачи",
+      "many": "{count} задач",
+      "other": "{count} задачи"
+    },
+    "sprintStates": {
+      "future": "будущий",
+      "active": "активный",
+      "closed": "завершён"
+    }
+  },
+  "agentForm": {
+    "namePlaceholder": "Название агента",
+    "instructionsPlaceholder": "Инструкции — что должен делать этот агент с задачей?",
+    "runtimeLabel": "Среда выполнения",
+    "modelLabel": "Модель",
+    "contextScopeLabel": "Область контекста",
+    "contextScopes": {
+      "thread": {
+        "label": "Тред",
+        "hint": "Только этот тред комментариев"
+      },
+      "ticket": {
+        "label": "Задача",
+        "hint": "Тред + собственные данные этой задачи (по умолчанию)"
+      },
+      "project": {
+        "label": "Проект",
+        "hint": "Задача + другие открытые задачи в этом проекте"
+      },
+      "workspace": {
+        "label": "Рабочее пространство",
+        "hint": "Проект + остальное рабочее пространство"
+      }
+    },
+    "reactsToLabel": "Реагирует на",
+    "allowedActionsLabel": "Разрешённые действия",
+    "approvalLabel": "Подтверждение",
+    "autoApplyAll": "Применять всё автоматически",
+    "requireApprovalForAll": "Требовать подтверждение для всего",
+    "requireApprovalFor": "Требовать подтверждение только для…",
+    "budgetLabel": "Бюджет (необязательно — пусто = без ограничений)",
+    "maxRunsPerHour": "Макс. запусков в час",
+    "maxRunsPerDay": "Макс. запусков в день",
+    "maxActionsPerRun": "Макс. действий за запуск",
+    "maxSpendPerDay": "Макс. расход в день",
+    "ignoreSelfEvents": "Игнорировать собственные события агента (рекомендуется — предотвращает повторный запуск самим собой)"
+  },
+  "agentsSettings": {
+    "awaitingApproval": "Ожидает вашего подтверждения",
+    "agentsLabel": "Агенты",
+    "hint": "Агенты выполняют задачи от имени участника команды — подключите агента к задаче (в разделе «ИИ-агенты» карточки задачи), и он сможет комментировать, менять статус, переназначать или обновлять поля по мере продвижения, всегда с указанием человека, от имени которого он действует. Именно инструкции агента определяют его решения при каждом запуске.",
+    "noAgentsYet": "Пока нет агентов — создайте первого ниже, чтобы начать автоматизировать работу с задачами.",
+    "approveButton": "Подтвердить",
+    "rejectButton": "Отклонить",
+    "addAgentLabel": "Добавить агента",
+    "addAgentButton": "Добавить агента",
+    "saveButton": "Сохранить",
+    "statusLabels": {
+      "pending": "В ожидании",
+      "awaitingApproval": "Ожидает подтверждения",
+      "applied": "Применено",
+      "rejected": "Отклонено",
+      "failed": "Ошибка"
+    },
+    "recentActivity": "Недавняя активность",
+    "totalTokensTitle": "Всего токенов использовано за все запуски",
+    "aiBadge": "ИИ"
+  },
+  "workflowDiagram": {
+    "newStatusPlaceholder": "Название нового статуса",
+    "addStatusButton": "Добавить статус",
+    "dragHint": "Перетащите от края одного статуса к другому, чтобы соединить их. Выберите статус или переход и нажмите Delete/Backspace, чтобы удалить — статусы «To Do» и «Done» удалить нельзя.",
+    "editStatusTitle": "Изменить статус",
+    "nameLabel": "Название",
+    "colorLabel": "Цвет (hex, необязательно)",
+    "savingButton": "Сохранение…",
+    "transitionsFromAnyLabel": "Переходы из любого статуса",
+    "transitionNamePlaceholder": "Название перехода (например, Reopen)",
+    "addGlobalTransitionButton": "Добавить глобальный переход",
+    "pathErrorTransition": "Удаление этого перехода уберёт единственный путь от To Do до Done",
+    "pathErrorStatus": "Удаление этого статуса уберёт единственный путь от To Do до Done",
+    "failedDeleteTransition": "Не удалось удалить переход",
+    "failedDeleteStatus": "Не удалось удалить статус"
+  },
+  "statusNode": {
+    "lockedTitle": "Статусы «To Do» и «Done» удалить нельзя",
+    "editTitle": "Изменить статус"
+  },
+  "relativeDate": {
+    "today": "сегодня",
+    "daysAgo": {
+      "one": "{count} день назад",
+      "few": "{count} дня назад",
+      "many": "{count} дней назад",
+      "other": "{count} дня назад"
+    }
+  },
+  "storyPointWarning": {
+    "pastDue": "Срок выполнения уже прошёл, а задача всё ещё оценена в {points} баллов.",
+    "tooSoon": "Обычно на {points} баллов уходит до {maxDuration}, а до срока выполнения осталось всего {daysUntilDue}.",
+    "hoursDuration": "{hours} ч.",
+    "daysDuration": {
+      "one": "{count} день",
+      "few": "{count} дня",
+      "many": "{count} дней",
+      "other": "{count} дня"
+    }
+  },
+  "activity": {
+    "eventType": {
+      "issueCreated": "создал эту задачу",
+      "issueStatusChanged": "изменил статус",
+      "issueResolved": "решил эту задачу",
+      "issueReopened": "переоткрыл эту задачу",
+      "issueAssigneesChanged": "изменил исполнителей",
+      "issueAgentAssigned": "подключил ИИ-агента",
+      "issueAgentUnassigned": "отключил ИИ-агента",
+      "issuePriorityChanged": "изменил приоритет",
+      "issueLabelsChanged": "изменил метки",
+      "issueDueDateChanged": "изменил срок выполнения",
+      "issueSprintChanged": "изменил спринт",
+      "issueUpdated": "обновил эту задачу",
+      "issueLinked": "связал другую задачу",
+      "issueUnlinked": "убрал связанную задачу",
+      "issueDeleted": "удалил эту задачу",
+      "issueWorklogAdded": "зафиксировал затраченное время",
+      "issueAttachmentAdded": "добавил вложение",
+      "issueBranchCreated": "создал ветку",
+      "issueBranchDeleted": "удалил ветку",
+      "commentCreated": "добавил комментарий",
+      "commentEdited": "изменил комментарий",
+      "commentDeleted": "удалил комментарий",
+      "commentMentioned": "упомянул кого-то в комментарии"
+    },
+    "event": {
+      "issueCreated": "создал эту задачу",
+      "issueStatusChanged": "изменил статус с {from} на {to}",
+      "issueResolved": "решил эту задачу ({status})",
+      "issueReopened": "переоткрыл эту задачу ({status})",
+      "assigneesChangedTo": "изменил исполнителей с {from} на {to}",
+      "assigneesUnassignedAll": "снял всех исполнителей (было: {from})",
+      "noOne": "никого",
+      "issueAgentAssigned": "подключил ИИ-агента",
+      "issueAgentUnassigned": "отключил ИИ-агента",
+      "issuePriorityChanged": "изменил приоритет с {from} на {to}",
+      "issueLabelsChanged": "изменил метки с {from} на {to}",
+      "labelsNone": "нет",
+      "dueDateSet": "установил срок выполнения на {date}",
+      "dueDateCleared": "убрал срок выполнения",
+      "sprintSet": "переместил задачу в спринт",
+      "sprintCleared": "убрал задачу из спринта",
+      "issueUpdated": "обновил {fields}",
+      "issueUpdatedFallback": "эту задачу",
+      "issueLinked": "связал другую задачу",
+      "issueUnlinked": "убрал связанную задачу",
+      "issueDeleted": "удалил эту задачу",
+      "worklogAdded": "зафиксировал {duration} работы",
+      "attachmentAdded": "добавил вложение {fileName}",
+      "branchCreated": "создал ветку {name}",
+      "branchDeleted": "удалил ветку",
+      "commentReplied": "ответил на комментарий",
+      "commentCreated": "добавил комментарий",
+      "commentEdited": "изменил комментарий",
+      "commentDeleted": "удалил комментарий",
+      "commentMentioned": "упомянул кого-то в комментарии"
+    }
+  },
+  "automation": {
+    "action": {
+      "transitionStatus": "→ {status}",
+      "assignTo": "назначить {name}",
+      "addComment": "комментарий «{body}»",
+      "setField": "установить {field} = {value}",
+      "readRepoFile": "прочитать {path}",
+      "writeRepoFile": "записать {path} → ветка «{branch}»"
+    }
+  }
+}

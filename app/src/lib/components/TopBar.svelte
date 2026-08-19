@@ -5,12 +5,13 @@
   import AccountSettingsModal from './AccountSettingsModal.svelte';
   import { currentUser, logout } from '../stores/auth';
   import { currentView, featureFlags, issuesStore, selectedIssueId, settingsJumpTab, sprints } from '../stores/workspace';
+  import { t } from '../i18n';
 
-  const allTabs: { label: string; view: 'board' | 'backlog' }[] = [
-    { label: 'Board', view: 'board' },
-    { label: 'Backlog', view: 'backlog' },
+  const allTabs: { labelKey: string; view: 'board' | 'backlog' }[] = [
+    { labelKey: 'nav.board', view: 'board' },
+    { labelKey: 'nav.backlog', view: 'backlog' },
   ];
-  $: tabs = $featureFlags.sprints ? allTabs : allTabs.filter((t) => t.view !== 'backlog');
+  $: tabs = $featureFlags.sprints ? allTabs : allTabs.filter((tab) => tab.view !== 'backlog');
 
   $: activeSprint = $sprints.find((s) => s.state === 'active');
   // Only shows the ticket pill while a ticket is actually the thing on screen — not while
@@ -79,11 +80,11 @@
 
 <header class="topbar">
   <div class="crumb-tabs">
-    <div class="crumb"><b>Workhorse</b><span>/</span><span>{activeSprint?.name ?? 'No active sprint'}</span></div>
-    <div class="mobile-brand"><Icon name="anvil" size={18} />Workhorse</div>
+    <div class="crumb"><b>{$t('topBar.workhorseBrand')}</b><span>/</span><span>{activeSprint?.name ?? $t('topBar.noActiveSprint')}</span></div>
+    <div class="mobile-brand"><Icon name="anvil" size={18} />{$t('topBar.workhorseBrand')}</div>
     <div class="view-tabs">
       {#each tabs as tab}
-        <button class="view-tab" class:active={tab.view === $currentView && !selectedIssue} on:click={() => goToView(tab.view)}>{tab.label}</button>
+        <button class="view-tab" class:active={tab.view === $currentView && !selectedIssue} on:click={() => goToView(tab.view)}>{$t(tab.labelKey)}</button>
       {/each}
     </div>
     {#if selectedIssue}
@@ -92,22 +93,22 @@
   </div>
   <div class="topbar-right">
     <div class="new-menu-wrap" bind:this={newMenuWrap}>
-      <button class="new-issue-btn" on:click={toggleNewMenu}><Icon name="plus" size={13} /><span class="new-issue-label">New…</span></button>
+      <button class="new-issue-btn" on:click={toggleNewMenu}><Icon name="plus" size={13} /><span class="new-issue-label">{$t('topBar.newButton')}</span></button>
       {#if showNewMenu}
         <div class="dropdown">
-          <button class="dropdown-item" on:click={newIssue}>Issue</button>
-          {#if $featureFlags.sprints}<button class="dropdown-item" on:click={newSprint}>Sprint</button>{/if}
+          <button class="dropdown-item" on:click={newIssue}>{$t('topBar.newIssue')}</button>
+          {#if $featureFlags.sprints}<button class="dropdown-item" on:click={newSprint}>{$t('topBar.newSprint')}</button>{/if}
           <div class="dropdown-sep"></div>
-          {#if $featureFlags.labels}<button class="dropdown-item" on:click={() => newCatalogItem('Labels')}>Label</button>{/if}
+          {#if $featureFlags.labels}<button class="dropdown-item" on:click={() => newCatalogItem('Labels')}>{$t('topBar.newLabel')}</button>{/if}
           {#if $featureFlags.componentsAndVersions}
-            <button class="dropdown-item" on:click={() => newCatalogItem('Components')}>Component</button>
-            <button class="dropdown-item" on:click={() => newCatalogItem('Versions')}>Version</button>
+            <button class="dropdown-item" on:click={() => newCatalogItem('Components')}>{$t('topBar.newComponent')}</button>
+            <button class="dropdown-item" on:click={() => newCatalogItem('Versions')}>{$t('topBar.newVersion')}</button>
           {/if}
         </div>
       {/if}
     </div>
-    <button class="icon-btn" title="Project settings" on:click={() => ($currentView = 'projectSettings')}><Icon name="grid" /></button>
-    <button class="icon-btn" title="Workspace settings" on:click={() => ($currentView = 'settings')}><Icon name="gear" /></button>
+    <button class="icon-btn project-settings-btn" title={$t('topBar.projectSettingsTitle')} on:click={() => ($currentView = 'projectSettings')}><Icon name="grid" /></button>
+    <button class="icon-btn workspace-settings-btn" title={$t('topBar.workspaceSettingsTitle')} on:click={() => ($currentView = 'settings')}><Icon name="gear" /></button>
     {#if $currentUser}
       <div class="user-menu-wrap" bind:this={userMenuWrap}>
         <button class="avatar-btn" on:click={toggleUserMenu}>
@@ -119,8 +120,8 @@
               <div class="user-menu-name">{$currentUser.displayName}</div>
               <div class="user-menu-email">{$currentUser.email}</div>
             </div>
-            <button class="dropdown-item" on:click={openAccountSettings}>Account settings</button>
-            <button class="dropdown-item" on:click={handleLogout}>Log out</button>
+            <button class="dropdown-item" on:click={openAccountSettings}>{$t('topBar.accountSettings')}</button>
+            <button class="dropdown-item" on:click={handleLogout}>{$t('topBar.logOut')}</button>
           </div>
         {/if}
       </div>
@@ -157,14 +158,14 @@
   .topbar-right { display: flex; align-items: center; gap: 14px; flex: 0 0 auto; }
   .icon-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 7px; color: var(--text-2); }
   .icon-btn:hover { background: var(--surface-sunken); color: var(--text); }
-  /* --create-button-bg/--create-button-fg are optional per-theme colorSchemes keys in
-     ui.config.json (see index.html) — falls back to the normal accent colors when a scheme
-     omits them. Hover uses a brightness filter rather than a second configured color
-     (--accent-strong's role for the default case), since it has to work regardless of which
-     color source is live. */
+  /* --component-create-button-bg/-fg come from ui.config.json's colorSchemes.*.components
+     ("create-button" entry) — see index.html — and fall back to the normal accent colors when a
+     scheme doesn't override them. Hover uses a brightness filter rather than a second configured
+     color (--accent-strong's role for the default case), since it has to work regardless of
+     which color source is live. */
   .new-issue-btn {
-    display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--create-button-fg, var(--accent-on));
-    background: var(--create-button-bg, var(--accent)); padding: 7px 12px; border-radius: 7px; white-space: nowrap;
+    display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--component-create-button-fg, var(--accent-on));
+    background: var(--component-create-button-bg, var(--accent)); padding: 7px 12px; border-radius: 7px; white-space: nowrap;
     transition: filter .1s ease;
   }
   .new-issue-btn:hover { filter: brightness(0.92); }
@@ -188,7 +189,7 @@
        — Board/Backlog/Projects/Settings are all one tap away there instead of a second tap
        through a menu, so the icon-only project/workspace settings buttons (now reachable from
        MobileNav's More sheet) stay hidden on mobile too. */
-    .icon-btn[title="Project settings"], .icon-btn[title="Workspace settings"] { display: none; }
+    .project-settings-btn, .workspace-settings-btn { display: none; }
     .crumb { display: none; }
     /* Nothing else occupies the bar's left side on mobile (crumb hidden, tabs hidden below) —
        shows the wordmark instead of leaving it blank, same identity Sidebar's .brand carries

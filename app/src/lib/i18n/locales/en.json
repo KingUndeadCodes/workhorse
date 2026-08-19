@@ -1,0 +1,485 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "create": "Create",
+    "creating": "Creating…",
+    "add": "Add",
+    "delete": "Delete",
+    "deleting": "Deleting…",
+    "edit": "Edit",
+    "remove": "Remove",
+    "members": {
+      "one": "{count} member",
+      "other": "{count} members"
+    },
+    "priority": {
+      "highest": "highest",
+      "high": "high",
+      "medium": "medium",
+      "low": "low",
+      "lowest": "lowest"
+    }
+  },
+  "nav": {
+    "board": "Board",
+    "backlog": "Backlog"
+  },
+  "topBar": {
+    "workhorseBrand": "Workhorse",
+    "noActiveSprint": "No active sprint",
+    "newButton": "New…",
+    "newIssue": "Issue",
+    "newSprint": "Sprint",
+    "newLabel": "Label",
+    "newComponent": "Component",
+    "newVersion": "Version",
+    "projectSettingsTitle": "Project settings",
+    "workspaceSettingsTitle": "Workspace settings",
+    "accountSettings": "Account settings",
+    "logOut": "Log out"
+  },
+  "sidebar": {
+    "newProjectPlaceholder": "Project name",
+    "newProjectKeyPlaceholder": "Key (e.g. MOB)",
+    "newProjectButton": "New Project",
+    "projectsLabel": "Projects",
+    "failedCreateProject": "Failed to create project"
+  },
+  "mobileNav": {
+    "newTab": "New",
+    "projectsTab": "Projects",
+    "moreTab": "More",
+    "newProjectRow": "New project",
+    "projectSettingsRow": "Project settings",
+    "workspaceSettingsRow": "Workspace settings",
+    "accountSettingsRow": "Account settings",
+    "logOutRow": "Log out"
+  },
+  "board": {
+    "noEpic": "No Epic",
+    "noIssues": "No issues"
+  },
+  "issueCard": {
+    "moveToTitle": "Move to…"
+  },
+  "issueDrawer": {
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Add a description… (markdown supported)",
+    "assigneesLabel": "Assignees",
+    "addChip": "+ Add",
+    "reporterLabel": "Reporter",
+    "unassigned": "Unassigned",
+    "priorityLabel": "Priority",
+    "storyPointsLabel": "Story Points",
+    "sprintLabel": "Sprint",
+    "noSprint": "No sprint",
+    "dueDateLabel": "Due Date",
+    "aiAgentsLabel": "AI Agents",
+    "agentsHint": "Attach an agent to have it work this ticket.",
+    "runNowTitle": "Run now",
+    "runNowButton": "Run",
+    "runningButton": "…",
+    "noMoreAgents": "No more agents to attach",
+    "branchLabel": "Branch",
+    "createBranchButton": "+ Create Branch",
+    "advancedToggle": "Advanced",
+    "linkedIssuesLabel": "Linked Issues",
+    "relationRelatesTo": "relates to",
+    "relationBlocks": "blocks",
+    "relationDuplicates": "duplicates",
+    "relationClones": "clones",
+    "relationCauses": "causes",
+    "relationInverse": "{type} (inverse)",
+    "issueKeyPlaceholder": "Issue key (e.g. ATL-131)",
+    "linkButton": "Link",
+    "timeTrackingLabel": "Time Tracking",
+    "loggedSuffix": "{hours}h logged",
+    "estimateSuffix": "{hours}h est.",
+    "hoursPlaceholder": "Hours",
+    "workNotePlaceholder": "What did you work on? (optional)",
+    "logButton": "Log",
+    "commentsTab": "Comments",
+    "activityTab": "Activity",
+    "nothingLoggedYet": "Nothing logged yet.",
+    "loadingDetails": "Loading details…",
+    "couldntLoadDetails": "Couldn't load details for this event.",
+    "runAgentConfirm": "Run \"{name}\" on this issue now?",
+    "failedAttachAgent": "Failed to attach agent",
+    "failedLoadBranch": "Failed to load branch",
+    "failedCreateBranch": "Failed to create branch",
+    "actorSomeone": "Someone",
+    "actorAutomationRule": "An automation rule",
+    "actorSystem": "The system",
+    "commentPlaceholder": "Add a comment… (markdown supported)",
+    "commentSubmitLabel": "Comment"
+  },
+  "settings": {
+    "tabs": {
+      "appearance": "Appearance",
+      "labels": "Labels",
+      "fields": "Fields",
+      "workflow": "Workflow",
+      "automations": "Automations",
+      "agents": "Agents",
+      "webhooks": "Webhooks"
+    },
+    "appearance": {
+      "themeLabel": "Theme",
+      "themeHint": "Switches between light and dark for this browser, or follows it live if you pick Match Browser.",
+      "themeLight": "Light",
+      "themeDark": "Dark",
+      "themeSystem": "Match Browser",
+      "languageLabel": "Language",
+      "languageHint": "Choose which language Workhorse displays in.",
+      "nonEnglishDisclaimer": "This only translates the app's own interface — please keep issue titles, descriptions, comments, labels, and other content in English so the whole team can read it."
+    },
+    "labelNamePlaceholder": "Label name",
+    "addLabelButton": "Add label",
+    "fieldNamePlaceholder": "Field name (e.g. Severity)",
+    "fieldKeyPlaceholder": "Machine key (e.g. severity)",
+    "fieldOptionsPlaceholder": "Options, comma-separated (e.g. Low, Medium, High)",
+    "addFieldButton": "Add field",
+    "statusCategoriesLabel": "Status categories",
+    "categoryNamePlaceholder": "Category name (e.g. Resolving Differences)",
+    "addCategoryButton": "Add category",
+    "workflowLabel": "Workflow",
+    "ruleNamePlaceholder": "Rule name",
+    "triggerLabel": "Trigger",
+    "conditionsLabel": "Conditions (optional — runs unconditionally if none)",
+    "valuePlaceholder": "value",
+    "addConditionButton": "+ Add condition",
+    "actionsLabel": "Actions",
+    "addActionButton": "+ Add action",
+    "addRuleButton": "Add rule",
+    "commentBodyPlaceholder": "Comment body",
+    "pathPlaceholder": "path/to/file.ts",
+    "branchNamePlaceholder": "branch name",
+    "fileContentPlaceholder": "file content",
+    "commitMessagePlaceholder": "commit message (optional)",
+    "statusPlaceholder": "status…",
+    "userPlaceholder": "user…",
+    "fieldPlaceholder": "field…",
+    "enabledLabel": "enabled",
+    "webhookUrlPlaceholder": "https://your-service.example/webhook",
+    "addWebhookButton": "Add webhook",
+    "failedDeleteCategory": "Failed to delete category"
+  },
+  "projectSettings": {
+    "tabs": {
+      "project": "Project",
+      "components": "Components",
+      "versions": "Versions",
+      "git": "Git"
+    },
+    "nameLabel": "Name",
+    "keyLabel": "Key",
+    "keyHint": "The key is permanent — it's baked into every issue's key (e.g. \"{key}-142\").",
+    "colorLabel": "Color",
+    "featuresLabel": "Features",
+    "featuresHint": "Turn off whatever process this project doesn't need — nothing is deleted, and re-enabling brings it right back.",
+    "features": {
+      "reporters": "Reporters",
+      "storyPoints": "Story Points",
+      "dueDates": "Due Dates",
+      "timeTracking": "Time Tracking",
+      "priority": "Priority",
+      "componentsAndVersions": "Components & Versions",
+      "sprints": "Sprints",
+      "labels": "Labels"
+    },
+    "archiveButton": "Archive this project",
+    "archiveConfirm": "Archive \"{name}\"? It'll stay in the workspace but hidden from the project switcher.",
+    "componentNamePlaceholder": "Component name",
+    "addComponentButton": "Add component",
+    "versionNamePlaceholder": "Version name (e.g. v3.5.0)",
+    "addVersionButton": "Add version",
+    "released": "Released",
+    "unreleased": "Unreleased",
+    "releaseButton": "Release",
+    "gitHint": "Link this project to a git repository to create a real branch for any ticket, right from its drawer.",
+    "noGitProviderHint": "No git provider is configured on this server, so there's nothing to link against yet — see server/src/services/GitProvider.ts.",
+    "ownerPlaceholder": "Owner",
+    "repoPlaceholder": "Repo",
+    "defaultBranchPlaceholder": "Default branch (main)",
+    "accessTokenPlaceholder": "Access token",
+    "linkRepoButton": "Link repository",
+    "linkingRepoButton": "Linking…",
+    "failedLinkRepo": "Failed to link repository",
+    "defaultBranchSuffix": "default branch: {branch}"
+  },
+  "workspaceView": {
+    "youBadge": "you",
+    "canManageRoles": "you can manage roles",
+    "roles": {
+      "owner": "owner",
+      "admin": "admin",
+      "member": "member",
+      "guest": "guest"
+    }
+  },
+  "newIssueModal": {
+    "title": "New issue",
+    "titleFieldLabel": "Title",
+    "titlePlaceholder": "What needs to be done?",
+    "typeLabel": "Type",
+    "priorityLabel": "Priority",
+    "assigneesLabel": "Assignees",
+    "failedCreate": "Failed to create issue",
+    "createButton": "Create issue",
+    "creatingButton": "Creating…"
+  },
+  "accountSettingsModal": {
+    "title": "Account settings",
+    "uploadPicture": "Upload picture",
+    "removePicture": "Remove",
+    "nameLabel": "Name",
+    "namePlaceholder": "Your name",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "invalidImage": "Please choose an image file",
+    "failedUpdate": "Failed to update account",
+    "saveButton": "Save changes",
+    "savingButton": "Saving…",
+    "youFallback": "You"
+  },
+  "commentThread": {
+    "reply": "Reply",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleting": "Deleting…",
+    "deleteConfirm": "Delete this comment? This can't be undone.",
+    "deleteConfirmWithReplies": "Delete this comment and all its replies? This can't be undone.",
+    "edited": "(edited)",
+    "repliesHidden": {
+      "one": "{count} reply hidden",
+      "other": "{count} replies hidden"
+    },
+    "continueThread": {
+      "one": "Continue thread ({count} more reply)",
+      "other": "Continue thread ({count} more replies)"
+    },
+    "replyPlaceholder": "Write a reply… (markdown supported)",
+    "replyButton": "Reply"
+  },
+  "markdownEditor": {
+    "boldTitle": "Bold",
+    "italicTitle": "Italic",
+    "codeTitle": "Code",
+    "linkTitle": "Link",
+    "listTitle": "Bulleted list",
+    "quoteTitle": "Quote",
+    "boldPlaceholder": "bold text",
+    "italicPlaceholder": "italic text",
+    "codePlaceholder": "code",
+    "linkPlaceholder": "link text",
+    "markdownSupported": "Markdown supported",
+    "wordCount": {
+      "one": "{count} word",
+      "other": "{count} words"
+    }
+  },
+  "login": {
+    "logInTitle": "Log in",
+    "signUpTitle": "Create an account",
+    "displayNameLabel": "Display name",
+    "displayNamePlaceholder": "Ada Lovelace",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "Password",
+    "pleaseWait": "Please wait…",
+    "logInButton": "Log in",
+    "signUpButton": "Sign up",
+    "toggleToSignUp": "Don't have an account? Sign up",
+    "toggleToLogIn": "Already have an account? Log in",
+    "genericError": "something went wrong"
+  },
+  "app": {
+    "apiErrorTitle": "Couldn't reach the Workhorse API",
+    "serverRunningHint": "Is the server running?",
+    "loadingWorkspace": "Loading workspace…"
+  },
+  "backlog": {
+    "startSprintButton": "Start sprint",
+    "completeSprintButton": "Complete sprint",
+    "noIssuesInSprint": "No issues in this sprint yet.",
+    "nothingUnscheduled": "Nothing unscheduled — everything's in a sprint.",
+    "newSprintPlaceholder": "New sprint name…",
+    "createSprintButton": "Create sprint",
+    "backlogLabel": "Backlog",
+    "pointsSuffix": "{done}/{total} pts",
+    "issuesCount": {
+      "one": "{count} issue",
+      "other": "{count} issues"
+    },
+    "sprintStates": {
+      "future": "future",
+      "active": "active",
+      "closed": "closed"
+    }
+  },
+  "agentForm": {
+    "namePlaceholder": "Agent name",
+    "instructionsPlaceholder": "Instructions — what should this agent do with a ticket?",
+    "runtimeLabel": "Runtime",
+    "modelLabel": "Model",
+    "contextScopeLabel": "Context scope",
+    "contextScopes": {
+      "thread": {
+        "label": "Thread",
+        "hint": "Just this comment thread"
+      },
+      "ticket": {
+        "label": "Ticket",
+        "hint": "Thread + this ticket’s own details (default)"
+      },
+      "project": {
+        "label": "Project",
+        "hint": "Ticket + other open tickets in this project"
+      },
+      "workspace": {
+        "label": "Workspace",
+        "hint": "Project + the rest of the workspace"
+      }
+    },
+    "reactsToLabel": "Reacts to",
+    "allowedActionsLabel": "Allowed actions",
+    "approvalLabel": "Approval",
+    "autoApplyAll": "Auto-apply everything",
+    "requireApprovalForAll": "Require approval for everything",
+    "requireApprovalFor": "Require approval only for…",
+    "budgetLabel": "Budget (optional — blank = unlimited)",
+    "maxRunsPerHour": "Max runs / hour",
+    "maxRunsPerDay": "Max runs / day",
+    "maxActionsPerRun": "Max actions / run",
+    "maxSpendPerDay": "Max spend / day",
+    "ignoreSelfEvents": "Ignore this agent's own events (recommended — prevents it retriggering itself)"
+  },
+  "agentsSettings": {
+    "awaitingApproval": "Awaiting your approval",
+    "agentsLabel": "Agents",
+    "hint": "Agents work tickets on a teammate's behalf — attach one to an issue (from the issue's AI Agents section) and it can comment, change status, reassign, or update fields as it makes progress, always attributed back to the human it's acting for. Its Instructions are what actually drive its decisions each time it's triggered.",
+    "noAgentsYet": "No agents yet — create one below to start automating ticket work.",
+    "approveButton": "Approve",
+    "rejectButton": "Reject",
+    "addAgentLabel": "Add agent",
+    "addAgentButton": "Add agent",
+    "saveButton": "Save",
+    "statusLabels": {
+      "pending": "Pending",
+      "awaitingApproval": "Awaiting approval",
+      "applied": "Applied",
+      "rejected": "Rejected",
+      "failed": "Failed"
+    },
+    "recentActivity": "Recent activity",
+    "totalTokensTitle": "Total tokens used across every run",
+    "aiBadge": "AI"
+  },
+  "workflowDiagram": {
+    "newStatusPlaceholder": "New status name",
+    "addStatusButton": "Add status",
+    "dragHint": "Drag from a status's edge to another to connect them. Select a status or transition and press Delete/Backspace to remove it — To Do and Done statuses can't be deleted.",
+    "editStatusTitle": "Edit status",
+    "nameLabel": "Name",
+    "colorLabel": "Color (hex, optional)",
+    "savingButton": "Saving…",
+    "transitionsFromAnyLabel": "Transitions from any status",
+    "transitionNamePlaceholder": "Transition name (e.g. Reopen)",
+    "addGlobalTransitionButton": "Add global transition",
+    "pathErrorTransition": "Deleting this transition would remove the only path from To Do to Done",
+    "pathErrorStatus": "Deleting this status would remove the only path from To Do to Done",
+    "failedDeleteTransition": "Failed to delete transition",
+    "failedDeleteStatus": "Failed to delete status"
+  },
+  "statusNode": {
+    "lockedTitle": "To Do and Done statuses can't be deleted",
+    "editTitle": "Edit status"
+  },
+  "relativeDate": {
+    "today": "today",
+    "daysAgo": {
+      "one": "{count} day ago",
+      "other": "{count} days ago"
+    }
+  },
+  "storyPointWarning": {
+    "pastDue": "This due date has already passed, but the issue is still estimated at {points} points.",
+    "tooSoon": "{points} points typically takes up to {maxDuration}, but the due date is only {daysUntilDue} away.",
+    "hoursDuration": "{hours}h",
+    "daysDuration": {
+      "one": "{count} day",
+      "other": "{count} days"
+    }
+  },
+  "activity": {
+    "eventType": {
+      "issueCreated": "created this issue",
+      "issueStatusChanged": "changed the status",
+      "issueResolved": "resolved this issue",
+      "issueReopened": "reopened this issue",
+      "issueAssigneesChanged": "changed assignees",
+      "issueAgentAssigned": "attached an AI agent",
+      "issueAgentUnassigned": "removed an AI agent",
+      "issuePriorityChanged": "changed priority",
+      "issueLabelsChanged": "changed labels",
+      "issueDueDateChanged": "changed the due date",
+      "issueSprintChanged": "changed the sprint",
+      "issueUpdated": "updated this issue",
+      "issueLinked": "linked another issue",
+      "issueUnlinked": "removed a linked issue",
+      "issueDeleted": "deleted this issue",
+      "issueWorklogAdded": "logged work",
+      "issueAttachmentAdded": "added an attachment",
+      "issueBranchCreated": "created a branch",
+      "issueBranchDeleted": "deleted the branch",
+      "commentCreated": "added a comment",
+      "commentEdited": "edited a comment",
+      "commentDeleted": "deleted a comment",
+      "commentMentioned": "mentioned someone in a comment"
+    },
+    "event": {
+      "issueCreated": "created this issue",
+      "issueStatusChanged": "changed status from {from} to {to}",
+      "issueResolved": "resolved this issue ({status})",
+      "issueReopened": "reopened this issue ({status})",
+      "assigneesChangedTo": "changed assignees from {from} to {to}",
+      "assigneesUnassignedAll": "unassigned everyone (was {from})",
+      "noOne": "no one",
+      "issueAgentAssigned": "attached an AI agent",
+      "issueAgentUnassigned": "removed an AI agent",
+      "issuePriorityChanged": "changed priority from {from} to {to}",
+      "issueLabelsChanged": "changed labels from {from} to {to}",
+      "labelsNone": "none",
+      "dueDateSet": "set the due date to {date}",
+      "dueDateCleared": "cleared the due date",
+      "sprintSet": "moved this issue to a sprint",
+      "sprintCleared": "moved this issue out of its sprint",
+      "issueUpdated": "updated {fields}",
+      "issueUpdatedFallback": "this issue",
+      "issueLinked": "linked another issue",
+      "issueUnlinked": "removed a linked issue",
+      "issueDeleted": "deleted this issue",
+      "worklogAdded": "logged {duration} of work",
+      "attachmentAdded": "attached {fileName}",
+      "branchCreated": "created branch {name}",
+      "branchDeleted": "deleted the branch",
+      "commentReplied": "replied to a comment",
+      "commentCreated": "added a comment",
+      "commentEdited": "edited a comment",
+      "commentDeleted": "deleted a comment",
+      "commentMentioned": "mentioned someone in a comment"
+    }
+  },
+  "automation": {
+    "action": {
+      "transitionStatus": "→ {status}",
+      "assignTo": "assign {name}",
+      "addComment": "comment \"{body}\"",
+      "setField": "set {field} = {value}",
+      "readRepoFile": "read {path}",
+      "writeRepoFile": "write {path} → branch \"{branch}\""
+    }
+  }
+}

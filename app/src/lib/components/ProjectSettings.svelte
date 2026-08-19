@@ -3,8 +3,15 @@
   import { components as componentsStore, currentProject, currentProjectId, featureFlags, gitRepoLink, settingsJumpTab, versions, linkGitRepo, unlinkGitRepo, setFeatureFlag, updateCurrentProject } from '../stores/workspace';
   import * as api from '../api';
   import { PROJECT_COLORS, type ProjectFeatureFlags } from '$domain';
+  import { t } from '../i18n';
 
   const allTabs = ['Project', 'Components', 'Versions', 'Git'] as const;
+  const TAB_LABEL_KEYS: Record<(typeof allTabs)[number], string> = {
+    Project: 'projectSettings.tabs.project',
+    Components: 'projectSettings.tabs.components',
+    Versions: 'projectSettings.tabs.versions',
+    Git: 'projectSettings.tabs.git',
+  };
   $: tabs = $featureFlags.componentsAndVersions ? allTabs : (allTabs.filter((t) => t !== 'Components' && t !== 'Versions') as unknown as typeof allTabs);
   let activeTab: (typeof allTabs)[number] = 'Project';
   // If Components/Versions get turned off while one of those tabs is active, fall back to Project.
@@ -16,17 +23,17 @@
   }
   settingsJumpTab.set(null);
 
-  const FEATURE_LABELS: Record<keyof ProjectFeatureFlags, string> = {
-    reporters: 'Reporters',
-    storyPoints: 'Story Points',
-    dueDates: 'Due Dates',
-    timeTracking: 'Time Tracking',
-    priority: 'Priority',
-    componentsAndVersions: 'Components & Versions',
-    sprints: 'Sprints',
-    labels: 'Labels',
+  const FEATURE_LABEL_KEYS: Record<keyof ProjectFeatureFlags, string> = {
+    reporters: 'projectSettings.features.reporters',
+    storyPoints: 'projectSettings.features.storyPoints',
+    dueDates: 'projectSettings.features.dueDates',
+    timeTracking: 'projectSettings.features.timeTracking',
+    priority: 'projectSettings.features.priority',
+    componentsAndVersions: 'projectSettings.features.componentsAndVersions',
+    sprints: 'projectSettings.features.sprints',
+    labels: 'projectSettings.features.labels',
   };
-  const FEATURE_KEYS = Object.keys(FEATURE_LABELS) as (keyof ProjectFeatureFlags)[];
+  const FEATURE_KEYS = Object.keys(FEATURE_LABEL_KEYS) as (keyof ProjectFeatureFlags)[];
 
   // ---- Project ----
   let editProjectName = '';
@@ -41,7 +48,7 @@
     editingProjectName = false;
   }
   async function archiveProject() {
-    if (!$currentProject || !confirm(`Archive "${$currentProject.name}"? It'll stay in the workspace but hidden from the project switcher.`)) return;
+    if (!$currentProject || !confirm($t('projectSettings.archiveConfirm', { name: $currentProject.name }))) return;
     await updateCurrentProject({ archivedAt: new Date().toISOString() });
   }
   async function setProjectColor(color: string) {
@@ -107,7 +114,7 @@
       newRepoDefaultBranch = '';
       newRepoToken = '';
     } catch (err) {
-      linkRepoError = err instanceof Error ? err.message : 'Failed to link repository';
+      linkRepoError = err instanceof Error ? err.message : $t('projectSettings.failedLinkRepo');
     } finally {
       linkingRepo = false;
     }
@@ -121,7 +128,7 @@
 <div class="settings">
   <nav class="tabs">
     {#each tabs as tab}
-      <button class="tab" class:active={tab === activeTab} on:click={() => (activeTab = tab)}>{tab}</button>
+      <button class="tab" class:active={tab === activeTab} on:click={() => (activeTab = tab)}>{$t(TAB_LABEL_KEYS[tab])}</button>
     {/each}
   </nav>
 
@@ -129,16 +136,16 @@
     {#if activeTab === 'Project'}
       {#if $currentProject}
         <div class="field-row">
-          <label class="field-label" for="proj-name-input">Name</label>
+          <label class="field-label" for="proj-name-input">{$t('projectSettings.nameLabel')}</label>
           <input id="proj-name-input" type="text" bind:value={editProjectName} on:focus={() => (editingProjectName = true)} on:blur={saveProjectName} on:keydown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
         </div>
         <div class="field-row">
-          <span class="field-label">Key</span>
+          <span class="field-label">{$t('projectSettings.keyLabel')}</span>
           <span class="row-tag mono">{$currentProject.key}</span>
         </div>
-        <p class="section-hint">The key is permanent — it's baked into every issue's key (e.g. "{$currentProject.key}-142").</p>
+        <p class="section-hint">{$t('projectSettings.keyHint', { key: $currentProject.key })}</p>
         <div class="field-row">
-          <span class="field-label">Color</span>
+          <span class="field-label">{$t('projectSettings.colorLabel')}</span>
           <div class="swatch-row">
             {#each PROJECT_COLORS as c}
               <button
@@ -152,18 +159,18 @@
             {/each}
           </div>
         </div>
-        <div class="subsection-label">Features</div>
-        <p class="section-hint">Turn off whatever process this project doesn't need — nothing is deleted, and re-enabling brings it right back.</p>
+        <div class="subsection-label">{$t('projectSettings.featuresLabel')}</div>
+        <p class="section-hint">{$t('projectSettings.featuresHint')}</p>
         <div class="feature-list">
           {#each FEATURE_KEYS as key}
             <label class="toggle feature-toggle">
               <input type="checkbox" checked={$featureFlags[key]} on:change={(e) => setFeatureFlag(key, (e.target as HTMLInputElement).checked)} />
-              {FEATURE_LABELS[key]}
+              {$t(FEATURE_LABEL_KEYS[key])}
             </label>
           {/each}
         </div>
 
-        <button type="button" class="text-btn danger" on:click={archiveProject}>Archive this project</button>
+        <button type="button" class="text-btn danger" on:click={archiveProject}>{$t('projectSettings.archiveButton')}</button>
       {/if}
     {:else if activeTab === 'Components'}
       <div class="list">
@@ -172,35 +179,35 @@
         {/each}
       </div>
       <form class="add-form" on:submit|preventDefault={addComponent}>
-        <input type="text" placeholder="Component name" bind:value={newComponentName} />
-        <button type="submit">Add component</button>
+        <input type="text" placeholder={$t('projectSettings.componentNamePlaceholder')} bind:value={newComponentName} />
+        <button type="submit">{$t('projectSettings.addComponentButton')}</button>
       </form>
     {:else if activeTab === 'Versions'}
       <div class="list">
         {#each $versions as v (v.id)}
           <div class="row">
             <span class="row-name">{v.name}</span>
-            <span class="row-tag" class:released={!!v.releasedAt}>{v.releasedAt ? 'Released' : 'Unreleased'}</span>
-            {#if !v.releasedAt}<button class="text-btn" on:click={() => releaseVersion(v.id)}>Release</button>{/if}
+            <span class="row-tag" class:released={!!v.releasedAt}>{v.releasedAt ? $t('projectSettings.released') : $t('projectSettings.unreleased')}</span>
+            {#if !v.releasedAt}<button class="text-btn" on:click={() => releaseVersion(v.id)}>{$t('projectSettings.releaseButton')}</button>{/if}
             <button class="icon-btn" on:click={() => removeVersion(v.id)}><Icon name="trash" size={13} /></button>
           </div>
         {/each}
       </div>
       <form class="add-form" on:submit|preventDefault={addVersion}>
-        <input type="text" placeholder="Version name (e.g. v3.5.0)" bind:value={newVersionName} />
-        <button type="submit">Add version</button>
+        <input type="text" placeholder={$t('projectSettings.versionNamePlaceholder')} bind:value={newVersionName} />
+        <button type="submit">{$t('projectSettings.addVersionButton')}</button>
       </form>
     {:else if activeTab === 'Git'}
-      <p class="section-hint">Link this project to a git repository to create a real branch for any ticket, right from its drawer.</p>
+      <p class="section-hint">{$t('projectSettings.gitHint')}</p>
       {#if $gitRepoLink}
         <div class="row">
           <Icon name="branch" size={13} />
           <span class="row-name">{$gitRepoLink.owner}/{$gitRepoLink.repo}</span>
-          <span class="row-tag">{$gitRepoLink.provider} · default branch: {$gitRepoLink.defaultBranch}</span>
+          <span class="row-tag">{$gitRepoLink.provider} · {$t('projectSettings.defaultBranchSuffix', { branch: $gitRepoLink.defaultBranch })}</span>
           <button class="icon-btn" on:click={removeGitRepoLink}><Icon name="trash" size={13} /></button>
         </div>
       {:else if availableGitProviders.length === 0}
-        <p class="section-hint">No git provider is configured on this server, so there's nothing to link against yet — see server/src/services/GitProvider.ts.</p>
+        <p class="section-hint">{$t('projectSettings.noGitProviderHint')}</p>
       {:else}
         <form class="add-form column" on:submit|preventDefault={submitGitRepoLink}>
           {#if availableGitProviders.length > 1}
@@ -208,11 +215,11 @@
               {#each availableGitProviders as p}<option value={p}>{p}</option>{/each}
             </select>
           {/if}
-          <input type="text" placeholder="Owner" bind:value={newRepoOwner} />
-          <input type="text" placeholder="Repo" bind:value={newRepoName} />
-          <input type="text" placeholder="Default branch (main)" bind:value={newRepoDefaultBranch} />
-          <input type="password" placeholder="Access token" bind:value={newRepoToken} />
-          <button type="submit" disabled={linkingRepo}>{linkingRepo ? 'Linking…' : 'Link repository'}</button>
+          <input type="text" placeholder={$t('projectSettings.ownerPlaceholder')} bind:value={newRepoOwner} />
+          <input type="text" placeholder={$t('projectSettings.repoPlaceholder')} bind:value={newRepoName} />
+          <input type="text" placeholder={$t('projectSettings.defaultBranchPlaceholder')} bind:value={newRepoDefaultBranch} />
+          <input type="password" placeholder={$t('projectSettings.accessTokenPlaceholder')} bind:value={newRepoToken} />
+          <button type="submit" disabled={linkingRepo}>{linkingRepo ? $t('projectSettings.linkingRepoButton') : $t('projectSettings.linkRepoButton')}</button>
         </form>
         {#if linkRepoError}<p class="error">{linkRepoError}</p>{/if}
       {/if}

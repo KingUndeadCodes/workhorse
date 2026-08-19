@@ -1,5 +1,6 @@
 <script lang="ts">
   import { login, signup } from '../stores/auth';
+  import { t } from '../i18n';
 
   let mode: 'login' | 'signup' = 'login';
   let email = '';
@@ -15,7 +16,7 @@
       if (mode === 'login') await login(email, password);
       else await signup(email, password, displayName);
     } catch (e) {
-      error = e instanceof Error ? e.message : 'something went wrong';
+      error = e instanceof Error ? e.message : $t('login.genericError');
     } finally {
       busy = false;
     }
@@ -29,25 +30,25 @@
 
 <div class="auth-screen">
   <form class="auth-card" on:submit|preventDefault={submit}>
-    <h1>{mode === 'login' ? 'Log in' : 'Create an account'}</h1>
+    <h1>{mode === 'login' ? $t('login.logInTitle') : $t('login.signUpTitle')}</h1>
     {#if mode === 'signup'}
       <label>
-        <span>Display name</span>
-        <input placeholder="Ada Lovelace" bind:value={displayName} required />
+        <span>{$t('login.displayNameLabel')}</span>
+        <input placeholder={$t('login.displayNamePlaceholder')} bind:value={displayName} required />
       </label>
     {/if}
     <label>
-      <span>Email</span>
-      <input type="email" placeholder="you@example.com" bind:value={email} required autocomplete="email" />
+      <span>{$t('login.emailLabel')}</span>
+      <input type="email" placeholder={$t('login.emailPlaceholder')} bind:value={email} required autocomplete="email" />
     </label>
     <label>
-      <span>Password</span>
+      <span>{$t('login.passwordLabel')}</span>
       <input type="password" placeholder="••••••••" bind:value={password} required minlength="8" autocomplete={mode === 'login' ? 'current-password' : 'new-password'} />
     </label>
     {#if error}<p class="error">{error}</p>{/if}
-    <button type="submit" class="primary" disabled={busy}>{busy ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Sign up'}</button>
+    <button type="submit" class="primary" disabled={busy}>{busy ? $t('login.pleaseWait') : mode === 'login' ? $t('login.logInButton') : $t('login.signUpButton')}</button>
     <button type="button" class="link" on:click={toggleMode}>
-      {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Log in'}
+      {mode === 'login' ? $t('login.toggleToSignUp') : $t('login.toggleToLogIn')}
     </button>
   </form>
 </div>

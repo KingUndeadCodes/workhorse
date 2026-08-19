@@ -9,6 +9,7 @@
   import Icon from './Icon.svelte';
   import Avatar from './Avatar.svelte';
   import { displayName, type Mentionable } from '../util';
+  import { t, tn } from '../i18n';
 
   // `autocorrect` is WebKit/Safari-only and isn't part of Svelte's HTMLAttributes typings for
   // <textarea> (unlike spellcheck/autocapitalize/autocomplete, which are standard and set
@@ -110,16 +111,16 @@
   interface FormatButton {
     key: string;
     icon: string;
-    title: string;
+    titleKey: string;
   }
 
   const buttons: FormatButton[] = [
-    { key: 'bold', icon: 'bold', title: 'Bold' },
-    { key: 'italic', icon: 'italic', title: 'Italic' },
-    { key: 'code', icon: 'code', title: 'Code' },
-    { key: 'link', icon: 'link', title: 'Link' },
-    { key: 'list', icon: 'list', title: 'Bulleted list' },
-    { key: 'quote', icon: 'quote', title: 'Quote' },
+    { key: 'bold', icon: 'bold', titleKey: 'markdownEditor.boldTitle' },
+    { key: 'italic', icon: 'italic', titleKey: 'markdownEditor.italicTitle' },
+    { key: 'code', icon: 'code', titleKey: 'markdownEditor.codeTitle' },
+    { key: 'link', icon: 'link', titleKey: 'markdownEditor.linkTitle' },
+    { key: 'list', icon: 'list', titleKey: 'markdownEditor.listTitle' },
+    { key: 'quote', icon: 'quote', titleKey: 'markdownEditor.quoteTitle' },
   ];
 
   $: wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
@@ -152,16 +153,16 @@
   function applyFormat(key: string) {
     switch (key) {
       case 'bold':
-        wrap('**', '**', 'bold text');
+        wrap('**', '**', $t('markdownEditor.boldPlaceholder'));
         break;
       case 'italic':
-        wrap('_', '_', 'italic text');
+        wrap('_', '_', $t('markdownEditor.italicPlaceholder'));
         break;
       case 'code':
-        wrap('`', '`', 'code');
+        wrap('`', '`', $t('markdownEditor.codePlaceholder'));
         break;
       case 'link':
-        wrap('[', '](url)', 'link text');
+        wrap('[', '](url)', $t('markdownEditor.linkPlaceholder'));
         break;
       case 'list':
         linePrefix('- ');
@@ -181,7 +182,7 @@
              before the click handler below ever runs, which used to tear the editor down
              on save-on-blur — kept even now that saving is explicit, since losing the
              selection mid-format is still a bad click. -->
-        <button type="button" title={b.title} on:mousedown|preventDefault on:click={() => applyFormat(b.key)}><Icon name={b.icon} size={13} /></button>
+        <button type="button" title={$t(b.titleKey)} on:mousedown|preventDefault on:click={() => applyFormat(b.key)}><Icon name={b.icon} size={13} /></button>
       {/each}
     </div>
     <div class="textarea-wrap">
@@ -219,8 +220,8 @@
       {/if}
     </div>
     <div class="footer">
-      <span>Markdown supported</span>
-      <span>{wordCount} {wordCount === 1 ? 'word' : 'words'}</span>
+      <span>{$t('markdownEditor.markdownSupported')}</span>
+      <span>{$tn('markdownEditor.wordCount', wordCount)}</span>
     </div>
   </div>
   <div class="actions">

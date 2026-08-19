@@ -35,6 +35,7 @@
   import MarkdownEditor from './MarkdownEditor.svelte';
   import { displayName, formatRelativeDate, renderMarkdown } from '../util';
   import { lineNumbers } from '../actions/lineNumbers';
+  import { locale, t, tn } from '../i18n';
   import type { User } from '$domain';
 
   export let comment: Comment;
@@ -97,7 +98,7 @@
   async function handleDelete() {
     if (deleting) return;
     const hasReplies = allComments.some((c) => c.parentCommentId === comment.id);
-    const message = hasReplies ? 'Delete this comment and all its replies? This can\'t be undone.' : "Delete this comment? This can't be undone.";
+    const message = hasReplies ? $t('commentThread.deleteConfirmWithReplies') : $t('commentThread.deleteConfirm');
     if (!confirm(message)) return;
     deleting = true;
     try {
@@ -135,9 +136,9 @@
       <button type="button" class="comment-meta" on:click={() => (collapsed = !collapsed)} aria-expanded={!collapsed}>
         <Icon name={collapsed ? 'chevron' : 'chevdown'} size={9} />
         <span class="comment-name">{#if author.kind === 'agent'}<Icon name="robot" size={11} />{/if}{displayName(author)}</span>
-        <span class="comment-time">{formatRelativeDate(comment.createdAt)}</span>
-        {#if comment.editedAt}<span class="comment-edited">(edited)</span>{/if}
-        {#if collapsed}<span class="comment-collapsed-count">{descendantCount} {descendantCount === 1 ? 'reply' : 'replies'} hidden</span>{/if}
+        <span class="comment-time">{formatRelativeDate(comment.createdAt, $t, $tn, $locale)}</span>
+        {#if comment.editedAt}<span class="comment-edited">{$t('commentThread.edited')}</span>{/if}
+        {#if collapsed}<span class="comment-collapsed-count">{$tn('commentThread.repliesHidden', descendantCount)}</span>{/if}
       </button>
 
       {#if collapsed}
@@ -150,7 +151,7 @@
             bind:value={editDraft}
             rows={3}
             autofocus
-            submitLabel="Save"
+            submitLabel={$t('common.save')}
             showCancel
             disabled={!editDraft.trim()}
             submitting={submittingEdit}
@@ -162,10 +163,10 @@
       {:else}
         <div class="comment-text markdown" use:lineNumbers={commentHtml}>{@html commentHtml}</div>
         <div class="comment-actions">
-          <button class="reply-btn" on:click={() => onStartReply(comment.id)}><Icon name="reply" size={12} />Reply</button>
+          <button class="reply-btn" on:click={() => onStartReply(comment.id)}><Icon name="reply" size={12} />{$t('commentThread.reply')}</button>
           {#if comment.authorId === currentUserId}
-            <button class="reply-btn" on:click={startEdit}><Icon name="pencil" size={12} />Edit</button>
-            <button class="reply-btn" on:click={handleDelete} disabled={deleting}><Icon name="trash" size={12} />{deleting ? 'Deleting…' : 'Delete'}</button>
+            <button class="reply-btn" on:click={startEdit}><Icon name="pencil" size={12} />{$t('commentThread.edit')}</button>
+            <button class="reply-btn" on:click={handleDelete} disabled={deleting}><Icon name="trash" size={12} />{deleting ? $t('commentThread.deleting') : $t('commentThread.delete')}</button>
           {/if}
         </div>
       {/if}
@@ -177,8 +178,8 @@
               bind:value={draftReply}
               rows={2}
               autofocus
-              placeholder="Write a reply… (markdown supported)"
-              submitLabel="Reply"
+              placeholder={$t('commentThread.replyPlaceholder')}
+              submitLabel={$t('commentThread.replyButton')}
               showCancel
               disabled={!draftReply.trim()}
               submitting={submittingReply}
@@ -192,7 +193,7 @@
         {#if children.length > 0 && atWindowEdge}
           <button type="button" class="continue-thread" on:click={() => (continued = true)} aria-expanded="false">
             <Icon name="chevron" size={9} />
-            Continue thread ({children.length} more {children.length === 1 ? 'reply' : 'replies'})
+            {$tn('commentThread.continueThread', children.length)}
           </button>
         {:else}
           {#each children as child (child.id)}

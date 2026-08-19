@@ -3,9 +3,11 @@
   import { currentUser } from '../stores/auth';
   import { updateWorkspaceMemberRole, users, workspace, workspaceMembers } from '../stores/workspace';
   import { displayName } from '../util';
+  import { t, tn } from '../i18n';
   import type { WorkspaceRole } from '$domain';
 
   const ROLES: WorkspaceRole[] = ['owner', 'admin', 'member', 'guest'];
+  $: roleLabel = (role: WorkspaceRole) => $t(`workspaceView.roles.${role}`);
 
   $: myRole = $workspaceMembers.find((m) => m.userId === $currentUser?.id)?.role;
   $: isAdmin = myRole === 'owner' || myRole === 'admin';
@@ -29,8 +31,8 @@
 
 <div class="workspace-view">
   <div class="header">
-    <h1>{$workspace?.name ?? 'Workspace'}</h1>
-    <p class="sub">{rows.length} {rows.length === 1 ? 'member' : 'members'}{isAdmin ? ' · you can manage roles' : ''}</p>
+    <h1>{$workspace?.name ?? ''}</h1>
+    <p class="sub">{$tn('common.members', rows.length)}{isAdmin ? ` · ${$t('workspaceView.canManageRoles')}` : ''}</p>
   </div>
 
   <div class="member-list">
@@ -39,7 +41,7 @@
         <div class="member-row">
           <Avatar userId={user.id} name={displayName(user)} avatarUrl={user.avatarUrl} kind={user.kind} size={32} />
           <div class="member-info">
-            <div class="member-name">{displayName(user)}{#if user.id === $currentUser?.id}<span class="you">you</span>{/if}</div>
+            <div class="member-name">{displayName(user)}{#if user.id === $currentUser?.id}<span class="you">{$t('workspaceView.youBadge')}</span>{/if}</div>
             <div class="member-email">{user.email}</div>
           </div>
           {#if isAdmin && user.id !== $currentUser?.id}
@@ -49,10 +51,10 @@
               disabled={pendingUserId === user.id}
               on:change={(e) => handleRoleChange(user.id, e)}
             >
-              {#each ROLES as r}<option value={r}>{r}</option>{/each}
+              {#each ROLES as r}<option value={r}>{roleLabel(r)}</option>{/each}
             </select>
           {:else}
-            <span class="role-badge">{member.role}</span>
+            <span class="role-badge">{roleLabel(member.role)}</span>
           {/if}
         </div>
       {/if}

@@ -26,10 +26,13 @@
          to render an accurate mini preview of *both* options at once, since --bg/--accent/etc.
          above only ever reflect whichever theme is currently active.
 
-         --create-button-bg/--create-button-fg are ordinary colorSchemes keys (like --accent) —
-         a per-theme override for the TopBar "+ New…" button. A scheme that omits them (they're
-         optional, unlike the rest of the palette) just leaves the CSS variable unset;
-         TopBar.svelte falls back to --accent/--accent-on via var(--create-button-bg, var(--accent)) in that case. -->
+         --component-{name}-bg/--component-{name}-fg come from each colorScheme's optional
+         "components" object in ui.config.json (see vite.config.ts's toComponentCssVars) — the
+         generic mechanism for a per-theme color override on one specific component, e.g.
+         "components": { "create-button": { "bg": "...", "fg": "..." } } becomes
+         --component-create-button-bg/-fg. A component a scheme doesn't override just leaves
+         those vars unset; consumers (e.g. TopBar.svelte's "+ New…" button) fall back to
+         --accent/--accent-on via var(--component-create-button-bg, var(--accent)) in that case. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="{{UI_FONT_GOOGLE_URL}}" rel="stylesheet" />

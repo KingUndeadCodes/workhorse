@@ -2,6 +2,7 @@
   import Icon from './Icon.svelte';
   import IssueCard from './IssueCard.svelte';
   import { completeSprint, createSprint, featureFlags, issueTypes, issuesStore, selectedIssueId, sprints, startSprint, statusCategories, workflow } from '../stores/workspace';
+  import { t, tn } from '../i18n';
 
   let newSprintName = '';
   let creating = false;
@@ -40,21 +41,21 @@
     <section class="sprint-block">
       <div class="sprint-head">
         <span class="sprint-name">{sprint.name}</span>
-        <span class="sprint-state" class:active={sprint.state === 'active'} class:closed={sprint.state === 'closed'}>{sprint.state}</span>
+        <span class="sprint-state" class:active={sprint.state === 'active'} class:closed={sprint.state === 'closed'}>{$t(`backlog.sprintStates.${sprint.state}`)}</span>
         {#if sprint.goal}<span class="sprint-goal">{sprint.goal}</span>{/if}
         <span class="sprint-spacer"></span>
-        {#if $featureFlags.storyPoints}<span class="sprint-points mono">{donePoints}/{points} pts</span>{/if}
+        {#if $featureFlags.storyPoints}<span class="sprint-points mono">{$t('backlog.pointsSuffix', { done: donePoints, total: points })}</span>{/if}
         {#if sprint.state === 'future'}
-          <button class="btn" on:click={() => startSprint(sprint.id)}>Start sprint</button>
+          <button class="btn" on:click={() => startSprint(sprint.id)}>{$t('backlog.startSprintButton')}</button>
         {:else if sprint.state === 'active'}
-          <button class="btn" on:click={() => completeSprint(sprint.id)}>Complete sprint</button>
+          <button class="btn" on:click={() => completeSprint(sprint.id)}>{$t('backlog.completeSprintButton')}</button>
         {/if}
       </div>
       <div class="issue-list">
         {#each sprintIssues as issue (issue.id)}
           <IssueCard {issue} selected={issue.id === $selectedIssueId} onSelect={selectIssue} {doneStatusIds} />
         {:else}
-          <div class="empty">No issues in this sprint yet.</div>
+          <div class="empty">{$t('backlog.noIssuesInSprint')}</div>
         {/each}
       </div>
     </section>
@@ -62,23 +63,23 @@
 
   <section class="sprint-block">
     <div class="sprint-head">
-      <span class="sprint-name">Backlog</span>
+      <span class="sprint-name">{$t('backlog.backlogLabel')}</span>
       <span class="sprint-spacer"></span>
-      <span class="sprint-points mono">{backlogIssues.length} issues</span>
+      <span class="sprint-points mono">{$tn('backlog.issuesCount', backlogIssues.length)}</span>
     </div>
     <div class="issue-list">
       {#each backlogIssues as issue (issue.id)}
         <IssueCard {issue} selected={issue.id === $selectedIssueId} onSelect={selectIssue} {doneStatusIds} />
       {:else}
-        <div class="empty">Nothing unscheduled — everything's in a sprint.</div>
+        <div class="empty">{$t('backlog.nothingUnscheduled')}</div>
       {/each}
     </div>
   </section>
 
   <form class="new-sprint" on:submit|preventDefault={submitNewSprint}>
     <Icon name="plus" size={13} />
-    <input type="text" placeholder="New sprint name…" bind:value={newSprintName} />
-    <button type="submit" disabled={!newSprintName.trim() || creating}>Create sprint</button>
+    <input type="text" placeholder={$t('backlog.newSprintPlaceholder')} bind:value={newSprintName} />
+    <button type="submit" disabled={!newSprintName.trim() || creating}>{$t('backlog.createSprintButton')}</button>
   </form>
 </div>
 

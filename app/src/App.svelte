@@ -12,6 +12,7 @@
   import { currentUser } from './lib/stores/auth';
   import { currentView, initWorkspace, loaded, loadError, selectedIssueId } from './lib/stores/workspace';
   import { connectWebSocket, disconnectWebSocket } from './lib/ws';
+  import { t } from './lib/i18n';
 
   // Kicks off the one API call that populates every store in workspace.ts, once there's a
   // logged-in user to make it as; $loaded and $loadError below gate what renders until it
@@ -34,15 +35,15 @@
 {:else if $loadError}
   <div class="status-screen">
     <div class="status-card">
-      <div class="status-title">Couldn't reach the Workhorse API</div>
+      <div class="status-title">{$t('app.apiErrorTitle')}</div>
       <p class="status-body">{$loadError}</p>
-      <p class="status-body">Is the server running? <code>npm run dev --prefix server</code></p>
+      <p class="status-body">{$t('app.serverRunningHint')} <code>npm run dev --prefix server</code></p>
     </div>
   </div>
 {:else if !$loaded}
   <div class="status-screen">
     <div class="status-card">
-      <div class="status-title">Loading workspace…</div>
+      <div class="status-title">{$t('app.loadingWorkspace')}</div>
     </div>
   </div>
 {:else}
@@ -81,11 +82,12 @@
     flex-direction: column;
     background: var(--bg);
   }
-  /* Reserves room for MobileNav's fixed bottom tab bar (~54px + safe-area inset) so the last
-     row of board/backlog/settings content isn't hidden underneath it. Desktop is untouched —
-     MobileNav renders nothing above 768px. */
+  /* Reserves room for MobileNav's fixed bottom tab bar (~54px + its own 8px gap above the
+     safe-area inset — see that component's .mobile-nav padding-bottom) so the last row of
+     board/backlog/settings content isn't hidden underneath it. Desktop is untouched — MobileNav
+     renders nothing above 768px. */
   @media (max-width: 768px) {
-    .main { padding-bottom: calc(54px + env(safe-area-inset-bottom)); }
+    .main { padding-bottom: calc(62px + env(safe-area-inset-bottom)); }
   }
   .status-screen {
     height: 100vh;

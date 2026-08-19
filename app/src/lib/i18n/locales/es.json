@@ -1,0 +1,485 @@
+{
+  "common": {
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "create": "Crear",
+    "creating": "Creando…",
+    "add": "Añadir",
+    "delete": "Eliminar",
+    "deleting": "Eliminando…",
+    "edit": "Editar",
+    "remove": "Quitar",
+    "members": {
+      "one": "{count} miembro",
+      "other": "{count} miembros"
+    },
+    "priority": {
+      "highest": "más alta",
+      "high": "alta",
+      "medium": "media",
+      "low": "baja",
+      "lowest": "más baja"
+    }
+  },
+  "nav": {
+    "board": "Tablero",
+    "backlog": "Backlog"
+  },
+  "topBar": {
+    "workhorseBrand": "Workhorse",
+    "noActiveSprint": "Sin sprint activo",
+    "newButton": "Nuevo…",
+    "newIssue": "Tarea",
+    "newSprint": "Sprint",
+    "newLabel": "Etiqueta",
+    "newComponent": "Componente",
+    "newVersion": "Versión",
+    "projectSettingsTitle": "Configuración del proyecto",
+    "workspaceSettingsTitle": "Configuración del espacio de trabajo",
+    "accountSettings": "Configuración de la cuenta",
+    "logOut": "Cerrar sesión"
+  },
+  "sidebar": {
+    "newProjectPlaceholder": "Nombre del proyecto",
+    "newProjectKeyPlaceholder": "Clave (p. ej., MOB)",
+    "newProjectButton": "Nuevo proyecto",
+    "projectsLabel": "Proyectos",
+    "failedCreateProject": "No se pudo crear el proyecto"
+  },
+  "mobileNav": {
+    "newTab": "Nuevo",
+    "projectsTab": "Proyectos",
+    "moreTab": "Más",
+    "newProjectRow": "Nuevo proyecto",
+    "projectSettingsRow": "Configuración del proyecto",
+    "workspaceSettingsRow": "Configuración del espacio de trabajo",
+    "accountSettingsRow": "Configuración de la cuenta",
+    "logOutRow": "Cerrar sesión"
+  },
+  "board": {
+    "noEpic": "Sin épica",
+    "noIssues": "Sin tareas"
+  },
+  "issueCard": {
+    "moveToTitle": "Mover a…"
+  },
+  "issueDrawer": {
+    "descriptionLabel": "Descripción",
+    "descriptionPlaceholder": "Añade una descripción… (se admite markdown)",
+    "assigneesLabel": "Asignados",
+    "addChip": "+ Añadir",
+    "reporterLabel": "Autor",
+    "unassigned": "Sin asignar",
+    "priorityLabel": "Prioridad",
+    "storyPointsLabel": "Story Points",
+    "sprintLabel": "Sprint",
+    "noSprint": "Sin sprint",
+    "dueDateLabel": "Fecha límite",
+    "aiAgentsLabel": "Agentes de IA",
+    "agentsHint": "Conecta un agente para que trabaje en esta tarea.",
+    "runNowTitle": "Ejecutar ahora",
+    "runNowButton": "Ejecutar",
+    "runningButton": "…",
+    "noMoreAgents": "No hay más agentes disponibles",
+    "branchLabel": "Rama",
+    "createBranchButton": "+ Crear rama",
+    "advancedToggle": "Avanzado",
+    "linkedIssuesLabel": "Tareas vinculadas",
+    "relationRelatesTo": "se relaciona con",
+    "relationBlocks": "bloquea",
+    "relationDuplicates": "duplica",
+    "relationClones": "clona",
+    "relationCauses": "causa",
+    "relationInverse": "{type} (inversa)",
+    "issueKeyPlaceholder": "Clave de la tarea (p. ej., ATL-131)",
+    "linkButton": "Vincular",
+    "timeTrackingLabel": "Seguimiento de tiempo",
+    "loggedSuffix": "{hours} h registradas",
+    "estimateSuffix": "{hours} h estimadas",
+    "hoursPlaceholder": "Horas",
+    "workNotePlaceholder": "¿En qué trabajaste? (opcional)",
+    "logButton": "Registrar",
+    "commentsTab": "Comentarios",
+    "activityTab": "Actividad",
+    "nothingLoggedYet": "Nada registrado todavía.",
+    "loadingDetails": "Cargando datos…",
+    "couldntLoadDetails": "No se pudieron cargar los datos de este evento.",
+    "runAgentConfirm": "¿Ejecutar «{name}» en esta tarea ahora?",
+    "failedAttachAgent": "No se pudo conectar el agente",
+    "failedLoadBranch": "No se pudo cargar la rama",
+    "failedCreateBranch": "No se pudo crear la rama",
+    "actorSomeone": "Alguien",
+    "actorAutomationRule": "Una regla de automatización",
+    "actorSystem": "El sistema",
+    "commentPlaceholder": "Añade un comentario… (se admite markdown)",
+    "commentSubmitLabel": "Comentar"
+  },
+  "settings": {
+    "tabs": {
+      "appearance": "Apariencia",
+      "labels": "Etiquetas",
+      "fields": "Campos",
+      "workflow": "Workflow",
+      "automations": "Automatizaciones",
+      "agents": "Agentes",
+      "webhooks": "Webhooks"
+    },
+    "appearance": {
+      "themeLabel": "Tema",
+      "themeHint": "Cambia entre modo claro y oscuro para este navegador, o sigue el tema del sistema en tiempo real si eliges «Igual que el navegador».",
+      "themeLight": "Claro",
+      "themeDark": "Oscuro",
+      "themeSystem": "Igual que el navegador",
+      "languageLabel": "Idioma",
+      "languageHint": "Elige el idioma en el que se muestra Workhorse.",
+      "nonEnglishDisclaimer": "Esto solo traduce la interfaz de la aplicación — mantén los títulos de las tareas, descripciones, comentarios, etiquetas y demás contenido en inglés para que todo el equipo pueda leerlo."
+    },
+    "labelNamePlaceholder": "Nombre de la etiqueta",
+    "addLabelButton": "Añadir etiqueta",
+    "fieldNamePlaceholder": "Nombre del campo (p. ej., Severity)",
+    "fieldKeyPlaceholder": "Clave interna (p. ej., severity)",
+    "fieldOptionsPlaceholder": "Opciones separadas por comas (p. ej., Low, Medium, High)",
+    "addFieldButton": "Añadir campo",
+    "statusCategoriesLabel": "Categorías de estado",
+    "categoryNamePlaceholder": "Nombre de la categoría (p. ej., Resolving Differences)",
+    "addCategoryButton": "Añadir categoría",
+    "workflowLabel": "Workflow",
+    "ruleNamePlaceholder": "Nombre de la regla",
+    "triggerLabel": "Disparador",
+    "conditionsLabel": "Condiciones (opcional — sin ellas la regla siempre se ejecuta)",
+    "valuePlaceholder": "valor",
+    "addConditionButton": "+ Añadir condición",
+    "actionsLabel": "Acciones",
+    "addActionButton": "+ Añadir acción",
+    "addRuleButton": "Añadir regla",
+    "commentBodyPlaceholder": "Texto del comentario",
+    "pathPlaceholder": "ruta/al/archivo.ts",
+    "branchNamePlaceholder": "nombre de la rama",
+    "fileContentPlaceholder": "contenido del archivo",
+    "commitMessagePlaceholder": "mensaje del commit (opcional)",
+    "statusPlaceholder": "estado…",
+    "userPlaceholder": "usuario…",
+    "fieldPlaceholder": "campo…",
+    "enabledLabel": "habilitado",
+    "webhookUrlPlaceholder": "https://your-service.example/webhook",
+    "addWebhookButton": "Añadir webhook",
+    "failedDeleteCategory": "No se pudo eliminar la categoría"
+  },
+  "projectSettings": {
+    "tabs": {
+      "project": "Proyecto",
+      "components": "Componentes",
+      "versions": "Versiones",
+      "git": "Git"
+    },
+    "nameLabel": "Nombre",
+    "keyLabel": "Clave",
+    "keyHint": "La clave es permanente — se usa en la clave de cada tarea (p. ej., «{key}-142»).",
+    "colorLabel": "Color",
+    "featuresLabel": "Funciones",
+    "featuresHint": "Desactiva lo que este proyecto no necesite — no se elimina nada, y puedes volver a activarlo en cualquier momento.",
+    "features": {
+      "reporters": "Autores",
+      "storyPoints": "Story Points",
+      "dueDates": "Fechas límite",
+      "timeTracking": "Seguimiento de tiempo",
+      "priority": "Prioridad",
+      "componentsAndVersions": "Componentes y versiones",
+      "sprints": "Sprints",
+      "labels": "Etiquetas"
+    },
+    "archiveButton": "Archivar este proyecto",
+    "archiveConfirm": "¿Archivar «{name}»? Seguirá en el espacio de trabajo, pero oculto del selector de proyectos.",
+    "componentNamePlaceholder": "Nombre del componente",
+    "addComponentButton": "Añadir componente",
+    "versionNamePlaceholder": "Nombre de la versión (p. ej., v3.5.0)",
+    "addVersionButton": "Añadir versión",
+    "released": "Publicada",
+    "unreleased": "Sin publicar",
+    "releaseButton": "Publicar",
+    "gitHint": "Vincula este proyecto a un repositorio git para crear ramas reales para cualquier tarea, directamente desde su panel.",
+    "noGitProviderHint": "No hay ningún proveedor de git configurado en este servidor, así que aún no hay nada con qué vincular — consulta server/src/services/GitProvider.ts.",
+    "ownerPlaceholder": "Propietario",
+    "repoPlaceholder": "Repositorio",
+    "defaultBranchPlaceholder": "Rama predeterminada (main)",
+    "accessTokenPlaceholder": "Token de acceso",
+    "linkRepoButton": "Vincular repositorio",
+    "linkingRepoButton": "Vinculando…",
+    "failedLinkRepo": "No se pudo vincular el repositorio",
+    "defaultBranchSuffix": "rama predeterminada: {branch}"
+  },
+  "workspaceView": {
+    "youBadge": "tú",
+    "canManageRoles": "puedes gestionar los roles",
+    "roles": {
+      "owner": "propietario",
+      "admin": "administrador",
+      "member": "miembro",
+      "guest": "invitado"
+    }
+  },
+  "newIssueModal": {
+    "title": "Nueva tarea",
+    "titleFieldLabel": "Título",
+    "titlePlaceholder": "¿Qué hay que hacer?",
+    "typeLabel": "Tipo",
+    "priorityLabel": "Prioridad",
+    "assigneesLabel": "Asignados",
+    "failedCreate": "No se pudo crear la tarea",
+    "createButton": "Crear tarea",
+    "creatingButton": "Creando…"
+  },
+  "accountSettingsModal": {
+    "title": "Configuración de la cuenta",
+    "uploadPicture": "Subir foto",
+    "removePicture": "Quitar",
+    "nameLabel": "Nombre",
+    "namePlaceholder": "Tu nombre",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "invalidImage": "Selecciona un archivo de imagen",
+    "failedUpdate": "No se pudo actualizar la cuenta",
+    "saveButton": "Guardar cambios",
+    "savingButton": "Guardando…",
+    "youFallback": "Tú"
+  },
+  "commentThread": {
+    "reply": "Responder",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "deleting": "Eliminando…",
+    "deleteConfirm": "¿Eliminar este comentario? Esta acción no se puede deshacer.",
+    "deleteConfirmWithReplies": "¿Eliminar este comentario y todas sus respuestas? Esta acción no se puede deshacer.",
+    "edited": "(editado)",
+    "repliesHidden": {
+      "one": "{count} respuesta oculta",
+      "other": "{count} respuestas ocultas"
+    },
+    "continueThread": {
+      "one": "Continuar el hilo ({count} respuesta más)",
+      "other": "Continuar el hilo ({count} respuestas más)"
+    },
+    "replyPlaceholder": "Escribe una respuesta… (se admite markdown)",
+    "replyButton": "Responder"
+  },
+  "markdownEditor": {
+    "boldTitle": "Negrita",
+    "italicTitle": "Cursiva",
+    "codeTitle": "Código",
+    "linkTitle": "Enlace",
+    "listTitle": "Lista con viñetas",
+    "quoteTitle": "Cita",
+    "boldPlaceholder": "texto en negrita",
+    "italicPlaceholder": "texto en cursiva",
+    "codePlaceholder": "código",
+    "linkPlaceholder": "texto del enlace",
+    "markdownSupported": "Se admite markdown",
+    "wordCount": {
+      "one": "{count} palabra",
+      "other": "{count} palabras"
+    }
+  },
+  "login": {
+    "logInTitle": "Iniciar sesión",
+    "signUpTitle": "Crear una cuenta",
+    "displayNameLabel": "Nombre visible",
+    "displayNamePlaceholder": "Ada Lovelace",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "Contraseña",
+    "pleaseWait": "Espera, por favor…",
+    "logInButton": "Iniciar sesión",
+    "signUpButton": "Registrarse",
+    "toggleToSignUp": "¿No tienes cuenta? Regístrate",
+    "toggleToLogIn": "¿Ya tienes cuenta? Inicia sesión",
+    "genericError": "algo salió mal"
+  },
+  "app": {
+    "apiErrorTitle": "No se pudo conectar con la API de Workhorse",
+    "serverRunningHint": "¿Está el servidor en ejecución?",
+    "loadingWorkspace": "Cargando espacio de trabajo…"
+  },
+  "backlog": {
+    "startSprintButton": "Iniciar sprint",
+    "completeSprintButton": "Completar sprint",
+    "noIssuesInSprint": "Todavía no hay tareas en este sprint.",
+    "nothingUnscheduled": "No hay tareas sin programar — todas están en sprints.",
+    "newSprintPlaceholder": "Nombre del nuevo sprint…",
+    "createSprintButton": "Crear sprint",
+    "backlogLabel": "Backlog",
+    "pointsSuffix": "{done}/{total} SP",
+    "issuesCount": {
+      "one": "{count} tarea",
+      "other": "{count} tareas"
+    },
+    "sprintStates": {
+      "future": "futuro",
+      "active": "activo",
+      "closed": "cerrado"
+    }
+  },
+  "agentForm": {
+    "namePlaceholder": "Nombre del agente",
+    "instructionsPlaceholder": "Instrucciones — ¿qué debe hacer este agente con una tarea?",
+    "runtimeLabel": "Entorno de ejecución",
+    "modelLabel": "Modelo",
+    "contextScopeLabel": "Alcance del contexto",
+    "contextScopes": {
+      "thread": {
+        "label": "Hilo",
+        "hint": "Solo este hilo de comentarios"
+      },
+      "ticket": {
+        "label": "Tarea",
+        "hint": "Hilo + los datos propios de esta tarea (predeterminado)"
+      },
+      "project": {
+        "label": "Proyecto",
+        "hint": "Tarea + otras tareas abiertas en este proyecto"
+      },
+      "workspace": {
+        "label": "Espacio de trabajo",
+        "hint": "Proyecto + el resto del espacio de trabajo"
+      }
+    },
+    "reactsToLabel": "Reacciona a",
+    "allowedActionsLabel": "Acciones permitidas",
+    "approvalLabel": "Aprobación",
+    "autoApplyAll": "Aplicar todo automáticamente",
+    "requireApprovalForAll": "Requerir aprobación para todo",
+    "requireApprovalFor": "Requerir aprobación solo para…",
+    "budgetLabel": "Presupuesto (opcional — vacío = sin límite)",
+    "maxRunsPerHour": "Máx. ejecuciones / hora",
+    "maxRunsPerDay": "Máx. ejecuciones / día",
+    "maxActionsPerRun": "Máx. acciones / ejecución",
+    "maxSpendPerDay": "Gasto máx. / día",
+    "ignoreSelfEvents": "Ignorar los propios eventos de este agente (recomendado — evita que se reactive a sí mismo)"
+  },
+  "agentsSettings": {
+    "awaitingApproval": "Esperando tu aprobación",
+    "agentsLabel": "Agentes",
+    "hint": "Los agentes trabajan en tareas en nombre de un miembro del equipo — conecta uno a una tarea (en la sección «Agentes de IA» de la tarea) y podrá comentar, cambiar el estado, reasignar o actualizar campos a medida que avanza, siempre atribuido a la persona en cuyo nombre actúa. Sus instrucciones son las que realmente guían sus decisiones cada vez que se activa.",
+    "noAgentsYet": "Todavía no hay agentes — crea uno abajo para empezar a automatizar el trabajo de las tareas.",
+    "approveButton": "Aprobar",
+    "rejectButton": "Rechazar",
+    "addAgentLabel": "Añadir agente",
+    "addAgentButton": "Añadir agente",
+    "saveButton": "Guardar",
+    "statusLabels": {
+      "pending": "Pendiente",
+      "awaitingApproval": "Esperando aprobación",
+      "applied": "Aplicado",
+      "rejected": "Rechazado",
+      "failed": "Fallido"
+    },
+    "recentActivity": "Actividad reciente",
+    "totalTokensTitle": "Total de tokens usados en todas las ejecuciones",
+    "aiBadge": "IA"
+  },
+  "workflowDiagram": {
+    "newStatusPlaceholder": "Nombre del nuevo estado",
+    "addStatusButton": "Añadir estado",
+    "dragHint": "Arrastra desde el borde de un estado hasta otro para conectarlos. Selecciona un estado o una transición y pulsa Supr/Retroceso para eliminarlo — los estados «To Do» y «Done» no se pueden eliminar.",
+    "editStatusTitle": "Editar estado",
+    "nameLabel": "Nombre",
+    "colorLabel": "Color (hex, opcional)",
+    "savingButton": "Guardando…",
+    "transitionsFromAnyLabel": "Transiciones desde cualquier estado",
+    "transitionNamePlaceholder": "Nombre de la transición (p. ej., Reopen)",
+    "addGlobalTransitionButton": "Añadir transición global",
+    "pathErrorTransition": "Eliminar esta transición eliminaría el único camino de To Do a Done",
+    "pathErrorStatus": "Eliminar este estado eliminaría el único camino de To Do a Done",
+    "failedDeleteTransition": "No se pudo eliminar la transición",
+    "failedDeleteStatus": "No se pudo eliminar el estado"
+  },
+  "statusNode": {
+    "lockedTitle": "Los estados «To Do» y «Done» no se pueden eliminar",
+    "editTitle": "Editar estado"
+  },
+  "relativeDate": {
+    "today": "hoy",
+    "daysAgo": {
+      "one": "hace {count} día",
+      "other": "hace {count} días"
+    }
+  },
+  "storyPointWarning": {
+    "pastDue": "Esta fecha límite ya pasó, pero la tarea sigue estimada en {points} puntos.",
+    "tooSoon": "{points} puntos normalmente llevan hasta {maxDuration}, pero solo quedan {daysUntilDue} para la fecha límite.",
+    "hoursDuration": "{hours} h",
+    "daysDuration": {
+      "one": "{count} día",
+      "other": "{count} días"
+    }
+  },
+  "activity": {
+    "eventType": {
+      "issueCreated": "creó esta tarea",
+      "issueStatusChanged": "cambió el estado",
+      "issueResolved": "resolvió esta tarea",
+      "issueReopened": "reabrió esta tarea",
+      "issueAssigneesChanged": "cambió los asignados",
+      "issueAgentAssigned": "conectó un agente de IA",
+      "issueAgentUnassigned": "desconectó un agente de IA",
+      "issuePriorityChanged": "cambió la prioridad",
+      "issueLabelsChanged": "cambió las etiquetas",
+      "issueDueDateChanged": "cambió la fecha límite",
+      "issueSprintChanged": "cambió el sprint",
+      "issueUpdated": "actualizó esta tarea",
+      "issueLinked": "vinculó otra tarea",
+      "issueUnlinked": "quitó una tarea vinculada",
+      "issueDeleted": "eliminó esta tarea",
+      "issueWorklogAdded": "registró tiempo trabajado",
+      "issueAttachmentAdded": "añadió un archivo adjunto",
+      "issueBranchCreated": "creó una rama",
+      "issueBranchDeleted": "eliminó la rama",
+      "commentCreated": "añadió un comentario",
+      "commentEdited": "editó un comentario",
+      "commentDeleted": "eliminó un comentario",
+      "commentMentioned": "mencionó a alguien en un comentario"
+    },
+    "event": {
+      "issueCreated": "creó esta tarea",
+      "issueStatusChanged": "cambió el estado de {from} a {to}",
+      "issueResolved": "resolvió esta tarea ({status})",
+      "issueReopened": "reabrió esta tarea ({status})",
+      "assigneesChangedTo": "cambió los asignados de {from} a {to}",
+      "assigneesUnassignedAll": "quitó a todos los asignados (eran: {from})",
+      "noOne": "nadie",
+      "issueAgentAssigned": "conectó un agente de IA",
+      "issueAgentUnassigned": "desconectó un agente de IA",
+      "issuePriorityChanged": "cambió la prioridad de {from} a {to}",
+      "issueLabelsChanged": "cambió las etiquetas de {from} a {to}",
+      "labelsNone": "ninguna",
+      "dueDateSet": "estableció la fecha límite en {date}",
+      "dueDateCleared": "quitó la fecha límite",
+      "sprintSet": "movió esta tarea a un sprint",
+      "sprintCleared": "sacó esta tarea de su sprint",
+      "issueUpdated": "actualizó {fields}",
+      "issueUpdatedFallback": "esta tarea",
+      "issueLinked": "vinculó otra tarea",
+      "issueUnlinked": "quitó una tarea vinculada",
+      "issueDeleted": "eliminó esta tarea",
+      "worklogAdded": "registró {duration} de trabajo",
+      "attachmentAdded": "adjuntó {fileName}",
+      "branchCreated": "creó la rama {name}",
+      "branchDeleted": "eliminó la rama",
+      "commentReplied": "respondió a un comentario",
+      "commentCreated": "añadió un comentario",
+      "commentEdited": "editó un comentario",
+      "commentDeleted": "eliminó un comentario",
+      "commentMentioned": "mencionó a alguien en un comentario"
+    }
+  },
+  "automation": {
+    "action": {
+      "transitionStatus": "→ {status}",
+      "assignTo": "asignar a {name}",
+      "addComment": "comentario «{body}»",
+      "setField": "establecer {field} = {value}",
+      "readRepoFile": "leer {path}",
+      "writeRepoFile": "escribir {path} → rama «{branch}»"
+    }
+  }
+}

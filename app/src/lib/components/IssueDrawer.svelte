@@ -33,6 +33,7 @@
   import { createBranch as apiCreateBranch, deleteBranch as apiDeleteBranch, fetchEventDetail, fetchIssueEvents, getBranch, triggerAgent, type ActivityEventSummary } from '../api';
   import { describeEvent, describeEventType, displayName, formatRelativeDate, priorityIcon, renderMarkdown, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
   import { lineNumbers } from '../actions/lineNumbers';
+  import { locale, t, tn } from '../i18n';
   import { STORY_POINT_VALUES, slugifyBranchName, type Branch, type EventEnvelope, type IssueLinkType } from '$domain';
 
   let draftComment = '';
@@ -67,7 +68,7 @@
   // for each, the replies attached to it, both ordered oldest-first.
   $: topLevelComments = [...issueComments].filter((c) => !c.parentCommentId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   $: timePct = issue?.originalEstimateSeconds ? Math.min(100, (issue.loggedSeconds / issue.originalEstimateSeconds) * 100) : 0;
-  $: pointsDueDateWarning = issue?.storyPoints ? storyPointDueDateWarning(issue.storyPoints, issue.dueDate) : null;
+  $: pointsDueDateWarning = issue?.storyPoints ? storyPointDueDateWarning(issue.storyPoints, issue.dueDate, $t, $tn) : null;
   $: applicableFields = $fieldDefinitions.filter((f) => !f.scope.projectIds || (issue && f.scope.projectIds.includes(issue.projectId)));
   $: issueLinksForIssue = issue ? $issueLinks.filter((l) => l.sourceIssueId === issue.id || l.targetIssueId === issue.id) : [];
   $: otherIssues = issue ? $issuesStore.filter((i) => i.id !== issue.id) : [];
@@ -124,9 +125,9 @@
   }
 
   function actorLabel(actor: ActivityEventSummary['actor']): string {
-    if (actor.kind === 'user') return $users.find((u) => u.id === actor.userId)?.displayName ?? 'Someone';
-    if (actor.kind === 'automation') return 'An automation rule';
-    return 'The system';
+    if (actor.kind === 'user') return $users.find((u) => u.id === actor.userId)?.displayName ?? $t('issueDrawer.actorSomeone');
+    if (actor.kind === 'automation') return $t('issueDrawer.actorAutomationRule');
+    return $t('issueDrawer.actorSystem');
   }
 
   /** The full `User` behind an event's actor, when it has one — an automation rule or the system has no avatar to show. */
@@ -242,7 +243,7 @@
       // Revert the checkbox — without this it stays checked even though the agent never
       // actually got attached, silently disagreeing with attachedAgents.
       checkbox.checked = false;
-      alert(err instanceof Error ? err.message : 'Failed to attach agent');
+      alert(err instanceof Error ? err.message : $t('issueDrawer.failedAttachAgent'));
     }
   }
   async function detachAgent(agentUserId: string) {
@@ -251,7 +252,7 @@
   }
   async function runAgentNow(agentUserId: string, agentName: string) {
     if (!issue) return;
-    if (!confirm(`Run "${agentName}" on this issue now?`)) return;
+    if (!confirm($t('issueDrawer.runAgentConfirm', { name: agentName }))) return;
     triggeringAgentId = agentUserId;
     try {
       await triggerAgent(agentUserId, issue.id);
@@ -285,7 +286,7 @@
         // error rather than silently — without this, a failed fetch looked identical to "no
         // branch exists yet", and clicking "+ Create Branch" produced a confusing 400 if one
         // actually did.
-        if (branchLoadedForIssueId === issueId) branchError = err instanceof Error ? err.message : 'Failed to load branch';
+        if (branchLoadedForIssueId === issueId) branchError = err instanceof Error ? err.message : $t('issueDrawer.failedLoadBranch');
       });
   }
 
@@ -304,7 +305,7 @@
       branch = created;
       showBranchForm = false;
     } catch (err) {
-      branchError = err instanceof Error ? err.message : 'Failed to create branch';
+      branchError = err instanceof Error ? err.message : $t('issueDrawer.failedCreateBranch');
     } finally {
       creatingBranch = false;
     }
@@ -354,12 +355,20 @@
     worklogHours = '';
     worklogNote = '';
   }
+
+  const RELATION_LABEL_KEYS: Record<IssueLinkType, string> = {
+    relatesTo: 'issueDrawer.relationRelatesTo',
+    blocks: 'issueDrawer.relationBlocks',
+    duplicates: 'issueDrawer.relationDuplicates',
+    clones: 'issueDrawer.relationClones',
+    causes: 'issueDrawer.relationCauses',
+  };
 </script>
 
 {#if issue}
   <div class="drawer">
     <div class="drawer-head">
-      <div class="crumb"><b>{$sprints.find((s) => s.id === issue?.sprintId)?.name ?? 'Backlog'}</b></div>
+      <div class="crumb"><b>{$sprints.find((s) => s.id === issue?.sprintId)?.name ?? $t('backlog.backlogLabel')}</b></div>
       <button class="icon-btn" on:click={close}><Icon name="x" /></button>
     </div>
     <div class="drawer-body">
@@ -383,14 +392,14 @@
       <input class="title-input" value={issue.title} on:blur={handleTitleBlur} on:keydown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
 
       <div class="section">
-        <div class="section-label">Description</div>
+        <div class="section-label">{$t('issueDrawer.descriptionLabel')}</div>
         {#if editingDescription}
           <MarkdownEditor
             bind:value={draftDescription}
             rows={5}
             autofocus
-            placeholder="Add a description… (markdown supported)"
-            submitLabel="Save"
+            placeholder={$t('issueDrawer.descriptionPlaceholder')}
+            submitLabel={$t('common.save')}
             showCancel
             submitting={savingDescription}
             onSubmit={submitDescription}
@@ -403,7 +412,7 @@
               {@const descriptionHtml = renderMarkdown(issue.description.plainText, $users)}
               <div class="markdown" use:lineNumbers={descriptionHtml}>{@html descriptionHtml}</div>
             {:else}
-              <span class="desc-placeholder">Add a description… (markdown supported)</span>
+              <span class="desc-placeholder">{$t('issueDrawer.descriptionPlaceholder')}</span>
             {/if}
           </button>
         {/if}
@@ -411,7 +420,7 @@
 
       <div class="field-grid">
         <div class="field assignee-field" use:closeOnClickOutside={() => (showAssigneePicker = false)}>
-          <span class="field-label">Assignees</span>
+          <span class="field-label">{$t('issueDrawer.assigneesLabel')}</span>
           <div class="assignee-control">
             {#each issue.assigneeIds as uid (uid)}
               {@const u = $users.find((usr) => usr.id === uid)}
@@ -423,7 +432,7 @@
                 </span>
               {/if}
             {/each}
-            <button type="button" class="assignee-add" on:click={() => (showAssigneePicker = !showAssigneePicker)}>+ Add</button>
+            <button type="button" class="assignee-add" on:click={() => (showAssigneePicker = !showAssigneePicker)}>{$t('issueDrawer.addChip')}</button>
             {#if showAssigneePicker}
               <div class="assignee-popover">
                 {#each humanUsers as u (u.id)}
@@ -439,27 +448,27 @@
         </div>
         {#if $featureFlags.reporters}
           <div class="field">
-            <span class="field-label">Reporter</span>
+            <span class="field-label">{$t('issueDrawer.reporterLabel')}</span>
             <span class="field-value">
               {#if reporter}
                 <Avatar userId={reporter.id} name={displayName(reporter)} avatarUrl={reporter.avatarUrl} kind={reporter.kind} size={19} />{displayName(reporter)}
               {:else}
-                Unassigned
+                {$t('issueDrawer.unassigned')}
               {/if}
             </span>
           </div>
         {/if}
         {#if $featureFlags.priority}
           <div class="field">
-            <span class="field-label">Priority</span>
+            <span class="field-label">{$t('issueDrawer.priorityLabel')}</span>
             <select class="field-select" value={issue.priority} on:change={handlePriorityChange}>
-              {#each ['highest', 'high', 'medium', 'low', 'lowest'] as p}<option value={p}>{p}</option>{/each}
+              {#each ['highest', 'high', 'medium', 'low', 'lowest'] as p}<option value={p}>{$t(`common.priority.${p}`)}</option>{/each}
             </select>
           </div>
         {/if}
         {#if $featureFlags.storyPoints}
           <div class="field">
-            <span class="field-label">Story Points</span>
+            <span class="field-label">{$t('issueDrawer.storyPointsLabel')}</span>
             <select
               class="field-select points-select"
               style={issue.storyPoints ? `background:${storyPointColor(issue.storyPoints).bg};color:${storyPointColor(issue.storyPoints).text}` : ''}
@@ -473,16 +482,16 @@
         {/if}
         {#if $featureFlags.sprints}
           <div class="field">
-            <span class="field-label">Sprint</span>
+            <span class="field-label">{$t('issueDrawer.sprintLabel')}</span>
             <select class="field-select" value={issue.sprintId ?? ''} on:change={handleSprintChange}>
-              <option value="">No sprint</option>
-              {#each $sprints as s (s.id)}<option value={s.id}>{s.name} ({s.state})</option>{/each}
+              <option value="">{$t('issueDrawer.noSprint')}</option>
+              {#each $sprints as s (s.id)}<option value={s.id}>{s.name} ({$t(`backlog.sprintStates.${s.state}`)})</option>{/each}
             </select>
           </div>
         {/if}
         {#if $featureFlags.dueDates}
           <div class="field">
-            <span class="field-label">Due Date</span>
+            <span class="field-label">{$t('issueDrawer.dueDateLabel')}</span>
             <input class="field-input" type="date" value={issue.dueDate ?? ''} on:change={handleDueDateChange} />
           </div>
         {/if}
@@ -505,9 +514,9 @@
       {/if}
 
       <div class="section agents-section" use:closeOnClickOutside={() => (showAgentPicker = false)}>
-        <div class="section-label">AI Agents</div>
+        <div class="section-label">{$t('issueDrawer.aiAgentsLabel')}</div>
         {#if attachedAgents.length === 0}
-          <p class="agents-hint">Attach an agent to have it work this ticket.</p>
+          <p class="agents-hint">{$t('issueDrawer.agentsHint')}</p>
         {/if}
         <div class="agent-chips">
           {#each attachedAgents as agent (agent.id)}
@@ -517,18 +526,18 @@
               <button
                 type="button"
                 class="chip-run"
-                title="Run now"
+                title={$t('issueDrawer.runNowTitle')}
                 disabled={triggeringAgentId === agent.id}
                 on:click={() => runAgentNow(agent.id, displayName(agent))}
-              >{triggeringAgentId === agent.id ? '…' : 'Run'}</button>
+              >{triggeringAgentId === agent.id ? $t('issueDrawer.runningButton') : $t('issueDrawer.runNowButton')}</button>
               <button type="button" class="chip-remove" on:click={() => detachAgent(agent.id)}><Icon name="x" size={10} /></button>
             </span>
           {/each}
-          <button type="button" class="assignee-add" on:click={toggleAgentPicker}>+ Add</button>
+          <button type="button" class="assignee-add" on:click={toggleAgentPicker}>{$t('issueDrawer.addChip')}</button>
           {#if showAgentPicker}
             <div class="assignee-popover">
               {#if unattachedAgents.length === 0}
-                <div class="agents-empty">No more agents to attach</div>
+                <div class="agents-empty">{$t('issueDrawer.noMoreAgents')}</div>
               {:else}
                 {#each unattachedAgents as a (a.id)}
                   <label class="assignee-option agent-picker-option">
@@ -545,7 +554,7 @@
 
       {#if $gitRepoLink}
         <div class="section">
-          <div class="section-label">Branch</div>
+          <div class="section-label">{$t('issueDrawer.branchLabel')}</div>
           {#if branch}
             <span class="branch-row">
               <a class="branch-link" href={branch.url} target="_blank" rel="noopener">
@@ -556,10 +565,10 @@
           {:else if showBranchForm}
             <form class="inline-form" on:submit|preventDefault={confirmCreateBranch}>
               <input class="inline-input" type="text" bind:value={branchNameDraft} />
-              <button class="inline-btn" type="submit" disabled={creatingBranch}>{creatingBranch ? '…' : 'Create'}</button>
+              <button class="inline-btn" type="submit" disabled={creatingBranch}>{creatingBranch ? $t('common.creating') : $t('common.create')}</button>
             </form>
           {:else}
-            <button type="button" class="assignee-add" on:click={openBranchForm}>+ Create Branch</button>
+            <button type="button" class="assignee-add" on:click={openBranchForm}>{$t('issueDrawer.createBranchButton')}</button>
           {/if}
           {#if branchError}
             <p class="points-warning">{branchError}</p>
@@ -569,18 +578,18 @@
 
       <div class="section">
         <button class="advanced-toggle" on:click={() => (showAdvanced = !showAdvanced)}>
-          <Icon name={showAdvanced ? 'chevup' : 'chevdown'} size={11} />Advanced
+          <Icon name={showAdvanced ? 'chevup' : 'chevdown'} size={11} />{$t('issueDrawer.advancedToggle')}
         </button>
         {#if showAdvanced}
           <div class="advanced-body">
             <div class="subsection">
-              <div class="section-label">Linked Issues</div>
+              <div class="section-label">{$t('issueDrawer.linkedIssuesLabel')}</div>
               {#each issueLinksForIssue as link (link.id)}
                 {@const otherId = link.sourceIssueId === issue.id ? link.targetIssueId : link.sourceIssueId}
                 {@const other = $issuesStore.find((i) => i.id === otherId)}
                 {#if other}
                   <div class="link-row">
-                    <span class="link-type">{link.sourceIssueId === issue.id ? link.type : `${link.type} (inverse)`}</span>
+                    <span class="link-type">{link.sourceIssueId === issue.id ? $t(RELATION_LABEL_KEYS[link.type]) : $t('issueDrawer.relationInverse', { type: $t(RELATION_LABEL_KEYS[link.type]) })}</span>
                     <span class="key mono">{other.key}</span>
                     <span class="link-title">{other.title}</span>
                     <button class="icon-btn small" on:click={() => removeIssueLink(issue.id, link.id)}><Icon name="x" size={12} /></button>
@@ -589,31 +598,31 @@
               {/each}
               <form class="inline-form" on:submit|preventDefault={submitLink}>
                 <select class="inline-select" bind:value={linkType}>
-                  <option value="relatesTo">relates to</option>
-                  <option value="blocks">blocks</option>
-                  <option value="duplicates">duplicates</option>
-                  <option value="clones">clones</option>
-                  <option value="causes">causes</option>
+                  <option value="relatesTo">{$t('issueDrawer.relationRelatesTo')}</option>
+                  <option value="blocks">{$t('issueDrawer.relationBlocks')}</option>
+                  <option value="duplicates">{$t('issueDrawer.relationDuplicates')}</option>
+                  <option value="clones">{$t('issueDrawer.relationClones')}</option>
+                  <option value="causes">{$t('issueDrawer.relationCauses')}</option>
                 </select>
-                <input class="inline-input" type="text" placeholder="Issue key (e.g. ATL-131)" bind:value={linkTargetKey} />
-                <button class="inline-btn" type="submit">Link</button>
+                <input class="inline-input" type="text" placeholder={$t('issueDrawer.issueKeyPlaceholder')} bind:value={linkTargetKey} />
+                <button class="inline-btn" type="submit">{$t('issueDrawer.linkButton')}</button>
               </form>
             </div>
 
             {#if $featureFlags.timeTracking}
               <div class="subsection">
-                <div class="section-label">Time Tracking</div>
+                <div class="section-label">{$t('issueDrawer.timeTrackingLabel')}</div>
                 <div class="time-track">
-                  <span class="time-label mono">{(issue.loggedSeconds / 3600).toFixed(1)}h logged</span>
+                  <span class="time-label mono">{$t('issueDrawer.loggedSuffix', { hours: (issue.loggedSeconds / 3600).toFixed(1) })}</span>
                   {#if issue.originalEstimateSeconds}
                     <div class="time-bar"><span style="width:{timePct}%"></span></div>
-                    <span class="time-label mono">{(issue.originalEstimateSeconds / 3600).toFixed(0)}h est.</span>
+                    <span class="time-label mono">{$t('issueDrawer.estimateSuffix', { hours: (issue.originalEstimateSeconds / 3600).toFixed(0) })}</span>
                   {/if}
                 </div>
                 <form class="inline-form" on:submit|preventDefault={submitWorklog}>
-                  <input class="inline-input small" type="number" min="0" step="0.25" placeholder="Hours" bind:value={worklogHours} />
-                  <input class="inline-input" type="text" placeholder="What did you work on? (optional)" bind:value={worklogNote} />
-                  <button class="inline-btn" type="submit">Log</button>
+                  <input class="inline-input small" type="number" min="0" step="0.25" placeholder={$t('issueDrawer.hoursPlaceholder')} bind:value={worklogHours} />
+                  <input class="inline-input" type="text" placeholder={$t('issueDrawer.workNotePlaceholder')} bind:value={worklogNote} />
+                  <button class="inline-btn" type="submit">{$t('issueDrawer.logButton')}</button>
                 </form>
               </div>
             {/if}
@@ -623,13 +632,13 @@
 
       <div class="section">
         <div class="tabs" role="tablist">
-          <button type="button" role="tab" aria-selected={activityTab === 'comments'} class:active={activityTab === 'comments'} on:click={() => (activityTab = 'comments')}>Comments</button>
-          <button type="button" role="tab" aria-selected={activityTab === 'activity'} class:active={activityTab === 'activity'} on:click={() => (activityTab = 'activity')}>Activity</button>
+          <button type="button" role="tab" aria-selected={activityTab === 'comments'} class:active={activityTab === 'comments'} on:click={() => (activityTab = 'comments')}>{$t('issueDrawer.commentsTab')}</button>
+          <button type="button" role="tab" aria-selected={activityTab === 'activity'} class:active={activityTab === 'activity'} on:click={() => (activityTab = 'activity')}>{$t('issueDrawer.activityTab')}</button>
         </div>
 
           {#if activityTab === 'activity'}
             {#if activityEvents.length === 0}
-              <div class="activity-empty">Nothing logged yet.</div>
+              <div class="activity-empty">{$t('issueDrawer.nothingLoggedYet')}</div>
             {:else}
               <ul class="activity-list">
                 {#each [...activityEvents].reverse() as event (event.id)}
@@ -645,17 +654,17 @@
                         <div class="activity-system-avatar"><Icon name="gear" size={10} /></div>
                       {/if}
                       <span class="activity-actor">{actorLabel(event.actor)}</span>
-                      <span class="activity-desc">{describeEventType(event.type)}</span>
-                      <span class="activity-time">{formatRelativeDate(event.occurredAt)}</span>
+                      <span class="activity-desc">{describeEventType(event.type, $t)}</span>
+                      <span class="activity-time">{formatRelativeDate(event.occurredAt, $t, $tn, $locale)}</span>
                     </button>
                     {#if expanded}
                       <div class="activity-detail">
                         {#if detail === 'loading' || detail === undefined}
-                          Loading details…
+                          {$t('issueDrawer.loadingDetails')}
                         {:else if detail === 'error'}
-                          Couldn't load details for this event.
+                          {$t('issueDrawer.couldntLoadDetails')}
                         {:else}
-                          <div>{describeEvent(detail, { workflow: $workflow, labels: $labels, users: $users })}</div>
+                          <div>{describeEvent(detail, { workflow: $workflow, labels: $labels, users: $users }, $t)}</div>
                           {#if (detail.payload.type === 'comment.created' || detail.payload.type === 'comment.edited') && detail.payload.body}
                             <div class="activity-detail-body markdown">{@html renderMarkdown(detail.payload.body, $users)}</div>
                           {/if}
@@ -688,8 +697,8 @@
               <MarkdownEditor
                 bind:value={draftComment}
                 rows={3}
-                placeholder="Add a comment… (markdown supported)"
-                submitLabel="Comment"
+                placeholder={$t('issueDrawer.commentPlaceholder')}
+                submitLabel={$t('issueDrawer.commentSubmitLabel')}
                 disabled={!draftComment.trim()}
                 submitting={submittingComment}
                 onSubmit={submitComment}

@@ -2,14 +2,15 @@
   import Icon from './Icon.svelte';
   import { currentView, currentProjectId, featureFlags, projects, selectedIssueId, switchProject, createNewProject, workspace, users } from '../stores/workspace';
   import { splitHumansAndAgents } from '../util';
+  import { t, tn } from '../i18n';
 
   // AI agents are User rows (kind: 'agent') so they can be assigned/mentioned like anyone else,
   // but they aren't people — the workspace's member count should only reflect humans.
   $: memberCount = splitHumansAndAgents($users).humans.length;
 
-  const allNavItems: { icon: string; label: string; view: 'board' | 'backlog' }[] = [
-    { icon: 'list', label: 'Backlog', view: 'backlog' },
-    { icon: 'columns', label: 'Board', view: 'board' },
+  const allNavItems: { icon: string; labelKey: string; view: 'board' | 'backlog' }[] = [
+    { icon: 'list', labelKey: 'nav.backlog', view: 'backlog' },
+    { icon: 'columns', labelKey: 'nav.board', view: 'board' },
   ];
   $: navItems = $featureFlags.sprints ? allNavItems : allNavItems.filter((i) => i.view !== 'backlog');
   // Sprints just got turned off while looking at the Backlog view — nothing to show there anymore.
@@ -43,7 +44,7 @@
       newProjectKey = '';
       showNewProjectForm = false;
     } catch (err) {
-      newProjectError = err instanceof Error ? err.message : 'Failed to create project';
+      newProjectError = err instanceof Error ? err.message : $t('sidebar.failedCreateProject');
     } finally {
       creatingProject = false;
     }
@@ -51,25 +52,25 @@
 </script>
 
 <aside class="sidebar">
-  <div class="brand"><Icon name="anvil" size={22} />Workhorse</div>
+  <div class="brand"><Icon name="anvil" size={22} />{$t('topBar.workhorseBrand')}</div>
 
   <button class="workspace" class:active={$currentView === 'workspace'} on:click={() => ($currentView = 'workspace')}>
     <div class="workspace-dot"></div>
     <div class="workspace-text">
       <div class="workspace-name">{$workspace?.name ?? ''}</div>
-      <div class="workspace-sub">{memberCount} {memberCount === 1 ? 'member' : 'members'}</div>
+      <div class="workspace-sub">{$tn('common.members', memberCount)}</div>
     </div>
   </button>
 
   <nav class="nav">
     {#each navItems as item}
       <button class="nav-item" class:active={item.view === $currentView} on:click={() => goToView(item.view)}>
-        <Icon name={item.icon} />{item.label}
+        <Icon name={item.icon} />{$t(item.labelKey)}
       </button>
     {/each}
   </nav>
 
-  <div class="section-label">Projects</div>
+  <div class="section-label">{$t('sidebar.projectsLabel')}</div>
   <nav class="nav" style="padding-top:0">
     {#each $projects as p (p.id)}
       <button type="button" class="proj-item" class:active={p.id === $currentProjectId} on:click={() => selectProject(p.id)}>
@@ -79,17 +80,17 @@
     {/each}
     {#if showNewProjectForm}
       <form class="proj-new-form" on:submit|preventDefault={submitNewProject}>
-        <input class="proj-new-input" type="text" placeholder="Project name" bind:value={newProjectName} />
-        <input class="proj-new-input" type="text" placeholder="Key (e.g. MOB)" bind:value={newProjectKey} />
+        <input class="proj-new-input" type="text" placeholder={$t('sidebar.newProjectPlaceholder')} bind:value={newProjectName} />
+        <input class="proj-new-input" type="text" placeholder={$t('sidebar.newProjectKeyPlaceholder')} bind:value={newProjectKey} />
         <div class="proj-new-actions">
-          <button type="submit" class="proj-new-btn" disabled={creatingProject}>{creatingProject ? '…' : 'Create'}</button>
-          <button type="button" class="proj-new-btn ghost" on:click={() => (showNewProjectForm = false)}>Cancel</button>
+          <button type="submit" class="proj-new-btn" disabled={creatingProject}>{creatingProject ? '…' : $t('common.create')}</button>
+          <button type="button" class="proj-new-btn ghost" on:click={() => (showNewProjectForm = false)}>{$t('common.cancel')}</button>
         </div>
         {#if newProjectError}<p class="proj-new-error">{newProjectError}</p>{/if}
       </form>
     {:else}
       <button type="button" class="proj-item proj-add" on:click={() => (showNewProjectForm = true)}>
-        <Icon name="plus" size={12} />New Project
+        <Icon name="plus" size={12} />{$t('sidebar.newProjectButton')}
       </button>
     {/if}
   </nav>

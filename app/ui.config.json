@@ -24,8 +24,9 @@
       "sidebar-text-dim": "#6B6B6B",
       "sidebar-border": "#D8D8D8",
       "sidebar-active-bg": "#DEDEDE",
-      "create-button-bg": "#2563EB",
-      "create-button-fg": "#FFFFFF"
+      "components": {
+        "create-button": { "bg": "#2563EB", "fg": "#FFFFFF" }
+      }
     },
     "neodark": {
       "bg": "#161616",
@@ -46,8 +47,9 @@
       "sidebar-text-dim": "#8A8A8A",
       "sidebar-border": "#262626",
       "sidebar-active-bg": "#262626",
-      "create-button-bg": "#2563EB",
-      "create-button-fg": "#FFFFFF"
+      "components": {
+        "create-button": { "bg": "#2563EB", "fg": "#FFFFFF" }
+      }
     }
   }
 }

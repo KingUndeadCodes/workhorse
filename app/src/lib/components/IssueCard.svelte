@@ -4,6 +4,7 @@
   import Avatar from './Avatar.svelte';
   import { issueTypes, users, labels, featureFlags } from '../stores/workspace';
   import { displayName, priorityIcon, storyPointColor, typeIcon } from '../util';
+  import { t } from '../i18n';
 
   export let issue: Issue;
   export let selected = false;
@@ -83,7 +84,7 @@
       {/if}
       {#if onMove && columns.length > 1}
         <div class="move-wrap" use:closeOnClickOutside>
-          <button class="move-trigger" title="Move to…" on:click={toggleMoveMenu}><Icon name="chevron" size={10} /></button>
+          <button class="move-trigger" title={$t('issueCard.moveToTitle')} on:click={toggleMoveMenu}><Icon name="chevron" size={10} /></button>
           {#if showMoveMenu}
             <div class="move-menu">
               {#each columns as col (col.id)}

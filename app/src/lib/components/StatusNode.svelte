@@ -3,6 +3,7 @@
   // own drag-to-connect create transitions — no hand-rolled "click source, click target" state.
   import { Handle, Position } from '@xyflow/svelte';
   import Icon from './Icon.svelte';
+  import { t } from '../i18n';
   import type { WorkflowStatus } from '$domain';
 
   interface StatusNodeData {
@@ -17,12 +18,12 @@
 <div class="status-node" style={data.status.color ? `border-color:${data.status.color}` : ''}>
   <Handle type="target" position={Position.Left} />
   {#if !data.deletable}
-    <span class="lock" title="To Do and Done statuses can't be deleted"><Icon name="lock" size={10} /></span>
+    <span class="lock" title={$t('statusNode.lockedTitle')}><Icon name="lock" size={10} /></span>
   {/if}
   <span class="name">{data.status.name}</span>
   <button
     class="edit-btn"
-    title="Edit status"
+    title={$t('statusNode.editTitle')}
     onmousedown={(e) => e.stopPropagation()}
     onclick={(e) => {
       e.stopPropagation();

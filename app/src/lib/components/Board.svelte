@@ -2,6 +2,7 @@
   import type { Issue } from '$domain';
   import IssueCard from './IssueCard.svelte';
   import { board, issueTypes, issuesStore, moveIssueToStatus, selectedIssueId, statusCategories, workflow } from '../stores/workspace';
+  import { t } from '../i18n';
 
   /** Cell key currently under the drag cursor, for the drop-target highlight. */
   let dragOverCell: string | null = null;
@@ -92,7 +93,7 @@
       <div class="swimlane">
         <div class="swimlane-head">
           <span class="epic-dot" style="background:var(--text-3)"></span>
-          <span class="epic-name">No Epic</span>
+          <span class="epic-name">{$t('board.noEpic')}</span>
         </div>
         <div class="swimlane-body">
           {#each columns as col}
@@ -101,7 +102,7 @@
             <div
               class="cell"
               role="list"
-              aria-label="{col.name} — No Epic"
+              aria-label="{col.name} — {$t('board.noEpic')}"
               class:drag-over={dragOverCell === key}
               on:dragover={(e) => { e.preventDefault(); dragOverCell = key; }}
               on:dragleave={() => (dragOverCell = null)}
@@ -109,7 +110,7 @@
             >
               <span class="cell-label">{col.name}</span>
               {#if cellIssues.length === 0}
-                <div class="cell-empty">No issues</div>
+                <div class="cell-empty">{$t('board.noIssues')}</div>
               {:else}
                 {#each cellIssues as issue (issue.id)}
                   <IssueCard
@@ -154,7 +155,7 @@
             >
               <span class="cell-label">{col.name}</span>
               {#if cellIssues.length === 0}
-                <div class="cell-empty">No issues</div>
+                <div class="cell-empty">{$t('board.noIssues')}</div>
               {:else}
                 {#each cellIssues as issue (issue.id)}
                   <IssueCard
