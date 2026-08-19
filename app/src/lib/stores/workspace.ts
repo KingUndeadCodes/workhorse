@@ -57,6 +57,7 @@ import {
   updateProject as apiUpdateProject,
   updateWorkspaceMemberRole as apiUpdateWorkspaceMemberRole,
 } from '../api';
+import { removeCommentSubtree } from '../util';
 
 /** Key used to persist which project was last active, so a reload lands back on it. */
 const CURRENT_PROJECT_STORAGE_KEY = 'anvil.currentProjectId';
@@ -163,16 +164,22 @@ function applyProjectScopedBootstrap(data: Awaited<ReturnType<typeof fetchBootst
   comments.set(data.comments);
   worklogs.set(data.worklogs);
   attachments.set(data.attachments);
-  selectedIssueId.set(data.comments[0]?.issueId ?? null);
+  selectedIssueId.set(null);
 }
+
+/** Guards {@link switchProject} against out-of-order resolution — only the most recently requested project id is allowed to actually apply its data. */
+let latestProjectSwitchId: string | undefined;
 
 /** Switches the active project: re-fetches its bootstrap slice and applies it, without touching workspace-global stores (users, workflow, labels, agents, etc. — re-setting them would be harmless but pointless). */
 export async function switchProject(id: string): Promise<void> {
+  latestProjectSwitchId = id;
   const data = await fetchBootstrap(id);
+  const gitRepoLinkResult = await getGitRepoLink(id).catch(() => null);
+  if (latestProjectSwitchId !== id) return; // a newer switchProject call superseded this one while we were awaiting
   currentProjectId.set(id);
   localStorage.setItem(CURRENT_PROJECT_STORAGE_KEY, id);
   applyProjectScopedBootstrap(data);
-  gitRepoLink.set(await getGitRepoLink(id).catch(() => null));
+  gitRepoLink.set(gitRepoLinkResult);
 }
 
 /** Creates a new project, adds it to {@link projects}, and switches to it. */
@@ -254,6 +261,12 @@ export async function deleteIssue(issueId: string): Promise<void> {
   await apiDeleteIssue(issueId);
   issuesStore.update((list) => list.filter((i) => i.id !== issueId));
   selectedIssueId.update((id) => (id === issueId ? null : id));
+  // Mirrors the server's cascade delete (see IssueRepository) so these stores don't keep
+  // stale rows for an issue that no longer exists until the next full bootstrap.
+  comments.update((list) => list.filter((c) => c.issueId !== issueId));
+  issueLinks.update((list) => list.filter((l) => l.sourceIssueId !== issueId && l.targetIssueId !== issueId));
+  worklogs.update((list) => list.filter((w) => w.issueId !== issueId));
+  attachments.update((list) => list.filter((a) => a.issueId !== issueId));
 }
 
 /** Posts a comment via the API, then appends the server's copy to {@link comments}. */
@@ -270,21 +283,7 @@ export async function editComment(issueId: string, commentId: string, body: stri
 /** Deletes a comment and every reply beneath it, mirroring the server's cascade (see IssueRepository.deleteComment) locally instead of waiting on a full reload to see the whole subtree gone. */
 export async function removeComment(issueId: string, commentId: string): Promise<void> {
   await apiDeleteComment(issueId, commentId);
-  comments.update((list) => {
-    const toRemove = new Set([commentId]);
-    // Repeated passes rather than a single lookup, since a grandchild's parent might only be added to the set on a later pass.
-    let grew = true;
-    while (grew) {
-      grew = false;
-      for (const c of list) {
-        if (c.parentCommentId && toRemove.has(c.parentCommentId) && !toRemove.has(c.id)) {
-          toRemove.add(c.id);
-          grew = true;
-        }
-      }
-    }
-    return list.filter((c) => !toRemove.has(c.id));
-  });
+  comments.update((list) => removeCommentSubtree(list, commentId));
 }
 
 export async function addIssueLink(issueId: string, type: IssueLinkType, targetIssueId: string): Promise<void> {

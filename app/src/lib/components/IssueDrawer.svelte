@@ -80,6 +80,7 @@
     editingDescription = false;
     replyingToId = null;
     activityTab = 'comments';
+    draftComment = '';
   }
 
   let activityTab: 'comments' | 'activity' = 'comments';
@@ -97,7 +98,9 @@
   $: if (issue) void loadActivity(issue.id, issueComments.length);
   async function loadActivity(issueId: string, _commentCount: number) {
     try {
-      activityEvents = (await fetchIssueEvents(issueId)).events;
+      const events = (await fetchIssueEvents(issueId)).events;
+      if (issue?.id !== issueId) return; // a newer loadActivity call (for a different issue) superseded this one while we were awaiting
+      activityEvents = events;
     } catch {
       // Non-critical — the rest of the drawer still works without an activity feed.
     }

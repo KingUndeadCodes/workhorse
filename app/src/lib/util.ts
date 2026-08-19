@@ -3,7 +3,7 @@ import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js';
 import DOMPurify from 'dompurify';
 import { PROJECT_COLORS, replaceMentions, STORY_POINT_VALUES } from '$domain';
-import type { AutomationAction, EventEnvelope, EventType, FieldDefinition, Label, Mentionable, User, Workflow } from '$domain';
+import type { AutomationAction, Comment, EventEnvelope, EventType, FieldDefinition, Label, Mentionable, User, Workflow } from '$domain';
 
 marked.setOptions({ breaks: true, gfm: true });
 // Syntax-highlights fenced code blocks (```js, ```python, ...) via highlight.js, tagging each
@@ -48,6 +48,28 @@ export function renderMarkdown(text: string, mentionUsers: Mentionable[] = []): 
   const withMentions = highlightMentions(text, mentionUsers);
   const html = marked.parse(withMentions, { async: false }) as string;
   return DOMPurify.sanitize(html);
+}
+
+/**
+ * Removes a comment and every reply beneath it (transitively) from a comment list — the local
+ * mirror of the server's cascade delete (IssueRepository.deleteComment). Shared by the
+ * locally-initiated delete path (stores/workspace.ts's removeComment) and the WebSocket-driven
+ * one (ws.ts's comment.deleted handler) so the two can't silently diverge on what counts as
+ * "beneath" a deleted comment.
+ */
+export function removeCommentSubtree(list: Comment[], commentId: string): Comment[] {
+  const toRemove = new Set([commentId]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const c of list) {
+      if (c.parentCommentId && toRemove.has(c.parentCommentId) && !toRemove.has(c.id)) {
+        toRemove.add(c.id);
+        grew = true;
+      }
+    }
+  }
+  return list.filter((c) => !toRemove.has(c.id));
 }
 
 /** Up to two uppercase initials from a display name, e.g. "Jordan Cole" -> "JC". */

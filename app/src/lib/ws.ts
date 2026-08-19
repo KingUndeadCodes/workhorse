@@ -2,6 +2,7 @@ import { get } from 'svelte/store';
 import type { EventEnvelope, FieldValue } from '$domain';
 import { authToken } from './stores/auth';
 import { attachments, comments, currentProjectId, initWorkspace, issueLinks, issuesStore, sprints, worklogs } from './stores/workspace';
+import { removeCommentSubtree } from './util';
 
 /**
  * Live updates over one WebSocket per tab: every event the server appends (see
@@ -107,6 +108,7 @@ function applyRemoteEvent(event: EventEnvelope): void {
       issuesStore.update((list) => list.filter((i) => i.id !== payload.issueId));
       return;
     case 'comment.created':
+      if (!get(issuesStore).some((i) => i.id === payload.issueId)) return;
       comments.update((list) =>
         list.some((c) => c.id === payload.commentId)
           ? list
@@ -128,25 +130,11 @@ function applyRemoteEvent(event: EventEnvelope): void {
         list.map((c) => (c.id === payload.commentId ? { ...c, body: { ...c.body, plainText: payload.body }, editedAt: event.occurredAt } : c)),
       );
       return;
-    case 'comment.deleted': {
-      // Mirrors the server's cascade (IssueRepository.deleteComment) locally — see removeComment in stores/workspace.ts, same logic.
-      comments.update((list) => {
-        const toRemove = new Set([payload.commentId]);
-        let grew = true;
-        while (grew) {
-          grew = false;
-          for (const c of list) {
-            if (c.parentCommentId && toRemove.has(c.parentCommentId) && !toRemove.has(c.id)) {
-              toRemove.add(c.id);
-              grew = true;
-            }
-          }
-        }
-        return list.filter((c) => !toRemove.has(c.id));
-      });
+    case 'comment.deleted':
+      comments.update((list) => removeCommentSubtree(list, payload.commentId));
       return;
-    }
     case 'issue.worklogAdded':
+      if (!get(issuesStore).some((i) => i.id === payload.issueId)) return;
       worklogs.update((list) =>
         list.some((w) => w.id === payload.worklogId)
           ? list
@@ -154,6 +142,7 @@ function applyRemoteEvent(event: EventEnvelope): void {
       );
       return;
     case 'issue.attachmentAdded':
+      if (!get(issuesStore).some((i) => i.id === payload.issueId)) return;
       attachments.update((list) =>
         list.some((a) => a.id === payload.attachmentId)
           ? list
@@ -167,6 +156,7 @@ function applyRemoteEvent(event: EventEnvelope): void {
       );
       return;
     case 'issue.linked':
+      if (!get(issuesStore).some((i) => i.id === payload.issueId)) return;
       issueLinks.update((list) =>
         list.some((l) => l.id === payload.linkId)
           ? list

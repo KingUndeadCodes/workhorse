@@ -1,3 +1,31 @@
+<script context="module" lang="ts">
+  import type { Comment } from '$domain';
+
+  // One CommentThread instance is mounted per comment in the tree (recursive via
+  // <svelte:self>), and every instance is handed the same `allComments` array reference. Without
+  // this cache, each instance independently re-filters that whole array (once for its own
+  // `children`, again inside `countDescendants`'s own recursion), which is O(N) work per node —
+  // O(N^2) total across a thread with N comments, redone on every reactive tick that touches
+  // `allComments` even when the change is unrelated to a given node's subtree. Keyed by the
+  // array's own identity (a WeakMap, so it's dropped once that array is replaced) so every
+  // instance sharing the same `allComments` reference reuses one O(N) grouping pass instead of
+  // paying for its own.
+  const childrenByParentCache = new WeakMap<Comment[], Map<string, Comment[]>>();
+  function getChildrenByParent(allComments: Comment[]): Map<string, Comment[]> {
+    const cached = childrenByParentCache.get(allComments);
+    if (cached) return cached;
+    const map = new Map<string, Comment[]>();
+    for (const c of allComments) {
+      if (!c.parentCommentId) continue;
+      const siblings = map.get(c.parentCommentId);
+      if (siblings) siblings.push(c);
+      else map.set(c.parentCommentId, [c]);
+    }
+    childrenByParentCache.set(allComments, map);
+    return map;
+  }
+</script>
+
 <script lang="ts">
   // Recursive: a comment plus every reply beneath it, nested to any depth (a reply can
   // itself be replied to). Renders itself again via <svelte:self> for each child, so the
@@ -7,13 +35,20 @@
   import MarkdownEditor from './MarkdownEditor.svelte';
   import { displayName, formatRelativeDate, renderMarkdown } from '../util';
   import { lineNumbers } from '../actions/lineNumbers';
-  import type { Comment, User } from '$domain';
+  import type { User } from '$domain';
 
   export let comment: Comment;
   export let allComments: Comment[];
   export let users: User[];
   export let currentUserId: string | undefined;
   export let depth = 0;
+  /**
+   * Depth within the currently-visible "page" of the thread — distinct from `depth` (which
+   * keeps counting up forever, for indent). Resets to 0 whenever a "Continue thread" stub is
+   * expanded, so replies only ever render 4 levels at a time no matter how deep the underlying
+   * thread actually goes; see `MAX_WINDOW_DEPTH` below.
+   */
+  export let windowDepth = 0;
   export let replyingToId: string | null;
   export let draftReply: string;
   export let submittingReply: boolean;
@@ -25,29 +60,34 @@
 
   $: commentHtml = renderMarkdown(comment.body.plainText, users);
   $: author = users.find((u) => u.id === comment.authorId);
-  $: children = allComments.filter((c) => c.parentCommentId === comment.id).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  $: childrenByParent = getChildrenByParent(allComments);
+  $: children = [...(childrenByParent.get(comment.id) ?? [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   // Indentation is capped, not unbounded — a very deep thread should still stay readable
   // rather than squeezing itself into a sliver on the right edge of the drawer.
   $: indent = Math.min(depth, 4) * 22;
 
   /** Every reply under this comment, however deep — the count shown on a collapsed thread, same idea as Reddit's "[+] N children" stub. */
-  function countDescendants(commentId: string): number {
-    const direct = allComments.filter((c) => c.parentCommentId === commentId);
-    return direct.length + direct.reduce((sum, c) => sum + countDescendants(c.id), 0);
+  function countDescendants(commentId: string, map: Map<string, Comment[]>): number {
+    const direct = map.get(commentId) ?? [];
+    return direct.length + direct.reduce((sum, c) => sum + countDescendants(c.id, map), 0);
   }
-  $: descendantCount = countDescendants(comment.id);
-
-  // Depth past which a reply auto-collapses on first render, same idea as Reddit's own default
-  // for deep threads — past a certain point a reply chain is more likely to be two people going
-  // back and forth than something everyone reading the issue needs to see expanded by default.
-  // Only the *initial* state; the user can still expand/re-collapse anything by hand afterward.
-  const AUTO_COLLAPSE_DEPTH = 3;
+  $: descendantCount = countDescendants(comment.id, childrenByParent);
 
   // Collapsing a comment hides its body, actions, and every reply beneath it, leaving just the
-  // meta line — the standard fix for a thread that's grown too deep/long to stay all on screen
-  // (see CommentThread's parent doc comment). Local to this instance on purpose: collapsing one
-  // subtree shouldn't affect sibling threads, and there's no reason to persist it server-side.
-  let collapsed = depth >= AUTO_COLLAPSE_DEPTH;
+  // meta line — for a user who wants to skim past one specific sub-conversation. Local to this
+  // instance on purpose: collapsing one subtree shouldn't affect sibling threads, and there's
+  // no reason to persist it server-side.
+  let collapsed = false;
+
+  // Only 4 levels of a thread are ever mounted at once — past that, children are replaced by a
+  // "Continue thread" stub instead of being rendered (not just visually hidden). A reply chain
+  // that goes 15 deep would otherwise mean 15 levels of DOM, markdown rendering, and shrinking
+  // indent all at once; this caps the cost the same way pagination would, just keyed on depth
+  // instead of comment count. Expanding a stub only re-opens *its* branch, starting a fresh
+  // 4-level window from there — sibling branches and everything above stay exactly as they were.
+  const MAX_WINDOW_DEPTH = 4;
+  let continued = false;
+  $: atWindowEdge = windowDepth + 1 >= MAX_WINDOW_DEPTH && !continued;
 
   let editing = false;
   let editDraft = '';
@@ -149,23 +189,31 @@
           </div>
         {/if}
 
-        {#each children as child (child.id)}
-          <svelte:self
-            comment={child}
-            {allComments}
-            {users}
-            {currentUserId}
-            depth={depth + 1}
-            {replyingToId}
-            bind:draftReply
-            {submittingReply}
-            {onStartReply}
-            {onCancelReply}
-            {onSubmitReply}
-            {onEditComment}
-            {onDeleteComment}
-          />
-        {/each}
+        {#if children.length > 0 && atWindowEdge}
+          <button type="button" class="continue-thread" on:click={() => (continued = true)} aria-expanded="false">
+            <Icon name="chevron" size={9} />
+            Continue thread ({children.length} more {children.length === 1 ? 'reply' : 'replies'})
+          </button>
+        {:else}
+          {#each children as child (child.id)}
+            <svelte:self
+              comment={child}
+              {allComments}
+              {users}
+              {currentUserId}
+              depth={depth + 1}
+              windowDepth={continued ? 0 : windowDepth + 1}
+              {replyingToId}
+              bind:draftReply
+              {submittingReply}
+              {onStartReply}
+              {onCancelReply}
+              {onSubmitReply}
+              {onEditComment}
+              {onDeleteComment}
+            />
+          {/each}
+        {/if}
       {/if}
     </div>
   </div>
@@ -189,6 +237,11 @@
   .comment-actions { display: flex; gap: 12px; margin-top: 4px; }
   .reply-btn { display: flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; color: var(--text-3); }
   .reply-btn:hover { color: var(--text-2); }
+  .continue-thread {
+    display: flex; align-items: center; gap: 4px; margin-top: 10px; padding: 4px 8px;
+    font-size: 11.5px; font-weight: 600; color: var(--accent-strong); border-radius: 4px;
+  }
+  .continue-thread:hover { background: var(--accent-soft); }
   .reply-composer, .edit-composer { margin-top: 10px; }
   .markdown { font-size: 12.5px; color: var(--text-2); line-height: 1.65; }
   .markdown :global(p) { margin: 0 0 8px; }
