@@ -12,7 +12,12 @@
     webhookSubscriptions,
     workflow,
   } from '../stores/workspace';
-  import { theme } from '../stores/theme';
+  import { theme, type Theme } from '../stores/theme';
+
+  const THEME_OPTIONS: { id: Theme; label: string }[] = [
+    { id: 'light', label: 'Light' },
+    { id: 'dark', label: 'Dark' },
+  ];
   import * as api from '../api';
   import { describeAutomationAction, splitHumansAndAgents } from '../util';
   import type { AutomationAction, AutomationCondition, EventType, FilterOp } from '$domain';
@@ -218,19 +223,30 @@
           <span class="row-name">Theme</span>
           <span class="row-hint">Switches between light and dark for this browser. Defaults to your system setting until you choose one here.</span>
         </div>
-        <button
-          type="button"
-          class="theme-slider"
-          class:dark={$theme === 'dark'}
-          role="switch"
-          aria-checked={$theme === 'dark'}
-          aria-label="Toggle dark mode"
-          on:click={() => theme.set($theme === 'dark' ? 'light' : 'dark')}
-        >
-          <Icon name="sun" size={12} />
-          <Icon name="moon" size={12} />
-          <span class="theme-slider-knob"></span>
-        </button>
+        <div class="theme-picker">
+          {#each THEME_OPTIONS as opt (opt.id)}
+            <button
+              type="button"
+              class="theme-option"
+              class:active={$theme === opt.id}
+              aria-pressed={$theme === opt.id}
+              on:click={() => theme.set(opt.id)}
+            >
+              <span class="theme-preview theme-preview-{opt.id}">
+                <span class="theme-preview-sidebar"></span>
+                <span class="theme-preview-content">
+                  <span class="theme-preview-bar"></span>
+                  <span class="theme-preview-bar short"></span>
+                  <span class="theme-preview-accent"></span>
+                </span>
+              </span>
+              <span class="theme-option-footer">
+                <span class="theme-option-check"><Icon name="check" size={11} /></span>
+                <span class="theme-option-label">{opt.label}</span>
+              </span>
+            </button>
+          {/each}
+        </div>
       </div>
     {:else if activeTab === 'Labels'}
       <div class="list">
@@ -409,23 +425,47 @@
   .row-tag { color: var(--text-3); font-size: 11.5px; flex: 1; }
   .dot { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 8px; }
   .appearance-row {
-    display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 460px;
-    padding: 12px 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px;
+    display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 900px;
+    padding: 24px 28px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
   }
-  .appearance-copy { display: flex; flex-direction: column; gap: 3px; }
-  .row-hint { color: var(--text-3); font-size: 11.5px; max-width: 320px; }
-  .theme-slider {
-    position: relative; flex: 0 0 auto; width: 52px; height: 28px; border-radius: 999px;
-    background: var(--surface-sunken); border: 1px solid var(--border-strong);
-    display: flex; align-items: center; justify-content: space-between; padding: 0 6px;
-    color: var(--text-3); transition: background .15s ease;
+  .appearance-copy { display: flex; flex-direction: column; gap: 5px; }
+  .row-name { font-size: 15px; }
+  .row-hint { color: var(--text-3); font-size: 12.5px; max-width: 480px; }
+
+  /* iOS-Settings-style theme picker: each option is a large, abstract preview of this app's
+     own chrome (sidebar + content + accent) rendered in that theme's actual colors — via the
+     always-active --preview-light- and --preview-dark- vars (see index.html) — rather than a
+     generic icon, so it's a real preview of what changes, not decoration. Sized to fill most of
+     the available panel width rather than sitting as a small control. */
+  .theme-picker { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 28px; width: 100%; }
+  .theme-option { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .theme-preview {
+    display: flex; width: 100%; aspect-ratio: 16 / 10; border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--border); box-shadow: 0 0 0 3px transparent; transition: box-shadow .15s ease, transform .15s ease;
   }
-  .theme-slider.dark { background: var(--accent-soft); color: var(--accent-strong); }
-  .theme-slider-knob {
-    position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%;
-    background: var(--surface); box-shadow: var(--shadow); transition: transform .15s ease;
+  .theme-option:hover .theme-preview { transform: translateY(-2px); }
+  .theme-option.active .theme-preview { box-shadow: 0 0 0 3px var(--accent); }
+  .theme-preview-light { background: var(--preview-light-bg); border-color: var(--preview-light-border); }
+  .theme-preview-dark { background: var(--preview-dark-bg); border-color: var(--preview-dark-border); }
+  .theme-preview-sidebar { flex: 0 0 28%; }
+  .theme-preview-light .theme-preview-sidebar { background: var(--preview-light-sidebar-bg); }
+  .theme-preview-dark .theme-preview-sidebar { background: var(--preview-dark-sidebar-bg); }
+  .theme-preview-content { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 16px 14px; min-width: 0; }
+  .theme-preview-bar { display: block; height: 7px; border-radius: 4px; width: 100%; }
+  .theme-preview-bar.short { width: 55%; }
+  .theme-preview-light .theme-preview-bar { background: var(--preview-light-border); }
+  .theme-preview-dark .theme-preview-bar { background: var(--preview-dark-border); }
+  .theme-preview-accent { display: block; width: 34%; height: 14px; border-radius: 7px; margin-top: auto; }
+  .theme-preview-light .theme-preview-accent { background: var(--preview-light-accent); }
+  .theme-preview-dark .theme-preview-accent { background: var(--preview-dark-accent); }
+  .theme-option-footer { display: flex; align-items: center; gap: 7px; }
+  .theme-option-check {
+    width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: var(--surface-sunken); border: 1px solid var(--border-strong); color: transparent; transition: all .12s ease;
   }
-  .theme-slider.dark .theme-slider-knob { transform: translateX(24px); background: var(--accent); }
+  .theme-option.active .theme-option-check { background: var(--accent); border-color: var(--accent); color: var(--accent-on); }
+  .theme-option-label { font-size: 13px; color: var(--text-2); }
+  .theme-option.active .theme-option-label { color: var(--text); font-weight: 600; }
   .icon-btn { color: var(--text-3); padding: 4px; border-radius: 6px; margin-left: auto; }
   .icon-btn:hover { background: var(--surface); color: var(--critical); }
   .text-btn { font-size: 12px; font-weight: 600; color: var(--accent-strong); }

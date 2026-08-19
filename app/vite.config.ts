@@ -16,9 +16,9 @@ interface UiConfig {
   colorSchemes: Record<string, Record<string, string>>;
 }
 
-/** `{ bg: '#FFF', accentSoft: '#EEE' }` -> `--bg: #FFF; --accent-soft: #EEE;` for inlining into a <style> block. */
-function toCssVars(vars: Record<string, string>): string {
-  return Object.entries(vars).map(([key, value]) => `--${key}: ${value};`).join(' ');
+/** `{ bg: '#FFF', accentSoft: '#EEE' }` -> `--bg: #FFF; --accent-soft: #EEE;` for inlining into a <style> block. An optional `prefix` produces a differently-named copy of the same vars (e.g. `--preview-light-bg`) — used to expose a palette that isn't the currently-active theme, see uiConfigHtmlPlugin. */
+function toCssVars(vars: Record<string, string>, prefix = ''): string {
+  return Object.entries(vars).map(([key, value]) => `--${prefix}${key}: ${value};`).join(' ');
 }
 
 /** `#RGB`, `#RRGGBB`, or `rgb()`/`rgba()` — the only color formats actually used in ui.config.json. */
@@ -71,7 +71,12 @@ function uiConfigHtmlPlugin(): Plugin {
         .replaceAll('{{UI_FONT_FAMILY}}', config.font.family)
         .replaceAll('{{UI_FONT_GOOGLE_URL}}', config.font.googleFontsUrl)
         .replaceAll('{{UI_COLOR_SCHEME_LIGHT}}', toCssVars(light))
-        .replaceAll('{{UI_COLOR_SCHEME_DARK}}', toCssVars(dark));
+        .replaceAll('{{UI_COLOR_SCHEME_DARK}}', toCssVars(dark))
+        // Unscoped, always-active copies of both palettes (not gated by [data-theme]) — so the
+        // Appearance tab's theme picker can render an accurate preview of *both* options at
+        // once, regardless of which one is actually live right now.
+        .replaceAll('{{UI_COLOR_PREVIEW_LIGHT}}', toCssVars(light, 'preview-light-'))
+        .replaceAll('{{UI_COLOR_PREVIEW_DARK}}', toCssVars(dark, 'preview-dark-'));
     },
   };
 }

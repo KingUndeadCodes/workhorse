@@ -19,12 +19,17 @@
          toggle in Settings, via src/lib/stores/theme.ts — always wins, via :not([data-theme])
          guarding the media query so a manual "light" choice isn't clobbered by a dark system
          preference, and an explicit [data-theme="dark"] rule that applies regardless of the
-         system preference either way. -->
+         system preference either way.
+
+         --preview-light-*/--preview-dark-* (also in the base :root, unconditionally) are a
+         second, unscoped copy of both palettes — used by Settings' Appearance-tab theme picker
+         to render an accurate mini preview of *both* options at once, since --bg/--accent/etc.
+         above only ever reflect whichever theme is currently active. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="{{UI_FONT_GOOGLE_URL}}" rel="stylesheet" />
     <style>
-      :root { --font-sans: '{{UI_FONT_FAMILY}}', 'Plex', -apple-system, 'Segoe UI', sans-serif; {{UI_COLOR_SCHEME_LIGHT}} }
+      :root { --font-sans: '{{UI_FONT_FAMILY}}', 'Plex', -apple-system, 'Segoe UI', sans-serif; {{UI_COLOR_SCHEME_LIGHT}} {{UI_COLOR_PREVIEW_LIGHT}} {{UI_COLOR_PREVIEW_DARK}} }
       @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { {{UI_COLOR_SCHEME_DARK}} } }
       :root[data-theme="dark"] { {{UI_COLOR_SCHEME_DARK}} }
     </style>
