@@ -321,6 +321,9 @@ issuesRouter.post('/issues/:id/links', async (c) => {
 /** DELETE /api/issues/:issueId/links/:linkId — removes a link; emits `issue.unlinked`. */
 issuesRouter.delete('/issues/:issueId/links/:linkId', async (c) => {
   const { issueId, linkId } = c.req.param();
+  const link = (await issueRepo.listLinksFor(issueId)).find((l) => l.id === linkId);
+  if (!link) return c.json({ error: 'Link not found' }, 404);
+
   const event = await engine.emitEvent({ actor: actorFrom(c.get('user')), subject: { type: 'issue', id: issueId }, payload: { type: 'issue.unlinked', issueId, linkId } });
   return c.json({ event });
 });
@@ -408,9 +411,12 @@ issuesRouter.post('/issues/:id/attachments', async (c) => {
   return c.json({ attachment, event }, 201);
 });
 
-/** DELETE /api/attachments/:id — removes an attachment record (not event-worthy; config-adjacent). */
+/** DELETE /api/attachments/:id — removes an attachment record (not event-worthy; config-adjacent). Only the uploader may delete it. */
 issuesRouter.delete('/attachments/:id', async (c) => {
   const id = c.req.param('id');
+  const attachment = await issueRepo.getAttachment(id);
+  if (!attachment) return c.json({ error: 'Attachment not found' }, 404);
+  if (attachment.uploadedBy !== c.get('user').id) return c.json({ error: 'Only the uploader can delete this attachment' }, 403);
   await issueRepo.deleteAttachment(id);
   persistState();
   return c.json({ ok: true });

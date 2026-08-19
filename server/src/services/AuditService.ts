@@ -24,8 +24,13 @@ interface ExpectedIssueState {
   assigneeIds?: string[];
   agentAssignments?: string[];
   sprintId?: string;
+  priority?: string;
+  labelIds?: string[];
+  dueDate?: string;
   loggedSeconds: number;
   commentIds: Set<string>;
+  attachmentIds: Set<string>;
+  hasBranch?: boolean;
   deleted: boolean;
 }
 
@@ -65,7 +70,7 @@ export class AuditService {
     const ensure = (issueId: string): ExpectedIssueState => {
       let e = expectedByIssue.get(issueId);
       if (!e) {
-        e = { loggedSeconds: 0, commentIds: new Set(), deleted: false, agentAssignments: [] };
+        e = { loggedSeconds: 0, commentIds: new Set(), attachmentIds: new Set(), deleted: false, agentAssignments: [] };
         expectedByIssue.set(issueId, e);
       }
       return e;
@@ -108,6 +113,15 @@ export class AuditService {
         case 'issue.sprintChanged':
           ensure(p.issueId).sprintId = p.toSprintId;
           break;
+        case 'issue.priorityChanged':
+          ensure(p.issueId).priority = p.toPriority;
+          break;
+        case 'issue.labelsChanged':
+          ensure(p.issueId).labelIds = p.toLabelIds;
+          break;
+        case 'issue.dueDateChanged':
+          ensure(p.issueId).dueDate = p.toDueDate;
+          break;
         case 'issue.worklogAdded':
           ensure(p.issueId).loggedSeconds += p.timeSpentSeconds;
           break;
@@ -119,6 +133,18 @@ export class AuditService {
           break;
         case 'comment.created':
           ensure(p.issueId).commentIds.add(p.commentId);
+          break;
+        case 'comment.deleted':
+          ensure(p.issueId).commentIds.delete(p.commentId);
+          break;
+        case 'issue.attachmentAdded':
+          ensure(p.issueId).attachmentIds.add(p.attachmentId);
+          break;
+        case 'issue.branchCreated':
+          ensure(p.issueId).hasBranch = true;
+          break;
+        case 'issue.branchDeleted':
+          ensure(p.issueId).hasBranch = false;
           break;
         case 'issue.deleted':
           ensure(p.issueId).deleted = true;
@@ -152,6 +178,17 @@ export class AuditService {
       }
       if ((expected.sprintId ?? undefined) !== actual.sprintId) findings.push({ issueId, field: 'sprintId', expected: expected.sprintId, actual: actual.sprintId });
       if (expected.loggedSeconds !== actual.loggedSeconds) findings.push({ issueId, field: 'loggedSeconds', expected: expected.loggedSeconds, actual: actual.loggedSeconds });
+      if (expected.priority !== undefined && expected.priority !== actual.priority) findings.push({ issueId, field: 'priority', expected: expected.priority, actual: actual.priority });
+      if (expected.labelIds !== undefined && !setsEqual(new Set(expected.labelIds), new Set(actual.labelIds))) {
+        findings.push({ issueId, field: 'labelIds', expected: expected.labelIds, actual: actual.labelIds });
+      }
+      if (expected.dueDate !== undefined && (expected.dueDate || undefined) !== actual.dueDate) findings.push({ issueId, field: 'dueDate', expected: expected.dueDate, actual: actual.dueDate });
+      if (expected.hasBranch !== undefined && expected.hasBranch !== !!(await this.issues.getBranchFor(issueId))) {
+        findings.push({ issueId, field: 'branch', expected: expected.hasBranch, actual: !expected.hasBranch });
+      }
+
+      const actualAttachmentIds = new Set((await this.issues.listAttachmentsFor(issueId)).map((a) => a.id));
+      if (!setsEqual(expected.attachmentIds, actualAttachmentIds)) findings.push({ issueId, field: 'attachments', expected: [...expected.attachmentIds], actual: [...actualAttachmentIds] });
 
       const expectedLinkIds = new Set([...activeLinks.entries()].filter(([, l]) => l.source === issueId || l.target === issueId).map(([linkId]) => linkId));
       const actualLinkIds = new Set((await this.issues.listLinksFor(issueId)).map((l) => l.id));

@@ -11,6 +11,11 @@ export class AgentRunRepository {
     return (await this.db.selectFrom('agent_runs').selectAll().orderBy('started_at', 'asc').execute()).map(rowToAgentRun);
   }
 
+  /** Runs for one agent — a `WHERE agent_user_id = ?` instead of {@link list}'s full-table scan, for the per-agent budget/history checks in EventEngine. */
+  async listForAgent(agentUserId: string): Promise<AgentRun[]> {
+    return (await this.db.selectFrom('agent_runs').selectAll().where('agent_user_id', '=', agentUserId).orderBy('started_at', 'asc').execute()).map(rowToAgentRun);
+  }
+
   async get(id: string): Promise<AgentRun | undefined> {
     const row = await this.db.selectFrom('agent_runs').selectAll().where('id', '=', id).executeTakeFirst();
     return row ? rowToAgentRun(row) : undefined;

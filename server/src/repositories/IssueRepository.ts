@@ -215,19 +215,24 @@ export class IssueRepository {
         continue;
       }
       const column = columnByField[field];
-      if (!column) continue;
+      if (!column) {
+        console.warn(`IssueRepository.updateFields: no column mapped for field "${field}" — ignoring it`);
+        continue;
+      }
       set[column] = jsonFields.has(field) ? JSON.stringify(value) : value;
     }
     if (Object.keys(set).length <= 1) return; // only updated_at — nothing recognized to change
     await this.db.updateTable('issues').set(set as never).where('id', '=', issueId).execute();
   }
 
-  async setFieldValue(issueId: string, fieldId: string, toValue: FieldValue['value'], occurredAt: string): Promise<void> {
-    const issue = await this.get(issueId);
-    if (!issue) return;
-    const next = issue.fieldValues.filter((f) => f.fieldId !== fieldId);
-    next.push({ fieldId, value: toValue });
-    await this.db.updateTable('issues').set({ field_values: JSON.stringify(next), updated_at: occurredAt }).where('id', '=', issueId).execute();
+  setFieldValue(issueId: string, fieldId: string, toValue: FieldValue['value'], occurredAt: string): Promise<void> {
+    return this.withIssueLock(issueId, async () => {
+      const issue = await this.get(issueId);
+      if (!issue) return;
+      const next = issue.fieldValues.filter((f) => f.fieldId !== fieldId);
+      next.push({ fieldId, value: toValue });
+      await this.db.updateTable('issues').set({ field_values: JSON.stringify(next), updated_at: occurredAt }).where('id', '=', issueId).execute();
+    });
   }
 
   async deleteCascade(issueId: string): Promise<void> {
@@ -283,6 +288,11 @@ export class IssueRepository {
         created_at: attachment.createdAt,
       })
       .execute();
+  }
+
+  async getAttachment(id: string): Promise<Attachment | undefined> {
+    const row = await this.db.selectFrom('attachments').selectAll().where('id', '=', id).executeTakeFirst();
+    return row ? rowToAttachment(row) : undefined;
   }
 
   async deleteAttachment(id: string): Promise<void> {

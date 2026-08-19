@@ -210,8 +210,7 @@ export class EventEngine {
       return run;
     }
 
-    const triggeringEvent = getEventById(run.triggeringEventId);
-    const issue = triggeringEvent?.subject.type === 'issue' ? await this.issues.get(triggeringEvent.subject.id) : undefined;
+    const issue = await this.issues.get(run.issueId);
     if (issue) {
       await this.executeAgentRun(run, issue);
     } else {
@@ -461,7 +460,7 @@ export class EventEngine {
 
   private async withinBudget(agent: Agent): Promise<boolean> {
     const { budget } = agent;
-    const runsForAgent = (await this.agentRuns.list()).filter((r) => r.agentUserId === agent.userId);
+    const runsForAgent = await this.agentRuns.listForAgent(agent.userId);
     const now = Date.now();
     if (budget.maxRunsPerHour !== undefined) {
       const hourAgo = now - 60 * 60 * 1000;
@@ -514,7 +513,7 @@ export class EventEngine {
       this.users.list(),
       this.catalog.listFieldDefinitions(),
       this.issues.listCommentsFor(issue.id),
-      this.agentRuns.list().then((runs) => runs.filter((r) => r.issueId === issue.id && r.agentUserId === agent.userId)),
+      this.agentRuns.listForAgent(agent.userId).then((runs) => runs.filter((r) => r.issueId === issue.id)),
     ]);
 
     const threadRootId = threadRootCommentId(triggeringEvent, allComments);
