@@ -16,7 +16,9 @@
    */
   import type { Issue } from '$domain';
   import IssueCard from './IssueCard.svelte';
+  import SearchFilterBar from './SearchFilterBar.svelte';
   import { board, issueTypes, issuesStore, moveIssueToStatus, selectedIssueId, statusCategories, workflow } from '../stores/workspace';
+  import { issueFiltersStore, issueMatchesFilters } from '../stores/issueFilters';
   import { t } from '../i18n';
 
   /** Same curated epic colors as Board.svelte's swimlane headers, kept in sync by eye — there's no shared source for this display-only mapping. */
@@ -41,7 +43,7 @@
   $: epicTypeId = $issueTypes.find((it) => it.name === 'Epic')?.id;
   $: epics = allIssues.filter((i) => i.issueTypeId === epicTypeId);
   $: epicIds = new Set(epics.map((e) => e.id));
-  $: trackedIssues = allIssues.filter((i) => i.issueTypeId !== epicTypeId);
+  $: trackedIssues = allIssues.filter((i) => i.issueTypeId !== epicTypeId && issueMatchesFilters(i, $issueFiltersStore));
   $: columns = $board?.columns ?? [];
   $: doneStatusIds = new Set(
     ($workflow?.statuses ?? [])
@@ -83,6 +85,7 @@
   }
 </script>
 
+<SearchFilterBar />
 <div class="mobile-board">
   {#each columns as col, i}
     {@const groups = epicGroupsForColumn(trackedIssues, epics, epicIds, col.statusIds)}

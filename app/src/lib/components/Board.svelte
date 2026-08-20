@@ -1,7 +1,9 @@
 <script lang="ts">
   import type { Issue } from '$domain';
   import IssueCard from './IssueCard.svelte';
+  import SearchFilterBar from './SearchFilterBar.svelte';
   import { board, issueTypes, issuesStore, moveIssueToStatus, selectedIssueId, statusCategories, workflow } from '../stores/workspace';
+  import { issueFiltersStore, issueMatchesFilters } from '../stores/issueFilters';
   import { t } from '../i18n';
 
   /** Cell key currently under the drag cursor, for the drop-target highlight. */
@@ -55,7 +57,7 @@
   // Epics carry a statusId too (so they render sensibly if ever shown as a card elsewhere),
   // but they aren't real work moving through the board — excluded here so WIP/column
   // counts reflect only the issues that actually sit in a column.
-  $: trackedIssues = allIssues.filter((i) => i.issueTypeId !== epicTypeId);
+  $: trackedIssues = allIssues.filter((i) => i.issueTypeId !== epicTypeId && issueMatchesFilters(i, $issueFiltersStore));
   // Issues with no epic (or one that's since been deleted) have nowhere to render in the
   // swimlane-per-epic layout below otherwise — on a brand-new project with zero epics yet,
   // every issue would silently vanish from the board despite existing.
@@ -69,6 +71,7 @@
   );
 </script>
 
+<SearchFilterBar />
 <div class="board-wrap">
   <div class="board-inner">
     <div class="board-head">

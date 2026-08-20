@@ -1,15 +1,17 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import IssueCard from './IssueCard.svelte';
+  import SearchFilterBar from './SearchFilterBar.svelte';
   import { board, completeSprint, createSprint, featureFlags, issueTypes, issuesStore, moveIssueToStatus, selectedIssueId, sprints, startSprint, statusCategories, workflow } from '../stores/workspace';
   import { isMobile } from '../stores/viewport';
+  import { issueFiltersStore, issueMatchesFilters } from '../stores/issueFilters';
   import { t, tn } from '../i18n';
 
   let newSprintName = '';
   let creating = false;
 
   $: epicTypeId = $issueTypes.find((t) => t.name === 'Epic')?.id;
-  $: trackedIssues = $issuesStore.filter((i) => i.issueTypeId !== epicTypeId);
+  $: trackedIssues = $issuesStore.filter((i) => i.issueTypeId !== epicTypeId && issueMatchesFilters(i, $issueFiltersStore));
   $: doneStatusIds = new Set(
     ($workflow?.statuses ?? [])
       .filter((s) => $statusCategories.find((c) => c.id === s.categoryId)?.type === 'done')
@@ -43,6 +45,7 @@
   }
 </script>
 
+<SearchFilterBar />
 <div class="backlog">
   {#each orderedSprints as sprint (sprint.id)}
     {@const sprintIssues = trackedIssues.filter((i) => i.sprintId === sprint.id)}

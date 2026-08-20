@@ -61,6 +61,17 @@
     "noEpic": "No Epic",
     "noIssues": "No issues"
   },
+  "filters": {
+    "searchPlaceholder": "Search issues…",
+    "title": "Filters",
+    "button": "Filters",
+    "clear": "Clear filters",
+    "sectionAssignee": "Assignee",
+    "sectionLabel": "Label",
+    "sectionPriority": "Priority",
+    "sectionType": "Type",
+    "sectionStatus": "Status"
+  },
   "issueCard": {
     "moveToTitle": "Move to…"
   },

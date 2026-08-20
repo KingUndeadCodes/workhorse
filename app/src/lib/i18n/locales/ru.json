@@ -63,6 +63,17 @@
     "noEpic": "Без эпика",
     "noIssues": "Нет задач"
   },
+  "filters": {
+    "searchPlaceholder": "Поиск задач…",
+    "title": "Фильтры",
+    "button": "Фильтры",
+    "clear": "Сбросить фильтры",
+    "sectionAssignee": "Исполнитель",
+    "sectionLabel": "Метка",
+    "sectionPriority": "Приоритет",
+    "sectionType": "Тип",
+    "sectionStatus": "Статус"
+  },
   "issueCard": {
     "moveToTitle": "Переместить в…"
   },

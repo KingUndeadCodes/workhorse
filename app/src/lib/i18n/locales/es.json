@@ -61,6 +61,17 @@
     "noEpic": "Sin épica",
     "noIssues": "Sin tareas"
   },
+  "filters": {
+    "searchPlaceholder": "Buscar tareas…",
+    "title": "Filtros",
+    "button": "Filtros",
+    "clear": "Borrar filtros",
+    "sectionAssignee": "Persona asignada",
+    "sectionLabel": "Etiqueta",
+    "sectionPriority": "Prioridad",
+    "sectionType": "Tipo",
+    "sectionStatus": "Estado"
+  },
   "issueCard": {
     "moveToTitle": "Mover a…"
   },
