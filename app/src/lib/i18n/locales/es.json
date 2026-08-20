@@ -131,7 +131,7 @@
       "appearance": "Apariencia",
       "labels": "Etiquetas",
       "fields": "Campos",
-      "workflow": "Workflow",
+      "workflow": "Flujo de trabajo",
       "automations": "Automatizaciones",
       "agents": "Agentes",
       "webhooks": "Webhooks"
@@ -155,7 +155,7 @@
     "statusCategoriesLabel": "Categorías de estado",
     "categoryNamePlaceholder": "Nombre de la categoría (p. ej., Resolving Differences)",
     "addCategoryButton": "Añadir categoría",
-    "workflowLabel": "Workflow",
+    "workflowLabel": "Flujo de trabajo",
     "workflowDesktopOnly": "El diagrama de flujo de trabajo es un lienzo de edición mediante arrastrar y soltar, diseñado para ratón — abre Ajustes en un navegador de escritorio para editar estados y transiciones.",
     "ruleNamePlaceholder": "Nombre de la regla",
     "triggerLabel": "Disparador",

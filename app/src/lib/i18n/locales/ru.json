@@ -133,7 +133,7 @@
       "appearance": "Внешний вид",
       "labels": "Метки",
       "fields": "Поля",
-      "workflow": "Workflow",
+      "workflow": "Рабочий процесс",
       "automations": "Автоматизации",
       "agents": "Агенты",
       "webhooks": "Вебхуки"
@@ -157,7 +157,7 @@
     "statusCategoriesLabel": "Категории статусов",
     "categoryNamePlaceholder": "Название категории (например, Resolving Differences)",
     "addCategoryButton": "Добавить категорию",
-    "workflowLabel": "Workflow",
+    "workflowLabel": "Рабочий процесс",
     "workflowDesktopOnly": "Диаграмма рабочего процесса — это холст для редактирования перетаскиванием, созданный для мыши. Откройте настройки в браузере на компьютере, чтобы редактировать статусы и переходы.",
     "ruleNamePlaceholder": "Название правила",
     "triggerLabel": "Триггер",
