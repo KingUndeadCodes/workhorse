@@ -123,6 +123,8 @@ export type EventPayload =
   | { type: 'sprint.started'; sprintId: SprintId }
   | { type: 'sprint.completed'; sprintId: SprintId }
   | { type: 'project.created'; projectId: ProjectId }
+  /** `changes` maps each of name/lead/color/featureFlags/archivedAt that changed to its new value, mirroring `issue.updated`'s shape. */
+  | { type: 'project.updated'; projectId: ProjectId; changes: Record<string, unknown> }
   /** Never carries the PAT — see {@link GitRepoLinkPublic} in integrations.ts; the event log, automations, and webhooks must never see the token either. */
   | { type: 'project.gitRepoLinked'; projectId: ProjectId; gitRepoLinkId: GitRepoLinkId; owner: string; repo: string }
   | { type: 'project.gitRepoUnlinked'; projectId: ProjectId; gitRepoLinkId: GitRepoLinkId }

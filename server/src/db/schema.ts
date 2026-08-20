@@ -1,4 +1,4 @@
-import { all, eventsDb, run, stateDb } from './core';
+import { all, eventsDb, get, run, stateDb } from './core';
 import { PROJECT_COLORS } from '../domain';
 
 /** Adds a column to an existing table if it isn't already there — `ALTER TABLE ADD COLUMN`
@@ -174,6 +174,51 @@ export function backfillAgentAssignments(): void {
       JSON.stringify(mergedAgentAssignments),
       row.id,
     ]);
+  }
+}
+
+/**
+ * One-time catch-up for issues that predate the single-`assignee_id` -> multi-`assignee_ids`
+ * split: copies the old column's value into the new JSON array column so upgrading doesn't
+ * silently unassign every already-assigned issue. `assignee_id` only still exists on databases
+ * created before this split (SQLite's `ALTER TABLE ADD COLUMN` never removes it), so this is a
+ * no-op on a fresh database.
+ */
+export function backfillIssueAssignees(): void {
+  const columns = all<{ name: string }>(stateDb, `PRAGMA table_info(issues)`);
+  if (!columns.some((c) => c.name === 'assignee_id')) return;
+
+  const rows = all<{ id: string; assignee_id: string | null; assignee_ids: string | null }>(
+    stateDb,
+    `SELECT id, assignee_id, assignee_ids FROM issues WHERE assignee_id IS NOT NULL`,
+  );
+  for (const row of rows) {
+    const existing: string[] = row.assignee_ids ? JSON.parse(row.assignee_ids) : [];
+    if (existing.length > 0) continue;
+    run(stateDb, `UPDATE issues SET assignee_ids = ? WHERE id = ?`, [JSON.stringify([row.assignee_id]), row.id]);
+  }
+}
+
+/**
+ * One-time catch-up for agent runs that predate the `agent_runs.issue_id` column: derives it
+ * from the triggering event's subject, mirroring the resolution `resolveAgentRun` used to do
+ * directly before this column existed — without this, approving a pre-existing run fails with
+ * "Could not resolve the issue this run was about."
+ */
+export function backfillAgentRunIssueIds(): void {
+  const rows = all<{ id: string; triggering_event_id: string }>(
+    stateDb,
+    `SELECT id, triggering_event_id FROM agent_runs WHERE issue_id IS NULL`,
+  );
+  for (const row of rows) {
+    const event = get<{ subject_type: string; subject_id: string }>(
+      eventsDb,
+      `SELECT subject_type, subject_id FROM events WHERE id = ?`,
+      [row.triggering_event_id],
+    );
+    if (event?.subject_type === 'issue') {
+      run(stateDb, `UPDATE agent_runs SET issue_id = ? WHERE id = ?`, [event.subject_id, row.id]);
+    }
   }
 }
 

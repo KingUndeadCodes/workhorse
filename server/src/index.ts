@@ -5,7 +5,14 @@ import { serve } from '@hono/node-server';
 import { app } from './app';
 import { agentRuntimes, gitProviders, initContainer, planningRepo, userRepo, workflowRepo, workspaceRepo } from './container';
 import { initDatabases, persistState } from './db/core';
-import { backfillAgentAssignments, backfillProjectColors, migrateEventsDb, migrateStateDb } from './db/schema';
+import {
+  backfillAgentAssignments,
+  backfillAgentRunIssueIds,
+  backfillIssueAssignees,
+  backfillProjectColors,
+  migrateEventsDb,
+  migrateStateDb,
+} from './db/schema';
 import { loadPlugins } from './plugins/loadPlugins';
 import { bootstrapDatabase } from './seed';
 import { initWebSocketServer } from './ws';
@@ -65,7 +72,9 @@ async function backfillBoardColumns(): Promise<void> {
   }
 }
 await backfillBoardColumns();
+backfillIssueAssignees();
 backfillAgentAssignments();
+backfillAgentRunIssueIds();
 backfillProjectColors();
 persistState();
 

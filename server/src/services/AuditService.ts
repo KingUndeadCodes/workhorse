@@ -29,6 +29,8 @@ interface ExpectedIssueState {
   dueDate?: string;
   loggedSeconds: number;
   commentIds: Set<string>;
+  /** commentId -> parentCommentId, so `comment.deleted` (root-only) can be replayed as the same reply-subtree cascade {@link IssueRepository.deleteComment} performs. */
+  commentParentOf: Map<string, string | undefined>;
   attachmentIds: Set<string>;
   hasBranch?: boolean;
   deleted: boolean;
@@ -70,7 +72,7 @@ export class AuditService {
     const ensure = (issueId: string): ExpectedIssueState => {
       let e = expectedByIssue.get(issueId);
       if (!e) {
-        e = { loggedSeconds: 0, commentIds: new Set(), attachmentIds: new Set(), deleted: false, agentAssignments: [] };
+        e = { loggedSeconds: 0, commentIds: new Set(), commentParentOf: new Map(), attachmentIds: new Set(), deleted: false, agentAssignments: [] };
         expectedByIssue.set(issueId, e);
       }
       return e;
@@ -131,12 +133,27 @@ export class AuditService {
         case 'issue.unlinked':
           activeLinks.delete(p.linkId);
           break;
-        case 'comment.created':
-          ensure(p.issueId).commentIds.add(p.commentId);
+        case 'comment.created': {
+          const e = ensure(p.issueId);
+          e.commentIds.add(p.commentId);
+          e.commentParentOf.set(p.commentId, p.parentCommentId);
           break;
-        case 'comment.deleted':
-          ensure(p.issueId).commentIds.delete(p.commentId);
+        }
+        case 'comment.deleted': {
+          // Only the root's id is on the event (see routes/issues.ts's DELETE comment doc
+          // comment) — replay the same reply-subtree cascade the DB performs, using the
+          // parent links recorded from `comment.created`.
+          const e = ensure(p.issueId);
+          const toDelete = [p.commentId];
+          for (let i = 0; i < toDelete.length; i++) {
+            const id = toDelete[i];
+            e.commentIds.delete(id);
+            for (const [childId, parentId] of e.commentParentOf) {
+              if (parentId === id) toDelete.push(childId);
+            }
+          }
           break;
+        }
         case 'issue.attachmentAdded':
           ensure(p.issueId).attachmentIds.add(p.attachmentId);
           break;

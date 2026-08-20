@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import type { FieldDefinition } from '../domain';
-import { catalogRepo, workspaceRepo } from '../container';
+import { catalogRepo, projectRepo, workspaceRepo } from '../container';
 
 /**
  * CRUD for project/workspace reference data: labels, components, versions, custom field
@@ -39,6 +39,7 @@ catalogRouter.post('/components', async (c) => {
   const body = await c.req.json<{ name: string; description?: string; leadId?: string; projectId: string }>();
   if (!body.name?.trim()) return c.json({ error: 'name is required' }, 400);
   if (!body.projectId?.trim()) return c.json({ error: 'projectId is required' }, 400);
+  if (!(await projectRepo.getProjectById(body.projectId))) return c.json({ error: 'Unknown projectId' }, 400);
   return c.json(await catalogRepo.createComponent(body.projectId, body.name.trim(), body.description, body.leadId), 201);
 });
 
@@ -59,6 +60,7 @@ catalogRouter.post('/versions', async (c) => {
   const body = await c.req.json<{ name: string; description?: string; releaseDate?: string; projectId: string }>();
   if (!body.name?.trim()) return c.json({ error: 'name is required' }, 400);
   if (!body.projectId?.trim()) return c.json({ error: 'projectId is required' }, 400);
+  if (!(await projectRepo.getProjectById(body.projectId))) return c.json({ error: 'Unknown projectId' }, 400);
   return c.json(await catalogRepo.createVersion(body.projectId, body.name.trim(), body.description, body.releaseDate), 201);
 });
 

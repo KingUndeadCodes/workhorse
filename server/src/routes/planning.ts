@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import type { AuthVariables } from '../auth/middleware';
-import { engine, planningRepo, workspaceRepo } from '../container';
+import { engine, planningRepo, projectRepo, workspaceRepo } from '../container';
 
 export const planningRouter = new Hono<{ Variables: AuthVariables }>();
 
@@ -16,6 +16,7 @@ planningRouter.post('/sprints', async (c) => {
   const body = await c.req.json<{ name: string; goal?: string; startDate?: string; endDate?: string; projectId: string }>();
   if (!body.name?.trim()) return c.json({ error: 'name is required' }, 400);
   if (!body.projectId?.trim()) return c.json({ error: 'projectId is required' }, 400);
+  if (!(await projectRepo.getProjectById(body.projectId))) return c.json({ error: 'Unknown projectId' }, 400);
   return c.json(await planningRepo.createSprint(body.projectId, body.name.trim(), body.goal, body.startDate, body.endDate), 201);
 });
 

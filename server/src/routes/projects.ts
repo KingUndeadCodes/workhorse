@@ -59,11 +59,35 @@ projectsRouter.post('/projects', async (c) => {
   return c.json({ project: created, board }, 201);
 });
 
-/** PATCH /api/projects/:id — edits name/lead/color/featureFlags (or archives via `archivedAt`). `key` is intentionally not editable — it's baked into every existing issue's key string. */
+/**
+ * PATCH /api/projects/:id — edits name/lead/color/featureFlags (or archives via `archivedAt`).
+ * `key` is intentionally not editable — it's baked into every existing issue's key string.
+ * Emits `project.updated` for webhook/automation/audit visibility, mirroring `issue.updated`
+ * — the DB write already happened via {@link projectRepo}, same split as every other project
+ * mutation in this file.
+ */
 projectsRouter.patch('/projects/:id', async (c) => {
+  const id = c.req.param('id');
+  const before = await projectRepo.getProjectById(id);
+  if (!before) return c.json({ error: 'Not found' }, 404);
+
   const body = await c.req.json<Partial<Pick<Project, 'name' | 'leadId' | 'archivedAt' | 'color' | 'featureFlags'>>>();
-  const updated = await projectRepo.updateProject(c.req.param('id'), body);
+  const updated = await projectRepo.updateProject(id, body);
   if (!updated) return c.json({ error: 'Not found' }, 404);
+
+  const changes: Record<string, unknown> = {};
+  for (const field of ['name', 'leadId', 'archivedAt', 'color', 'featureFlags'] as const) {
+    if (!(field in body)) continue;
+    if (JSON.stringify(before[field]) !== JSON.stringify(updated[field])) changes[field] = updated[field];
+  }
+  if (Object.keys(changes).length > 0) {
+    await engine.emitEvent({
+      actor: actorFrom(c.get('user')),
+      subject: { type: 'project', id },
+      payload: { type: 'project.updated', projectId: id, changes },
+    });
+  }
+
   return c.json(updated);
 });
 

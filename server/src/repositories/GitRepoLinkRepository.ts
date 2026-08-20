@@ -16,24 +16,25 @@ export class GitRepoLinkRepository {
   async create(link: GitRepoLink): Promise<GitRepoLink> {
     // Insert-then-delete-old, not delete-then-insert: if the insert throws (e.g. a transient
     // DB error), the project keeps its previous link instead of silently ending up with none.
-    // There's no transaction wrapping these two statements — no precedent for Kysely
-    // transactions elsewhere against this sql.js/kysely-wasm setup — so this ordering is what
-    // keeps a mid-failure outcome "still has a repo" rather than "lost its repo".
-    await this.db
-      .insertInto('git_repo_links')
-      .values({
-        id: link.id,
-        project_id: link.projectId,
-        provider: link.provider,
-        owner: link.owner,
-        repo: link.repo,
-        default_branch: link.defaultBranch,
-        token: link.token,
-        created_at: link.createdAt,
-        created_by: link.createdBy,
-      })
-      .execute();
-    await this.db.deleteFrom('git_repo_links').where('project_id', '=', link.projectId).where('id', '!=', link.id).execute();
+    // Wrapped in a transaction so two concurrent creates for the same project can't each
+    // delete the other's just-inserted row and leave the project with zero links.
+    await this.db.transaction().execute(async (trx) => {
+      await trx
+        .insertInto('git_repo_links')
+        .values({
+          id: link.id,
+          project_id: link.projectId,
+          provider: link.provider,
+          owner: link.owner,
+          repo: link.repo,
+          default_branch: link.defaultBranch,
+          token: link.token,
+          created_at: link.createdAt,
+          created_by: link.createdBy,
+        })
+        .execute();
+      await trx.deleteFrom('git_repo_links').where('project_id', '=', link.projectId).where('id', '!=', link.id).execute();
+    });
     persistState();
     return link;
   }

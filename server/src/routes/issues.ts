@@ -353,6 +353,8 @@ issuesRouter.post('/issues/:id/agents', async (c) => {
 /** DELETE /api/issues/:id/agents/:agentUserId — detaches an agent from the issue; emits `issue.agentUnassigned`. */
 issuesRouter.delete('/issues/:id/agents/:agentUserId', async (c) => {
   const { id, agentUserId } = c.req.param();
+  if (!(await issueRepo.get(id))) return c.json({ error: 'Issue not found' }, 404);
+
   const event = await engine.emitEvent({
     actor: actorFrom(c.get('user')),
     subject: { type: 'issue', id },
