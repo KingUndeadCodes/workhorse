@@ -142,16 +142,25 @@
     padding: 0 20px; height: 54px; border-bottom: 1px solid var(--border); background: var(--surface);
     gap: 16px;
   }
-  .crumb-tabs { display: flex; align-items: center; gap: 18px; min-width: 0; }
-  .crumb { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-2); white-space: nowrap; }
+  /* overflow: hidden is load-bearing, not decorative — without it, once this box gets
+     squeezed narrower than .crumb + .view-tabs' combined content width (the band of widths
+     just above the 768px breakpoint, before .crumb disappears entirely below it), the content
+     doesn't reflow or truncate on its own: it just renders past this box's shrunk edge and
+     visually overlaps .topbar-right's "+ New…" button sitting right after it. */
+  .crumb-tabs { display: flex; align-items: center; gap: 18px; min-width: 0; overflow: hidden; }
+  /* The least essential piece here (brand + sprint name, vs. the Board/Backlog tabs actually
+     needed for navigation) — flex-shrink/min-width:0 make it the one that gives up space and
+     clips first as the bar narrows, instead of both pieces shrinking together and neither
+     staying legible. */
+  .crumb { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-2); white-space: nowrap; flex-shrink: 1; min-width: 0; overflow: hidden; }
   .crumb b { color: var(--text); font-weight: 600; }
   .mobile-brand { display: none; }
-  .view-tabs { display: flex; align-items: center; gap: 2px; background: var(--surface-sunken); border-radius: 8px; padding: 3px; }
+  .view-tabs { display: flex; align-items: center; gap: 2px; background: var(--surface-sunken); border-radius: 8px; padding: 3px; flex-shrink: 0; }
   .view-tab { padding: 5px 12px; font-size: 12.5px; font-weight: 500; color: var(--text-2); border-radius: 6px; }
   .view-tab.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); font-weight: 600; }
   .issue-pill {
     display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--accent-strong);
-    background: var(--accent-soft); padding: 5px 10px; border-radius: 6px; white-space: nowrap;
+    background: var(--accent-soft); padding: 5px 10px; border-radius: 6px; white-space: nowrap; flex-shrink: 0;
   }
   .issue-pill :global(svg) { transform: rotate(-90deg); }
   .topbar-right { display: flex; align-items: center; gap: 14px; flex: 0 0 auto; }

@@ -383,16 +383,17 @@
           <Icon name={typeIcon(issueType?.name ?? 'Story')} size={11} />
         </span>
         <span class="key mono">{issue.key}</span>
-        <select
-          class="status-select"
-          class:done={category?.type === 'done'}
-          class:inprogress={category?.type === 'inProgress'}
-          style="width: {(status?.name.length ?? 6) + 4}ch"
-          value={issue.statusId}
-          on:change={handleStatusChange}
-        >
-          {#each $workflow?.statuses ?? [] as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
-        </select>
+        <!-- The visible pill is a plain span, not the interactive control: app.css forces every
+             `select`'s font-size to 16px on mobile (to stop iOS auto-zoom-on-focus), which would
+             blow this uppercase badge up far past the size its sibling elements (key, type icon)
+             use. The real `<select>` sits invisibly on top, sized to the pill, so it keeps that
+             16px/zoom-safe/tappable behavior without it ever being visible. -->
+        <span class="status-pill" class:done={category?.type === 'done'} class:inprogress={category?.type === 'inProgress'}>
+          {status?.name}
+          <select class="status-pill-select" value={issue.statusId} on:change={handleStatusChange}>
+            {#each $workflow?.statuses ?? [] as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
+          </select>
+        </span>
       </div>
 
       <input class="title-input" value={issue.title} on:blur={handleTitleBlur} on:keydown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
@@ -781,12 +782,14 @@
   .type-icon.bug { background: var(--critical-soft); color: var(--critical); }
   .type-icon.task { background: var(--info-soft); color: var(--info); }
   .key { font-size: 12.5px; color: var(--text-2); }
-  .status-select {
-    font: inherit; appearance: none; cursor: pointer; border: none; padding: 5px 10px; border-radius: 99px;
+  .status-pill {
+    position: relative; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;
+    padding: 5px 10px; border-radius: 99px;
     font-size: 11.5px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; background: var(--surface-2); color: var(--text-2);
   }
-  .status-select.inprogress { background: var(--info-soft); color: var(--info); }
-  .status-select.done { background: var(--success-soft); color: var(--success); }
+  .status-pill.inprogress { background: var(--info-soft); color: var(--info); }
+  .status-pill.done { background: var(--success-soft); color: var(--success); }
+  .status-pill-select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: none; cursor: pointer; appearance: none; }
   .title-input {
     width: 100%; font: inherit; font-size: 16.5px; font-weight: 700; line-height: 1.35; margin: 0 0 16px;
     color: var(--text); background: none; border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; margin-left: -6px;
@@ -963,12 +966,12 @@
        as an oversized field for what it holds, so it gets its own narrower cap instead. */
     .field-input[type="date"] { max-width: 165px; padding: 0 8px; }
     .field-label { font-size: 11px; }
-    /* app.css forces every select to 16px below this width (iOS zoom-on-focus prevention),
-       which the status pill can't opt out of — but its inline `width: {n}ch` (index.svelte's
-       key-row markup) was sized assuming the desktop 11.5px font, so at 16px the same character
-       count blew the pill up far past what its text needs. `!important` cancels that inline
-       style so the pill sizes to its actual (larger) rendered text instead of compounding both. */
-    .status-select { padding: 3px 9px; width: auto !important; }
+    /* The visible label is a span (see the markup comment), so it's untouched by app.css's
+       forced 16px select font-size — free to size for readability/touch instead of inheriting
+       the zoom-prevention font size. Nudged up slightly from desktop's 11.5px/5px-10px, in line
+       with this drawer's other mobile chips (assignee-chip, due-chip), not blown up like the
+       old `<select>`-as-pill was. */
+    .status-pill { padding: 7px 13px; font-size: 12.5px; }
     .assignee-chip, .agent-chip { padding: 5px 10px 5px 6px; font-size: 13px; }
     .assignee-add { padding: 6px 12px; font-size: 13px; }
     .chip-remove :global(svg) { width: 13px; height: 13px; }

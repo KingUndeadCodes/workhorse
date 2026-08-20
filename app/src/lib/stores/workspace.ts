@@ -58,6 +58,7 @@ import {
   updateWorkspaceMemberRole as apiUpdateWorkspaceMemberRole,
 } from '../api';
 import { removeCommentSubtree } from '../util';
+import { currentUser, setCurrentUser } from './auth';
 
 /** Key used to persist which project was last active, so a reload lands back on it. */
 const CURRENT_PROJECT_STORAGE_KEY = 'anvil.currentProjectId';
@@ -132,6 +133,13 @@ export async function initWorkspace(): Promise<void> {
     if (token !== latestLoadToken) return; // a switchProject/initWorkspace call started after this one superseded it
     workspace.set(data.workspace);
     users.set(data.users);
+    // auth.ts's currentUser is a separate snapshot, only ever written at login/signup or after
+    // saving Account Settings — never refreshed from here otherwise. Without this, a profile
+    // change made in another session/tab/device (or by an admin) would show correctly
+    // everywhere that reads the live `users` store (assignee chips, comment authors, ...) but
+    // never update the one place that reads `currentUser` instead: TopBar's own avatar button.
+    const freshSelf = data.users.find((u) => u.id === get(currentUser)?.id);
+    if (freshSelf) setCurrentUser(freshSelf);
     workspaceMembers.set(data.workspaceMembers);
     agents.set(data.agents);
     agentRuns.set(data.agentRuns);
