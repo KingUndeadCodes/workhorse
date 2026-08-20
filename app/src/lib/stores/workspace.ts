@@ -116,13 +116,20 @@ export const selectedIssueId = writable<string | null>(null);
 
 /**
  * Loads the workspace from the API and populates every store above. Called once from
- * `App.svelte` on mount. Sets {@link loadError} instead of throwing, so the UI can render
- * a clear "couldn't reach the API" state rather than a blank page.
+ * `App.svelte` on mount, and also re-called as a catch-up refetch (WS reconnect, and ws.ts's
+ * default-case fallback for agent/automation/git events) — so it shares {@link latestLoadToken}
+ * with {@link switchProject} to guard against whichever of the two resolves last winning even
+ * when it's the stale one.
+ * Sets {@link loadError} instead of throwing, so the UI can render a clear "couldn't reach the
+ * API" state rather than a blank page.
  */
 export async function initWorkspace(): Promise<void> {
+  const token = ++latestLoadToken;
   try {
+    const previousProjectId = get(currentProjectId);
     const persistedProjectId = localStorage.getItem(CURRENT_PROJECT_STORAGE_KEY) ?? undefined;
     const data = await fetchBootstrap(persistedProjectId);
+    if (token !== latestLoadToken) return; // a switchProject/initWorkspace call started after this one superseded it
     workspace.set(data.workspace);
     users.set(data.users);
     workspaceMembers.set(data.workspaceMembers);
@@ -138,6 +145,11 @@ export async function initWorkspace(): Promise<void> {
     automationRules.set(data.automationRules);
     webhookSubscriptions.set(data.webhookSubscriptions);
     applyProjectScopedBootstrap(data);
+    // Only clear the selection when this catch-up refetch actually landed on a different
+    // project than before (e.g. the previously-active project was archived/deleted server-side
+    // and the bootstrap fell back to another one) — otherwise the user may still be looking at
+    // a perfectly valid issue in the same project and shouldn't be kicked back to the list.
+    if (data.currentProjectId !== previousProjectId) selectedIssueId.set(null);
     // Not part of Bootstrap (see gitRepoLink's own doc comment) but still loaded eagerly here,
     // not lazily per-drawer-open, since it's small (never carries the token) and every
     // IssueDrawer needs to know synchronously whether to show its Branch section.
@@ -148,7 +160,13 @@ export async function initWorkspace(): Promise<void> {
   }
 }
 
-/** The subset of a bootstrap response that varies per project — shared by {@link initWorkspace} and {@link switchProject}. */
+/**
+ * The subset of a bootstrap response that varies per project — shared by {@link initWorkspace}
+ * and {@link switchProject}. Deliberately does NOT touch {@link selectedIssueId} itself — each
+ * caller clears it on its own terms (initWorkspace only if the project actually changed;
+ * switchProject unconditionally, since the previous selection is always from the project being
+ * left).
+ */
 function applyProjectScopedBootstrap(data: Awaited<ReturnType<typeof fetchBootstrap>>): void {
   components.set(data.components);
   versions.set(data.versions);
@@ -161,21 +179,25 @@ function applyProjectScopedBootstrap(data: Awaited<ReturnType<typeof fetchBootst
   comments.set(data.comments);
   worklogs.set(data.worklogs);
   attachments.set(data.attachments);
-  selectedIssueId.set(null);
 }
 
-/** Guards {@link switchProject} against out-of-order resolution — only the most recently requested project id is allowed to actually apply its data. */
-let latestProjectSwitchId: string | undefined;
+/**
+ * Guards {@link initWorkspace} and {@link switchProject} against clobbering each other's result
+ * when both are in flight at once (e.g. a project switch racing a WS-triggered catch-up
+ * refetch) — only the call that started most recently is allowed to actually apply its data,
+ * regardless of which one it is or which resolves first.
+ */
+let latestLoadToken = 0;
 
 /** Switches the active project: re-fetches its bootstrap slice and applies it, without touching workspace-global stores (users, workflow, labels, agents, etc. — re-setting them would be harmless but pointless). */
 export async function switchProject(id: string): Promise<void> {
-  latestProjectSwitchId = id;
-  const data = await fetchBootstrap(id);
-  const gitRepoLinkResult = await getGitRepoLink(id).catch(() => null);
-  if (latestProjectSwitchId !== id) return; // a newer switchProject call superseded this one while we were awaiting
+  const token = ++latestLoadToken;
+  const [data, gitRepoLinkResult] = await Promise.all([fetchBootstrap(id), getGitRepoLink(id).catch(() => null)]);
+  if (token !== latestLoadToken) return; // a newer switchProject/initWorkspace call superseded this one while we were awaiting
   currentProjectId.set(id);
   localStorage.setItem(CURRENT_PROJECT_STORAGE_KEY, id);
   applyProjectScopedBootstrap(data);
+  selectedIssueId.set(null); // the previous selection may be an issue from the project we just left
   gitRepoLink.set(gitRepoLinkResult);
 }
 
@@ -269,7 +291,13 @@ export async function deleteIssue(issueId: string): Promise<void> {
 /** Posts a comment via the API, then appends the server's copy to {@link comments}. */
 export async function addComment(issueId: string, body: string, parentCommentId?: string): Promise<void> {
   const { comment } = await postComment(issueId, body, parentCommentId);
-  comments.update((list) => [...list, comment]);
+  // The server broadcasts this same comment over the websocket as soon as it's persisted,
+  // which can reach this same client (see ws.ts's own comment.created handler) before this
+  // POST's response does — especially when the comment mentions an agent, since the request
+  // handler does extra mention-detection/agent-triggering work before responding. Without this
+  // check, both paths would append the same comment id, and Svelte's keyed {#each} over
+  // comments (CommentThread.svelte) throws a hard duplicate-key error the moment that happens.
+  comments.update((list) => (list.some((c) => c.id === comment.id) ? list : [...list, comment]));
 }
 
 export async function editComment(issueId: string, commentId: string, body: string): Promise<void> {
@@ -316,14 +344,18 @@ export async function createSprint(name: string, goal?: string, startDate?: stri
   sprints.update((list) => [...list, sprint]);
 }
 
+function replaceSprint(sprint: Sprint): void {
+  sprints.update((list) => list.map((s) => (s.id === sprint.id ? sprint : s)));
+}
+
 export async function startSprint(id: string): Promise<void> {
   const { sprint } = await apiStartSprint(id);
-  sprints.update((list) => list.map((s) => (s.id === id ? sprint : s)));
+  replaceSprint(sprint);
 }
 
 export async function completeSprint(id: string): Promise<void> {
   const { sprint } = await apiCompleteSprint(id);
-  sprints.update((list) => list.map((s) => (s.id === id ? sprint : s)));
+  replaceSprint(sprint);
 }
 
 export async function updateWorkspaceMemberRole(userId: string, role: WorkspaceRole): Promise<void> {
