@@ -136,6 +136,7 @@
       {@const epicIssues = issuesForEpic(allIssues, epic.id)}
       {@const doneCount = epicIssues.filter((i) => doneStatusIds.has(i.statusId)).length}
       {@const total = epicIssues.length}
+      {@const epicTrackedIssues = issuesForEpic(trackedIssues, epic.id)}
       <div class="swimlane">
         <div class="swimlane-head">
           <span class="epic-dot" style="background:{colorForEpic(epic.id)}"></span>
@@ -145,7 +146,7 @@
         </div>
         <div class="swimlane-body">
           {#each columns as col}
-            {@const cellIssues = issuesInColumn(epicIssues, col.statusIds)}
+            {@const cellIssues = issuesInColumn(epicTrackedIssues, col.statusIds)}
             {@const key = cellKey(epic.id, col.id)}
             <div
               class="cell"

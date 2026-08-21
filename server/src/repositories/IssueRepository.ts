@@ -245,6 +245,10 @@ export class IssueRepository {
       .deleteFrom('issue_links')
       .where((eb) => eb.or([eb('source_issue_id', '=', issueId), eb('target_issue_id', '=', issueId)]))
       .execute();
+    // Otherwise every AgentRun this issue ever triggered becomes a permanently dangling row —
+    // still counted by withinBudget's maxRunsPerHour/Day/spend math and still rendered in
+    // "recent activity" UI, pointing at an issue that no longer exists.
+    await this.db.deleteFrom('agent_runs').where('issue_id', '=', issueId).execute();
   }
 
   async insertLink(link: IssueLink): Promise<void> {

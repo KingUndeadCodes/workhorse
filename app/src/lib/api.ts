@@ -29,6 +29,7 @@ import type {
   StatusCategory,
   User,
   WebhookSubscription,
+  WebhookSubscriptionPublic,
   Workflow,
   WorkflowStatus,
   WorkflowTransition,
@@ -63,7 +64,7 @@ export interface Bootstrap {
   board: Board;
   savedViews: SavedView[];
   automationRules: AutomationRule[];
-  webhookSubscriptions: WebhookSubscription[];
+  webhookSubscriptions: WebhookSubscriptionPublic[];
   issues: Issue[];
   issueLinks: IssueLink[];
   comments: Comment[];
@@ -301,7 +302,7 @@ export function createAgent(agent: {
   allowedActionTypes: AutomationAction['type'][];
   approvalPolicy: AgentApprovalPolicy;
   budget: AgentBudget;
-}): Promise<Agent> {
+}): Promise<{ agent: Agent; user: User }> {
   return post('/agents', agent);
 }
 export function updateAgent(userId: string, changes: Partial<Agent>): Promise<Agent> {
@@ -326,7 +327,7 @@ export function listAgentRuntimes(): Promise<string[]> {
 export function createWebhook(targetUrl: string, eventFilter: EventType[] | '*'): Promise<WebhookSubscription> {
   return post('/webhooks', { targetUrl, eventFilter });
 }
-export function updateWebhook(id: string, changes: Partial<Pick<WebhookSubscription, 'targetUrl' | 'eventFilter' | 'enabled'>>): Promise<WebhookSubscription> {
+export function updateWebhook(id: string, changes: Partial<Pick<WebhookSubscription, 'targetUrl' | 'eventFilter' | 'enabled'>>): Promise<WebhookSubscriptionPublic> {
   return patch(`/webhooks/${id}`, changes);
 }
 export function deleteWebhook(id: string): Promise<{ ok: true }> {

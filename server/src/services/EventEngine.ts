@@ -178,6 +178,23 @@ export class EventEngine {
     private readonly gitProviders: GitProviderRegistry,
   ) {}
 
+  /** One chained promise per agent — see {@link withAgentLock}. */
+  private readonly agentLocks = new Map<string, Promise<unknown>>();
+
+  /**
+   * Serializes an agent's budget check against its own run-starting, the same way
+   * `IssueRepository.withIssueLock` serializes issue read-modify-writes. Without this, two
+   * events processed close together (e.g. two comments in quick succession) can both call
+   * `withinBudget` before either's `AgentRun` row is recorded, so both pass a check meant to
+   * allow only one — silently exceeding `maxRunsPerHour`/`maxRunsPerDay`/`maxSpendPerDay`.
+   */
+  private withAgentLock<T>(agentUserId: string, fn: () => Promise<T>): Promise<T> {
+    const previous = this.agentLocks.get(agentUserId) ?? Promise.resolve();
+    const next = previous.then(fn, fn);
+    this.agentLocks.set(agentUserId, next.catch(() => undefined));
+    return next;
+  }
+
   /** The entry point every route should use to record something that happened. */
   async emitEvent(entry: { actor: ActorRef; subject: EntityRef; payload: EventPayload }): Promise<EventEnvelope> {
     const event = await this.writeEvent(entry);
@@ -244,7 +261,12 @@ export class EventEngine {
     });
 
     let run: AgentRun | undefined;
-    if (issue && (await this.withinBudget(agent))) run = await this.startAgentRun(agent, issue, event);
+    if (issue) {
+      run = await this.withAgentLock(agentUserId, async () => {
+        if (!(await this.withinBudget(agent))) return undefined;
+        return this.startAgentRun(agent, issue, event);
+      });
+    }
     return { event, run };
   }
 
@@ -552,7 +574,7 @@ export class EventEngine {
 
     const userMessage = [
       includeTicket ? `Issue: ${issue.title}` : `Issue: ${issue.id}`,
-      includeTicket && issue.description ? `Description: ${issue.description}` : undefined,
+      includeTicket && issue.description ? `Description: ${issue.description.plainText}` : undefined,
       includeTicket ? `Current status: ${issue.statusId}` : undefined,
       includeTicket ? `Type: ${issue.issueTypeId}` : undefined,
       includeTicket ? `Assignees: ${issue.assigneeIds.length ? issue.assigneeIds.join(', ') : 'unassigned'}` : undefined,
@@ -707,8 +729,10 @@ export class EventEngine {
       // it's their only trigger for comments at all.
       if (event.payload.type === 'comment.mentioned' && matchesFilter(agent.eventFilter, 'comment.created')) continue;
       if (!matchesFilter(agent.eventFilter, event.payload.type)) continue;
-      if (!(await this.withinBudget(agent))) continue;
-      await this.startAgentRun(agent, issue, event);
+      await this.withAgentLock(agent.userId, async () => {
+        if (!(await this.withinBudget(agent))) return;
+        await this.startAgentRun(agent, issue, event);
+      });
     }
   }
 

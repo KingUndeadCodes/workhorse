@@ -107,6 +107,7 @@ export type EventPayload =
       mimeType: string;
       sizeBytes: number;
     }
+  | { type: 'issue.attachmentRemoved'; issueId: IssueId; attachmentId: AttachmentId }
   | { type: 'comment.created'; commentId: CommentId; issueId: IssueId; authorId: UserId; body: string; parentCommentId?: CommentId }
   | { type: 'comment.edited'; commentId: CommentId; issueId: IssueId; body: string }
   | { type: 'comment.deleted'; commentId: CommentId; issueId: IssueId }

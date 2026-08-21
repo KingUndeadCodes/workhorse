@@ -55,16 +55,43 @@ agentsRouter.post('/agents', async (c) => {
     createdAt: now,
   };
   await agentRepo.create(agent);
-  return c.json(agent, 201);
+  // The frontend's `agents` store is separate from `users` (assignee pickers/@mentions read
+  // `users`) — return the User row too so callers can add it to both, or a newly created agent
+  // is invisible everywhere except Settings until the next full reload.
+  const user = await userRepo.getById(userId);
+  return c.json({ agent, user }, 201);
 });
+
+/**
+ * An Agent's `name` and its underlying `User.displayName` are two separate columns (see
+ * POST /agents above, which writes both at creation) — without this, renaming an agent here
+ * would silently desync them, so every chip/avatar/mention elsewhere (all read from `User`)
+ * would keep showing the old name while this agent's own settings/overview show the new one.
+ */
+const AGENT_PATCHABLE_FIELDS = [
+  'name', 'description', 'enabled', 'runtime', 'model', 'contextScope',
+  'eventFilter', 'allowedActionTypes', 'approvalPolicy', 'budget', 'ignoreSelfTriggeredEvents',
+] as const;
 
 agentsRouter.patch('/agents/:userId', async (c) => {
   const userId = c.req.param('userId');
   const existing = await agentRepo.get(userId);
   if (!existing) return c.json({ error: 'Not found' }, 404);
-  const body = await c.req.json<Partial<Agent>>();
-  const merged: Agent = { ...existing, ...body, userId: existing.userId };
+  // `userId`/`workspaceId`/`projectId`/`createdAt` are identity/provenance, not editable
+  // config — only the fields below may come from the client, unlike a naive `{...existing,
+  // ...body}` spread of an unchecked `Partial<Agent>`, which would let a client silently
+  // rescope an agent to a different project or corrupt its workspace/creation bookkeeping.
+  const body = await c.req.json<Partial<Pick<Agent, (typeof AGENT_PATCHABLE_FIELDS)[number]>>>();
+  const name = body.name?.trim();
+  const changes: Partial<Agent> = {};
+  for (const field of AGENT_PATCHABLE_FIELDS) {
+    if (field in body) (changes as Record<string, unknown>)[field] = field === 'name' ? name : body[field];
+  }
+  const merged: Agent = { ...existing, ...changes, userId: existing.userId };
   await agentRepo.update(merged);
+  if (name && name !== existing.name) {
+    await userRepo.updateProfile(userId, { displayName: name });
+  }
   return c.json(merged);
 });
 

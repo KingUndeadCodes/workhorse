@@ -4,8 +4,8 @@ import type { ActorRef, FieldValue, Issue, IssueLinkType, IssuePriority, User } 
 import { parseMentionedUserIds, slugifyBranchName, STORY_POINT_VALUES } from '../domain';
 import type { AuthVariables } from '../auth/middleware';
 import { agentRepo, engine, gitProviders, gitRepoLinkRepo, issueRepo, projectRepo, userRepo, workflowRepo, workspaceRepo } from '../container';
-import { persistState } from '../db/core';
 import { getEventsForIssue } from '../eventLog';
+import { setsEqual } from '../util';
 
 export const issuesRouter = new Hono<{ Variables: AuthVariables }>();
 
@@ -58,7 +58,7 @@ issuesRouter.post('/issues', async (c) => {
     statusId: workflow.initialStatusId,
     title,
     priority: (body.priority as Issue['priority']) ?? 'medium',
-    reporterId: (body.reporterId as string) ?? user.id,
+    reporterId: user.id,
     assigneeIds: (body.assigneeIds as string[]) ?? [],
     parentId: body.parentId as string | undefined,
     labelIds: (body.labelIds as string[]) ?? [],
@@ -96,8 +96,16 @@ issuesRouter.patch('/issues/:id', async (c) => {
   const body = await c.req.json<Record<string, unknown>>();
   const actor = actorFrom(c.get('user'));
 
+  // Every 400-worthy validation runs before any emitEvent below — this PATCH applies up to
+  // seven independent changes as separate sequential events with no cross-database
+  // transaction wrapping them (the event log and state db are separate sql.js instances), so
+  // a validation failure discovered partway through would otherwise leave earlier changes
+  // applied while the client only sees an error with no updated issue.
   if ('storyPoints' in body && !isValidStoryPoints(body.storyPoints)) {
     return c.json({ error: `storyPoints must be one of ${STORY_POINT_VALUES.join(', ')}` }, 400);
+  }
+  if ('assigneeIds' in body && (await containsAgentId((body.assigneeIds as string[]) ?? []))) {
+    return c.json({ error: "Agents can't be assignees — add them from the AI Agents section instead" }, 400);
   }
 
   if ('statusId' in body && body.statusId !== issue.statusId) {
@@ -110,10 +118,7 @@ issuesRouter.patch('/issues/:id', async (c) => {
   }
   if ('assigneeIds' in body) {
     const toUserIds = (body.assigneeIds as string[]) ?? [];
-    if (await containsAgentId(toUserIds)) {
-      return c.json({ error: "Agents can't be assignees — add them from the AI Agents section instead" }, 400);
-    }
-    if (JSON.stringify([...toUserIds].sort()) !== JSON.stringify([...issue.assigneeIds].sort())) {
+    if (!setsEqual(new Set(toUserIds), new Set(issue.assigneeIds))) {
       await engine.emitEvent({ actor, subject: { type: 'issue', id }, payload: { type: 'issue.assigneesChanged', issueId: id, fromUserIds: issue.assigneeIds, toUserIds } });
     }
   }
@@ -129,7 +134,7 @@ issuesRouter.patch('/issues/:id', async (c) => {
   }
   if ('labelIds' in body) {
     const toLabelIds = (body.labelIds as string[]) ?? [];
-    if (JSON.stringify([...toLabelIds].sort()) !== JSON.stringify([...issue.labelIds].sort())) {
+    if (!setsEqual(new Set(toLabelIds), new Set(issue.labelIds))) {
       await engine.emitEvent({
         actor,
         subject: { type: 'issue', id },
@@ -306,6 +311,7 @@ issuesRouter.delete('/issues/:issueId/comments/:commentId', async (c) => {
 issuesRouter.post('/issues/:id/links', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json<{ type: IssueLinkType; targetIssueId: string }>();
+  if (id === body.targetIssueId) return c.json({ error: "An issue can't be linked to itself" }, 400);
   if (!(await issueRepo.get(id)) || !(await issueRepo.get(body.targetIssueId))) return c.json({ error: 'Issue not found' }, 404);
 
   const linkId = `link_${randomUUID()}`;
@@ -341,6 +347,7 @@ issuesRouter.post('/issues/:id/agents', async (c) => {
 
   const body = await c.req.json<{ agentUserId: string }>();
   if (!(await agentRepo.get(body.agentUserId))) return c.json({ error: 'Agent not found' }, 400);
+  if (issue.agentAssignments?.includes(body.agentUserId)) return c.json({ error: 'Agent already attached to this issue' }, 400);
 
   const event = await engine.emitEvent({
     actor: actorFrom(c.get('user')),
@@ -353,7 +360,9 @@ issuesRouter.post('/issues/:id/agents', async (c) => {
 /** DELETE /api/issues/:id/agents/:agentUserId — detaches an agent from the issue; emits `issue.agentUnassigned`. */
 issuesRouter.delete('/issues/:id/agents/:agentUserId', async (c) => {
   const { id, agentUserId } = c.req.param();
-  if (!(await issueRepo.get(id))) return c.json({ error: 'Issue not found' }, 404);
+  const issue = await issueRepo.get(id);
+  if (!issue) return c.json({ error: 'Issue not found' }, 404);
+  if (!issue.agentAssignments?.includes(agentUserId)) return c.json({ error: 'Agent not attached to this issue' }, 404);
 
   const event = await engine.emitEvent({
     actor: actorFrom(c.get('user')),
@@ -413,14 +422,17 @@ issuesRouter.post('/issues/:id/attachments', async (c) => {
   return c.json({ attachment, event }, 201);
 });
 
-/** DELETE /api/attachments/:id — removes an attachment record (not event-worthy; config-adjacent). Only the uploader may delete it. */
+/** DELETE /api/attachments/:id — removes an attachment record; emits `issue.attachmentRemoved` (its addition is event-sourced too, so AuditService's replay stays symmetric). Only the uploader may delete it. */
 issuesRouter.delete('/attachments/:id', async (c) => {
   const id = c.req.param('id');
   const attachment = await issueRepo.getAttachment(id);
   if (!attachment) return c.json({ error: 'Attachment not found' }, 404);
   if (attachment.uploadedBy !== c.get('user').id) return c.json({ error: 'Only the uploader can delete this attachment' }, 403);
-  await issueRepo.deleteAttachment(id);
-  persistState();
+  await engine.emitEvent({
+    actor: actorFrom(c.get('user')),
+    subject: { type: 'issue', id: attachment.issueId },
+    payload: { type: 'issue.attachmentRemoved', issueId: attachment.issueId, attachmentId: id },
+  });
   return c.json({ ok: true });
 });
 

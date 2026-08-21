@@ -1,5 +1,5 @@
 import { createMiddleware } from 'hono/factory';
-import { userRepo } from '../container';
+import { userRepo, workspaceRepo } from '../container';
 import { verifyToken } from './jwt';
 
 /** Hono context variable populated by {@link requireAuth} — read via `c.get('user')`. */
@@ -20,3 +20,15 @@ export const requireAuth = createMiddleware<{ Variables: AuthVariables }>(async 
     return c.json({ error: 'unauthorized' }, 401);
   }
 });
+
+/**
+ * Shared guard for configuration that acts workspace-wide against every matching future event
+ * (automation rules, webhooks, git repo links) — guests (read-mostly by convention, see
+ * WorkspaceRole) may not define them. Returns an error message to 403 with, or `undefined` if
+ * the caller may proceed.
+ */
+export async function requireNonGuest(c: { get: (k: 'user') => { id: string } }, action: string): Promise<string | undefined> {
+  const caller = await workspaceRepo.getMember(c.get('user').id);
+  if (!caller || caller.role === 'guest') return `Guests cannot ${action}`;
+  return undefined;
+}

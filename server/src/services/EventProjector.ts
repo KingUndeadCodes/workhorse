@@ -88,6 +88,9 @@ export class EventProjector {
           createdAt: event.occurredAt,
         });
         break;
+      case 'issue.attachmentRemoved':
+        await this.issues.deleteAttachment(payload.attachmentId);
+        break;
       case 'comment.created':
         await this.issues.insertComment({
           id: payload.commentId,

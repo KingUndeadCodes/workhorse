@@ -33,6 +33,10 @@ export function migrateStateDb(): void {
     stateDb,
     `CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, kind TEXT, email TEXT, display_name TEXT, avatar_url TEXT, status TEXT, created_at TEXT)`,
   );
+  // The real enforcement for email uniqueness — routes/auth.ts's findByEmail-then-create check
+  // is only a fast path, not a lock, the same relationship idx_branches_issue has to its route's
+  // own check-then-act read (see that index's comment below).
+  run(stateDb, `CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
   // Kept out of `users` deliberately: `users` rows feed straight into the bootstrap payload
   // via rowToUser, so a password hash living there is one lazy `SELECT *` away from being
   // shipped to the client. A separate table makes that structurally impossible.

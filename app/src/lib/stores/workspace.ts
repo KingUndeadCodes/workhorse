@@ -22,7 +22,7 @@ import type {
   Sprint,
   StatusCategory,
   User,
-  WebhookSubscription,
+  WebhookSubscriptionPublic,
   Workflow,
   Worklog,
   Workspace,
@@ -103,7 +103,7 @@ export const sprints = writable<Sprint[]>([]);
 export const board = writable<Board | null>(null);
 export const savedViews = writable<SavedView[]>([]);
 export const automationRules = writable<AutomationRule[]>([]);
-export const webhookSubscriptions = writable<WebhookSubscription[]>([]);
+export const webhookSubscriptions = writable<WebhookSubscriptionPublic[]>([]);
 export const issuesStore = writable<Issue[]>([]);
 export const issueLinks = writable<IssueLink[]>([]);
 export const comments = writable<Comment[]>([]);
@@ -161,7 +161,9 @@ export async function initWorkspace(): Promise<void> {
     // Not part of Bootstrap (see gitRepoLink's own doc comment) but still loaded eagerly here,
     // not lazily per-drawer-open, since it's small (never carries the token) and every
     // IssueDrawer needs to know synchronously whether to show its Branch section.
-    gitRepoLink.set(await getGitRepoLink(data.currentProjectId).catch(() => null));
+    const gitRepoLinkResult = await getGitRepoLink(data.currentProjectId).catch(() => null);
+    if (token !== latestLoadToken) return; // a switchProject/initWorkspace call started during this await superseded it
+    gitRepoLink.set(gitRepoLinkResult);
     loaded.set(true);
   } catch (err) {
     loadError.set(err instanceof Error ? err.message : 'Failed to load workspace');

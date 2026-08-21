@@ -19,8 +19,11 @@ export interface WebhookSubscription extends EventSubscription {
   id: WebhookId;
   workspaceId: WorkspaceId;
   targetUrl: string;
-  /** Used to HMAC-sign each delivery so receivers can verify authenticity. */
+  /** Used to HMAC-sign each delivery so receivers can verify authenticity. Never returned to the client except once, on creation — see {@link WebhookSubscriptionPublic}. */
   secret: string;
   enabled: boolean;
   createdBy: UserId;
 }
+
+/** What every route except creation must return — `secret` is a write-once credential, not something every workspace member should be able to read back out. */
+export type WebhookSubscriptionPublic = Omit<WebhookSubscription, 'secret'>;

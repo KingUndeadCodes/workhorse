@@ -48,6 +48,10 @@ planningRouter.post('/views', async (c) => {
 });
 
 planningRouter.delete('/views/:id', async (c) => {
-  await planningRepo.deleteSavedView(c.req.param('id'));
+  const id = c.req.param('id');
+  const view = await planningRepo.getSavedView(id);
+  if (!view) return c.json({ error: 'Not found' }, 404);
+  if (view.ownerId && view.ownerId !== c.get('user').id) return c.json({ error: 'Only the owner can delete this view' }, 403);
+  await planningRepo.deleteSavedView(id);
   return c.json({ ok: true });
 });

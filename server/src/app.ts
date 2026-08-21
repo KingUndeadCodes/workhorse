@@ -16,6 +16,7 @@ import {
   workspaceRepo,
 } from './container';
 import { getEventById, getEventsSince } from './eventLog';
+import { toWebhookPublic } from './db/mappers';
 import { agentsRouter } from './routes/agents';
 import { automationsRouter } from './routes/automations';
 import { catalogRouter } from './routes/catalog';
@@ -69,7 +70,7 @@ app.get('/api/bootstrap', async (c) => {
   ]);
   return c.json({
     workspace, users, workspaceMembers, agents, agentRuns, statusCategories, workflow,
-    labels, fieldDefinitions, automationRules, webhookSubscriptions,
+    labels, fieldDefinitions, automationRules, webhookSubscriptions: webhookSubscriptions.map(toWebhookPublic),
     projects, currentProjectId: activeProject.id,
     components, versions, issueTypes, sprints, board, savedViews,
     issues, issueLinks, comments, worklogs, attachments,

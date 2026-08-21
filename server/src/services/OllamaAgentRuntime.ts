@@ -27,6 +27,11 @@ export class OllamaAgentRuntime implements AgentRuntime {
 
   private readonly host = process.env.OLLAMA_HOST?.trim() || 'http://localhost:11434';
 
+  /** A stuck Ollama server (model still loading, deadlock, network partition) must not hang
+   * forever — `EventEngine`'s per-agent lock holds for the full duration of this call, so an
+   * unbounded fetch here would wedge that agent's event processing permanently. */
+  private readonly requestTimeoutMs = 120_000;
+
   async decide(opts: { model: string; system: string; userMessage: string; tools: AgentRuntimeTool[] }): Promise<AgentRuntimeDecision> {
     const tools = opts.tools.map((t) => ({
       type: 'function' as const,
@@ -47,6 +52,7 @@ export class OllamaAgentRuntime implements AgentRuntime {
           tools,
           stream: false,
         }),
+        signal: AbortSignal.timeout(this.requestTimeoutMs),
       });
       if (!res.ok) throw new Error(`Ollama returned ${res.status}: ${await res.text()}`);
       response = (await res.json()) as OllamaChatResponse;

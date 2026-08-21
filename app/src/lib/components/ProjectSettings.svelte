@@ -18,10 +18,13 @@
   $: if (!tabs.includes(activeTab)) activeTab = 'Project';
 
   // Lets the TopBar "New…" menu open this view already on the relevant tab (e.g. "New Component").
-  if ($settingsJumpTab && (allTabs as readonly string[]).includes($settingsJumpTab)) {
+  // Reactive, not a one-time check: this component stays mounted across jumps whenever the
+  // view is already 'projectSettings' (no {#key} in App.svelte), so a plain top-level `if`
+  // would only ever fire once, at first mount.
+  $: if ($settingsJumpTab && (allTabs as readonly string[]).includes($settingsJumpTab)) {
     activeTab = $settingsJumpTab as (typeof allTabs)[number];
+    settingsJumpTab.set(null);
   }
-  settingsJumpTab.set(null);
 
   const FEATURE_LABEL_KEYS: Record<keyof ProjectFeatureFlags, string> = {
     reporters: 'projectSettings.features.reporters',

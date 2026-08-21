@@ -21,6 +21,7 @@ import type {
   StatusCategory,
   User,
   WebhookSubscription,
+  WebhookSubscriptionPublic,
   Workflow,
   WorkflowStatus,
   WorkflowTransition,
@@ -261,6 +262,12 @@ export function rowToWebhook(r: Record<string, unknown>): WebhookSubscription {
     createdBy: r.created_by as string,
   };
 }
+/** Enforcement point: every route returning a `WebhookSubscription` except creation must go through this — the signing secret never reaches a client response after that first reveal. */
+export function toWebhookPublic(hook: WebhookSubscription): WebhookSubscriptionPublic {
+  const { secret: _secret, ...pub } = hook;
+  return pub;
+}
+
 export function webhookParams(h: WebhookSubscription): unknown[] {
   return [h.id, h.workspaceId, h.targetUrl, h.secret, j(h.eventFilter), h.enabled ? 1 : 0, h.createdBy];
 }

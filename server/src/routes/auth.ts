@@ -27,7 +27,16 @@ publicAuthRouter.post('/auth/signup', async (c) => {
   if (await userRepo.findByEmail(email)) return c.json({ error: 'an account with this email already exists' }, 409);
 
   const isFirstMember = !(await workspaceRepo.hasAnyMember());
-  const user = await userRepo.createHuman(email, displayName, hashPassword(password));
+  let user;
+  try {
+    // The unique index on users(email) is what actually enforces uniqueness — the findByEmail
+    // check above is only a fast path, not a lock, so two concurrent signups for the same
+    // email can both pass it; whichever loses the insert lands here.
+    user = await userRepo.createHuman(email, displayName, hashPassword(password));
+  } catch (err) {
+    if (err instanceof Error && /unique/i.test(err.message)) return c.json({ error: 'an account with this email already exists' }, 409);
+    throw err;
+  }
   await workspaceRepo.addMember((await workspaceRepo.getWorkspace()).id, user.id, isFirstMember ? 'owner' : 'member', user.createdAt);
 
   const token = await signToken(user);

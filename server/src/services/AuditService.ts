@@ -1,6 +1,7 @@
 import { getAllEvents } from '../eventLog';
 import type { IssueRepository } from '../repositories/IssueRepository';
 import type { WorkspaceRepository } from '../repositories/WorkspaceRepository';
+import { setsEqual } from '../util';
 
 export interface AuditFinding {
   issueId: string;
@@ -34,12 +35,6 @@ interface ExpectedIssueState {
   attachmentIds: Set<string>;
   hasBranch?: boolean;
   deleted: boolean;
-}
-
-function setsEqual(a: Set<string>, b: Set<string>): boolean {
-  if (a.size !== b.size) return false;
-  for (const x of a) if (!b.has(x)) return false;
-  return true;
 }
 
 /**
@@ -157,6 +152,9 @@ export class AuditService {
         case 'issue.attachmentAdded':
           ensure(p.issueId).attachmentIds.add(p.attachmentId);
           break;
+        case 'issue.attachmentRemoved':
+          ensure(p.issueId).attachmentIds.delete(p.attachmentId);
+          break;
         case 'issue.branchCreated':
           ensure(p.issueId).hasBranch = true;
           break;
@@ -165,6 +163,12 @@ export class AuditService {
           break;
         case 'issue.deleted':
           ensure(p.issueId).deleted = true;
+          // IssueRepository.deleteCascade removes every issue_links row touching this issue,
+          // including on the other side of the link — mirror that here, since no `issue.unlinked`
+          // is emitted for links a deletion cascades away.
+          for (const [linkId, link] of activeLinks) {
+            if (link.source === p.issueId || link.target === p.issueId) activeLinks.delete(linkId);
+          }
           break;
         default:
           break;

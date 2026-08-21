@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import type { ActorRef, GitRepoLink, Project, User } from '../domain';
 import { DEFAULT_FEATURE_FLAGS, PROJECT_COLORS } from '../domain';
-import type { AuthVariables } from '../auth/middleware';
+import { requireNonGuest, type AuthVariables } from '../auth/middleware';
 import { engine, gitProviders, gitRepoLinkRepo, planningRepo, projectRepo, workflowRepo, workspaceRepo } from '../container';
 import { toGitRepoLinkPublic } from '../db/mappers';
 
@@ -109,6 +109,8 @@ projectsRouter.get('/projects/:id/git-repo-link', async (c) => {
  * Response is always the token-free `GitRepoLinkPublic`, even here.
  */
 projectsRouter.post('/projects/:id/git-repo-link', async (c) => {
+  const forbidden = await requireNonGuest(c, 'manage git repo links');
+  if (forbidden) return c.json({ error: forbidden }, 403);
   const projectId = c.req.param('id');
   const body = await c.req.json<{ provider: string; owner: string; repo: string; defaultBranch?: string; token: string }>();
   if (!body.provider?.trim() || !body.owner?.trim() || !body.repo?.trim() || !body.token?.trim()) {
@@ -149,6 +151,8 @@ projectsRouter.post('/projects/:id/git-repo-link', async (c) => {
 
 /** DELETE /api/projects/:id/git-repo-link — 404 if none exists, else unlinks and emits `project.gitRepoUnlinked`. */
 projectsRouter.delete('/projects/:id/git-repo-link', async (c) => {
+  const forbidden = await requireNonGuest(c, 'manage git repo links');
+  if (forbidden) return c.json({ error: forbidden }, 403);
   const projectId = c.req.param('id');
   const existing = await gitRepoLinkRepo.getForProject(projectId);
   if (!existing) return c.json({ error: 'Not found' }, 404);
