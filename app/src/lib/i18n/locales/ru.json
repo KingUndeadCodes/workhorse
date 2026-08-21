@@ -405,6 +405,14 @@
     "totalTokensTitle": "Всего токенов использовано за все запуски",
     "aiBadge": "ИИ"
   },
+  "agentOverview": {
+    "capabilitiesLabel": "Возможности",
+    "usageLabel": "Использование",
+    "tokensSuffix": "токенов всего",
+    "budgetLabel": "Бюджет",
+    "noActivityYet": "Пока нет активности.",
+    "manageButton": "Настройки агента"
+  },
   "workflowDiagram": {
     "newStatusPlaceholder": "Название нового статуса",
     "addStatusButton": "Добавить статус",
@@ -464,6 +472,7 @@
       "issueDeleted": "удалил эту задачу",
       "issueWorklogAdded": "зафиксировал затраченное время",
       "issueAttachmentAdded": "добавил вложение",
+      "issueAttachmentRemoved": "удалил вложение",
       "issueBranchCreated": "создал ветку",
       "issueBranchDeleted": "удалил ветку",
       "commentCreated": "добавил комментарий",
@@ -495,6 +504,7 @@
       "issueDeleted": "удалил эту задачу",
       "worklogAdded": "зафиксировал {duration} работы",
       "attachmentAdded": "добавил вложение {fileName}",
+      "attachmentRemoved": "удалил вложение",
       "branchCreated": "создал ветку {name}",
       "branchDeleted": "удалил ветку",
       "commentReplied": "ответил на комментарий",

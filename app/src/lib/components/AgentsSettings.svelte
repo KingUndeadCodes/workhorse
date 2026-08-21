@@ -4,9 +4,9 @@
   import AgentForm from './AgentForm.svelte';
   import { agentRuns, agents, fieldDefinitions, issuesStore, users, workflow } from '../stores/workspace';
   import * as api from '../api';
-  import { describeAutomationAction, formatRelativeDate } from '../util';
+  import { agentRunStatusLabel, describeAutomationAction, formatRelativeDate, formatTokenCount, recentRunsForAgent, totalTokensForAgent } from '../util';
   import { locale, t, tn } from '../i18n';
-  import type { Agent, AgentRun, AgentRunStatus, AutomationAction, EventType } from '$domain';
+  import type { Agent, AgentRun, AutomationAction, EventType } from '$domain';
 
   $: pendingRuns = $agentRuns.filter((r) => r.status === 'awaitingApproval');
 
@@ -24,13 +24,20 @@
   }
 
   async function createAgent(values: Omit<Agent, 'userId' | 'workspaceId' | 'projectId' | 'enabled' | 'createdAt'>) {
-    const agent = await api.createAgent(values);
+    const { agent, user } = await api.createAgent(values);
     agents.update((l) => [...l, agent]);
+    // Without this, the new agent is invisible to assignee pickers and @mention autocomplete
+    // (both read `users`, not `agents`) until the next full reload.
+    users.update((l) => [...l, user]);
   }
 
   async function saveAgent(userId: string, values: Omit<Agent, 'userId' | 'workspaceId' | 'projectId' | 'enabled' | 'createdAt'>) {
     const agent = await api.updateAgent(userId, values);
     agents.update((l) => l.map((a) => (a.userId === userId ? agent : a)));
+    // PATCH /agents/:userId keeps User.displayName in sync with Agent.name server-side, but that
+    // updated User row isn't part of this response — mirror the rename here too, or every other
+    // surface reading `users` (chips, comment authors, @mentions) stays stale until next reload.
+    users.update((l) => l.map((u) => (u.id === userId ? { ...u, displayName: agent.name } : u)));
     expandedAgentId = null;
   }
 
@@ -43,26 +50,15 @@
     agentRuns.update((l) => l.map((r) => (r.id === id ? run : r)));
   }
 
-  /** Last 5 runs for one agent, newest first — from the already-loaded `agentRuns` store, no extra fetch. */
   function recentRunsFor(agentUserId: string): AgentRun[] {
-    return $agentRuns
-      .filter((r) => r.agentUserId === agentUserId)
-      .sort((a, b) => b.startedAt.localeCompare(a.startedAt))
-      .slice(0, 5);
+    return recentRunsForAgent(agentUserId, $agentRuns);
   }
 
-  /** All-time token usage across every run this agent has ever made — the same field `withinBudget` sums for `maxSpendPerDay` (server/src/services/EventEngine.ts), just not scoped to today here. */
   function totalTokensFor(agentUserId: string): number {
-    return $agentRuns.filter((r) => r.agentUserId === agentUserId).reduce((sum, r) => sum + (r.tokenUsage ?? 0), 0);
+    return totalTokensForAgent(agentUserId, $agentRuns);
   }
 
-  function formatTokenCount(n: number): string {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-    return `${n}`;
-  }
-
-  $: statusLabel = (status: AgentRunStatus) => $t(`agentsSettings.statusLabels.${status}`);
+  $: statusLabel = (status: AgentRun['status']) => agentRunStatusLabel(status, $t);
 
   const emptyDraft = () => ({
     name: '',

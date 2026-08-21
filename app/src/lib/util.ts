@@ -3,7 +3,7 @@ import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js';
 import DOMPurify from 'dompurify';
 import { PROJECT_COLORS, replaceMentions, STORY_POINT_VALUES } from '$domain';
-import type { AutomationAction, Comment, EventEnvelope, EventType, FieldDefinition, Label, Mentionable, User, Workflow } from '$domain';
+import type { AgentRun, AgentRunStatus, AutomationAction, Comment, EventEnvelope, EventType, FieldDefinition, Label, Mentionable, User, Workflow } from '$domain';
 
 /** The resolved value of the `t`/`tn` i18n stores (see `lib/i18n/index.ts`) — plain functions,
  * not stores, since these are called from ordinary functions below rather than `.svelte`
@@ -121,6 +121,30 @@ export function displayName(user: { kind?: string; displayName: string }): strin
  */
 export function splitHumansAndAgents<T extends { kind: string }>(users: T[]): { humans: T[]; agents: T[] } {
   return { humans: users.filter((u) => u.kind !== 'agent'), agents: users.filter((u) => u.kind === 'agent') };
+}
+
+/** All-time token usage across every run an agent has ever made — the same field `withinBudget`
+ * sums for `maxSpendPerDay` (server/src/services/EventEngine.ts), just not scoped to today here. */
+export function totalTokensForAgent(agentUserId: string, agentRuns: AgentRun[]): number {
+  return agentRuns.filter((r) => r.agentUserId === agentUserId).reduce((sum, r) => sum + (r.tokenUsage ?? 0), 0);
+}
+
+/** Every run for one agent, newest first — from the already-loaded `agentRuns` store, no extra fetch. */
+export function recentRunsForAgent(agentUserId: string, agentRuns: AgentRun[], limit = 5): AgentRun[] {
+  return agentRuns
+    .filter((r) => r.agentUserId === agentUserId)
+    .sort((a, b) => b.startedAt.localeCompare(a.startedAt))
+    .slice(0, limit);
+}
+
+export function formatTokenCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return `${n}`;
+}
+
+export function agentRunStatusLabel(status: AgentRunStatus, t: Translate): string {
+  return t(`agentsSettings.statusLabels.${status}`);
 }
 
 /** Maps an {@link IssuePriority} to the icon name that represents it (see public/icons.svg). */
@@ -253,6 +277,8 @@ export function describeEventType(type: EventType, t: Translate): string {
       return t('activity.eventType.issueWorklogAdded');
     case 'issue.attachmentAdded':
       return t('activity.eventType.issueAttachmentAdded');
+    case 'issue.attachmentRemoved':
+      return t('activity.eventType.issueAttachmentRemoved');
     case 'issue.branchCreated':
       return t('activity.eventType.issueBranchCreated');
     case 'issue.branchDeleted':
@@ -325,6 +351,8 @@ export function describeEvent(event: EventEnvelope, ctx: { workflow: Workflow | 
       return t('activity.event.worklogAdded', { duration: formatDuration(p.timeSpentSeconds) });
     case 'issue.attachmentAdded':
       return t('activity.event.attachmentAdded', { fileName: p.fileName });
+    case 'issue.attachmentRemoved':
+      return t('activity.event.attachmentRemoved');
     case 'issue.branchCreated':
       return t('activity.event.branchCreated', { name: p.name });
     case 'issue.branchDeleted':

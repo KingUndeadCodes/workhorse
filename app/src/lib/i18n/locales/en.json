@@ -393,6 +393,14 @@
     "totalTokensTitle": "Total tokens used across every run",
     "aiBadge": "AI"
   },
+  "agentOverview": {
+    "capabilitiesLabel": "Capabilities",
+    "usageLabel": "Usage",
+    "tokensSuffix": "tokens total",
+    "budgetLabel": "Budget",
+    "noActivityYet": "No activity yet.",
+    "manageButton": "Manage agent settings"
+  },
   "workflowDiagram": {
     "newStatusPlaceholder": "New status name",
     "addStatusButton": "Add status",
@@ -448,6 +456,7 @@
       "issueDeleted": "deleted this issue",
       "issueWorklogAdded": "logged work",
       "issueAttachmentAdded": "added an attachment",
+      "issueAttachmentRemoved": "removed an attachment",
       "issueBranchCreated": "created a branch",
       "issueBranchDeleted": "deleted the branch",
       "commentCreated": "added a comment",
@@ -479,6 +488,7 @@
       "issueDeleted": "deleted this issue",
       "worklogAdded": "logged {duration} of work",
       "attachmentAdded": "attached {fileName}",
+      "attachmentRemoved": "removed an attachment",
       "branchCreated": "created branch {name}",
       "branchDeleted": "deleted the branch",
       "commentReplied": "replied to a comment",

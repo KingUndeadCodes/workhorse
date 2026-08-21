@@ -4,6 +4,7 @@
   import MarkdownEditor from './MarkdownEditor.svelte';
   import CommentThread from './CommentThread.svelte';
   import BottomSheet from './BottomSheet.svelte';
+  import AgentOverviewModal from './AgentOverviewModal.svelte';
   import { isMobile } from '../stores/viewport';
   import { currentUser } from '../stores/auth';
   import {
@@ -11,6 +12,7 @@
     editComment,
     removeComment,
     addIssueLink,
+    agents,
     assignAgent,
     comments,
     components,
@@ -232,6 +234,8 @@
 
   let showAgentPicker = false;
   let triggeringAgentId: string | null = null;
+  let overviewAgentId: string | null = null;
+  $: overviewAgent = overviewAgentId ? $agents.find((a) => a.userId === overviewAgentId) : undefined;
 
   function toggleAgentPicker() {
     showAgentPicker = !showAgentPicker;
@@ -558,8 +562,10 @@
         <div class="agent-chips">
           {#each attachedAgents as agent (agent.id)}
             <span class="agent-chip">
-              <Avatar userId={agent.id} name={displayName(agent)} kind={agent.kind} size={16} />
-              <Icon name="robot" size={11} />{displayName(agent)}
+              <button type="button" class="chip-name" on:click={() => (overviewAgentId = agent.id)}>
+                <Avatar userId={agent.id} name={displayName(agent)} kind={agent.kind} size={16} />
+                <Icon name="robot" size={11} />{displayName(agent)}
+              </button>
               <button
                 type="button"
                 class="chip-run"
@@ -765,6 +771,10 @@
   </div>
 {/if}
 
+{#if overviewAgent}
+  <AgentOverviewModal agent={overviewAgent} onClose={() => (overviewAgentId = null)} />
+{/if}
+
 <style>
   .drawer {
     width: 100%; flex: 1; min-width: 0; background: var(--surface);
@@ -848,6 +858,8 @@
     display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text);
     background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 3px 8px 3px 5px;
   }
+  .chip-name { display: inline-flex; align-items: center; gap: 5px; font: inherit; color: inherit; cursor: pointer; }
+  .chip-name:hover { color: var(--accent-strong); }
   .chip-run {
     font-size: 10.5px; font-weight: 600; color: var(--text-3); background: none; border: 1px solid var(--border);
     border-radius: 999px; padding: 1px 7px; cursor: pointer;

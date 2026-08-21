@@ -393,6 +393,14 @@
     "totalTokensTitle": "Total de tokens usados en todas las ejecuciones",
     "aiBadge": "IA"
   },
+  "agentOverview": {
+    "capabilitiesLabel": "Capacidades",
+    "usageLabel": "Uso",
+    "tokensSuffix": "tokens en total",
+    "budgetLabel": "Presupuesto",
+    "noActivityYet": "Todavía no hay actividad.",
+    "manageButton": "Gestionar ajustes del agente"
+  },
   "workflowDiagram": {
     "newStatusPlaceholder": "Nombre del nuevo estado",
     "addStatusButton": "Añadir estado",
@@ -448,6 +456,7 @@
       "issueDeleted": "eliminó esta tarea",
       "issueWorklogAdded": "registró tiempo trabajado",
       "issueAttachmentAdded": "añadió un archivo adjunto",
+      "issueAttachmentRemoved": "eliminó un archivo adjunto",
       "issueBranchCreated": "creó una rama",
       "issueBranchDeleted": "eliminó la rama",
       "commentCreated": "añadió un comentario",
@@ -479,6 +488,7 @@
       "issueDeleted": "eliminó esta tarea",
       "worklogAdded": "registró {duration} de trabajo",
       "attachmentAdded": "adjuntó {fileName}",
+      "attachmentRemoved": "eliminó un archivo adjunto",
       "branchCreated": "creó la rama {name}",
       "branchDeleted": "eliminó la rama",
       "commentReplied": "respondió a un comentario",
