@@ -1,0 +1,515 @@
+{
+  "common": {
+    "cancel": "取消",
+    "save": "保存",
+    "saving": "保存中…",
+    "create": "创建",
+    "creating": "创建中…",
+    "add": "添加",
+    "delete": "删除",
+    "deleting": "删除中…",
+    "edit": "编辑",
+    "remove": "移除",
+    "members": {
+      "other": "{count} 位成员"
+    },
+    "priority": {
+      "highest": "最高",
+      "high": "高",
+      "medium": "中",
+      "low": "低",
+      "lowest": "最低"
+    }
+  },
+  "nav": {
+    "board": "看板",
+    "backlog": "待办事项"
+  },
+  "topBar": {
+    "workhorseBrand": "Workhorse",
+    "noActiveSprint": "没有进行中的冲刺",
+    "newButton": "新建…",
+    "newIssue": "事项",
+    "newSprint": "冲刺",
+    "newLabel": "标签",
+    "newComponent": "组件",
+    "newVersion": "版本",
+    "statsTitle": "统计",
+    "projectSettingsTitle": "项目设置",
+    "workspaceSettingsTitle": "工作区设置",
+    "accountSettings": "账户设置",
+    "logOut": "退出登录"
+  },
+  "sidebar": {
+    "newProjectPlaceholder": "项目名称",
+    "newProjectKeyPlaceholder": "标识（例如 MOB）",
+    "newProjectButton": "新建项目",
+    "projectsLabel": "项目",
+    "failedCreateProject": "创建项目失败"
+  },
+  "mobileNav": {
+    "newTab": "新建",
+    "projectsTab": "项目",
+    "moreTab": "更多",
+    "newProjectRow": "新建项目",
+    "statsRow": "统计",
+    "projectSettingsRow": "项目设置",
+    "workspaceSettingsRow": "工作区设置",
+    "accountSettingsRow": "账户设置",
+    "logOutRow": "退出登录"
+  },
+  "board": {
+    "noEpic": "无史诗任务",
+    "noIssues": "没有事项"
+  },
+  "filters": {
+    "searchPlaceholder": "搜索事项…",
+    "title": "筛选",
+    "button": "筛选",
+    "clear": "清除筛选",
+    "sectionAssignee": "经办人",
+    "sectionLabel": "标签",
+    "sectionPriority": "优先级",
+    "sectionType": "类型",
+    "sectionStatus": "状态"
+  },
+  "issueCard": {
+    "moveToTitle": "移动到…"
+  },
+  "issueDrawer": {
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "添加描述…（支持 Markdown）",
+    "assigneesLabel": "经办人",
+    "addChip": "+ 添加",
+    "reporterLabel": "报告人",
+    "unassigned": "未分配",
+    "priorityLabel": "优先级",
+    "storyPointsLabel": "故事点",
+    "sprintLabel": "冲刺",
+    "noSprint": "无冲刺",
+    "dueDateLabel": "截止日期",
+    "aiAgentsLabel": "AI 代理",
+    "agentsHint": "添加一个代理来处理此工单。",
+    "runNowTitle": "立即运行",
+    "runNowButton": "运行",
+    "runningButton": "…",
+    "noMoreAgents": "没有更多可添加的代理",
+    "branchLabel": "分支",
+    "createBranchButton": "+ 创建分支",
+    "advancedToggle": "高级",
+    "linkedIssuesLabel": "关联事项",
+    "relationRelatesTo": "关联到",
+    "relationBlocks": "阻塞",
+    "relationDuplicates": "重复于",
+    "relationClones": "克隆自",
+    "relationCauses": "导致",
+    "relationInverse": "{type}（反向）",
+    "issueKeyPlaceholder": "事项编号（例如 ATL-131）",
+    "linkButton": "关联",
+    "timeTrackingLabel": "时间跟踪",
+    "loggedSuffix": "已记录 {hours} 小时",
+    "estimateSuffix": "预计 {hours} 小时",
+    "hoursPlaceholder": "小时数",
+    "workNotePlaceholder": "你做了什么工作？（可选）",
+    "logButton": "记录",
+    "commentsTab": "评论",
+    "activityTab": "动态",
+    "nothingLoggedYet": "目前还没有记录。",
+    "loadingDetails": "正在加载详情…",
+    "couldntLoadDetails": "无法加载此事件的详情。",
+    "runAgentConfirm": "现在对此事项运行「{name}」？",
+    "failedAttachAgent": "添加代理失败",
+    "failedLoadBranch": "加载分支失败",
+    "failedCreateBranch": "创建分支失败",
+    "actorSomeone": "某人",
+    "actorAutomationRule": "一条自动化规则",
+    "actorSystem": "系统",
+    "commentPlaceholder": "添加评论…（支持 Markdown）",
+    "commentSubmitLabel": "评论"
+  },
+  "settings": {
+    "tabs": {
+      "appearance": "外观",
+      "labels": "标签",
+      "fields": "字段",
+      "workflow": "工作流",
+      "automations": "自动化",
+      "agents": "代理",
+      "webhooks": "Webhook"
+    },
+    "appearance": {
+      "themeLabel": "主题",
+      "themeHint": "在此浏览器中切换浅色和深色主题，若选择「跟随浏览器」，则会实时跟随系统主题。",
+      "themeLight": "浅色",
+      "themeDark": "深色",
+      "themeSystem": "跟随浏览器",
+      "languageLabel": "语言",
+      "languageHint": "选择 Workhorse 显示所用的语言。",
+      "nonEnglishDisclaimer": "这只会翻译应用本身的界面 — 请将事项标题、描述、评论、标签及其他内容保留为英文，以便整个团队都能阅读。"
+    },
+    "labelNamePlaceholder": "标签名称",
+    "addLabelButton": "添加标签",
+    "fieldNamePlaceholder": "字段名称（例如 Severity）",
+    "fieldKeyPlaceholder": "机器键（例如 severity）",
+    "fieldOptionsPlaceholder": "选项，以逗号分隔（例如 Low, Medium, High）",
+    "addFieldButton": "添加字段",
+    "statusCategoriesLabel": "状态类别",
+    "categoryNamePlaceholder": "类别名称（例如 Resolving Differences）",
+    "addCategoryButton": "添加类别",
+    "workflowLabel": "工作流",
+    "workflowDesktopOnly": "工作流图是为鼠标操作设计的拖放编辑画布 — 请在桌面浏览器中打开设置以编辑状态和转换。",
+    "ruleNamePlaceholder": "规则名称",
+    "triggerLabel": "触发条件",
+    "conditionsLabel": "条件（可选 — 若不设置则无条件执行）",
+    "valuePlaceholder": "值",
+    "addConditionButton": "+ 添加条件",
+    "actionsLabel": "操作",
+    "addActionButton": "+ 添加操作",
+    "addRuleButton": "添加规则",
+    "commentBodyPlaceholder": "评论内容",
+    "pathPlaceholder": "path/to/file.ts",
+    "branchNamePlaceholder": "分支名称",
+    "fileContentPlaceholder": "文件内容",
+    "commitMessagePlaceholder": "提交信息（可选）",
+    "statusPlaceholder": "状态…",
+    "userPlaceholder": "用户…",
+    "fieldPlaceholder": "字段…",
+    "enabledLabel": "已启用",
+    "webhookUrlPlaceholder": "https://your-service.example/webhook",
+    "addWebhookButton": "添加 Webhook",
+    "failedDeleteCategory": "删除类别失败"
+  },
+  "projectSettings": {
+    "tabs": {
+      "project": "项目",
+      "components": "组件",
+      "versions": "版本",
+      "git": "Git"
+    },
+    "nameLabel": "名称",
+    "keyLabel": "标识",
+    "keyHint": "标识是永久性的 — 它会嵌入每个事项的编号中（例如「{key}-142」）。",
+    "colorLabel": "颜色",
+    "featuresLabel": "功能",
+    "featuresHint": "关闭此项目不需要的流程 — 不会删除任何数据，重新启用即可立即恢复。",
+    "features": {
+      "reporters": "报告人",
+      "storyPoints": "故事点",
+      "dueDates": "截止日期",
+      "timeTracking": "时间跟踪",
+      "priority": "优先级",
+      "componentsAndVersions": "组件与版本",
+      "sprints": "冲刺",
+      "labels": "标签"
+    },
+    "archiveButton": "归档此项目",
+    "archiveConfirm": "归档「{name}」？它将保留在工作区中，但会从项目切换器中隐藏。",
+    "componentNamePlaceholder": "组件名称",
+    "addComponentButton": "添加组件",
+    "versionNamePlaceholder": "版本名称（例如 v3.5.0）",
+    "addVersionButton": "添加版本",
+    "released": "已发布",
+    "unreleased": "未发布",
+    "releaseButton": "发布",
+    "gitHint": "将此项目关联到一个 git 仓库，即可直接从工单抽屉为任意工单创建真实分支。",
+    "noGitProviderHint": "此服务器未配置任何 git 提供方，因此暂时无法关联 — 参见 server/src/services/GitProvider.ts。",
+    "ownerPlaceholder": "所有者",
+    "repoPlaceholder": "仓库",
+    "defaultBranchPlaceholder": "默认分支（main）",
+    "accessTokenPlaceholder": "访问令牌",
+    "linkRepoButton": "关联仓库",
+    "linkingRepoButton": "关联中…",
+    "failedLinkRepo": "关联仓库失败",
+    "defaultBranchSuffix": "默认分支：{branch}"
+  },
+  "workspaceView": {
+    "youBadge": "你",
+    "canManageRoles": "你可以管理角色",
+    "roles": {
+      "owner": "所有者",
+      "admin": "管理员",
+      "member": "成员",
+      "guest": "访客"
+    }
+  },
+  "stats": {
+    "title": "统计",
+    "window24h": "24小时",
+    "window1w": "1 周",
+    "window30d": "30 天",
+    "timeSpentLabel": "花费时间",
+    "mostActiveLabel": "最活跃的工单",
+    "noActivity": "暂无活动。",
+    "loading": "正在加载统计数据…"
+  },
+  "newIssueModal": {
+    "title": "新建事项",
+    "titleFieldLabel": "标题",
+    "titlePlaceholder": "需要做什么？",
+    "typeLabel": "类型",
+    "priorityLabel": "优先级",
+    "assigneesLabel": "经办人",
+    "failedCreate": "创建事项失败",
+    "createButton": "创建事项",
+    "creatingButton": "创建中…"
+  },
+  "accountSettingsModal": {
+    "title": "账户设置",
+    "uploadPicture": "上传图片",
+    "removePicture": "移除",
+    "nameLabel": "姓名",
+    "namePlaceholder": "你的姓名",
+    "emailLabel": "邮箱",
+    "emailPlaceholder": "you@example.com",
+    "invalidImage": "请选择一个图片文件",
+    "failedUpdate": "更新账户失败",
+    "saveButton": "保存更改",
+    "savingButton": "保存中…",
+    "youFallback": "你"
+  },
+  "commentThread": {
+    "reply": "回复",
+    "edit": "编辑",
+    "delete": "删除",
+    "deleting": "删除中…",
+    "deleteConfirm": "删除这条评论？此操作无法撤销。",
+    "deleteConfirmWithReplies": "删除这条评论及其所有回复？此操作无法撤销。",
+    "edited": "（已编辑）",
+    "repliesHidden": {
+      "other": "已隐藏 {count} 条回复"
+    },
+    "continueThread": {
+      "other": "继续讨论串（还有 {count} 条回复）"
+    },
+    "showReplies": {
+      "other": "显示 {count} 条回复"
+    },
+    "replyPlaceholder": "写下回复…（支持 Markdown）",
+    "replyButton": "回复"
+  },
+  "markdownEditor": {
+    "boldTitle": "加粗",
+    "italicTitle": "斜体",
+    "codeTitle": "代码",
+    "linkTitle": "链接",
+    "listTitle": "项目符号列表",
+    "quoteTitle": "引用",
+    "boldPlaceholder": "加粗文本",
+    "italicPlaceholder": "斜体文本",
+    "codePlaceholder": "代码",
+    "linkPlaceholder": "链接文本",
+    "markdownSupported": "支持 Markdown",
+    "wordCount": {
+      "other": "{count} 个字"
+    }
+  },
+  "login": {
+    "logInTitle": "登录",
+    "signUpTitle": "创建账户",
+    "displayNameLabel": "显示名称",
+    "displayNamePlaceholder": "Ada Lovelace",
+    "emailLabel": "邮箱",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "密码",
+    "pleaseWait": "请稍候…",
+    "logInButton": "登录",
+    "signUpButton": "注册",
+    "toggleToSignUp": "还没有账户？注册",
+    "toggleToLogIn": "已有账户？登录",
+    "genericError": "出了点问题"
+  },
+  "app": {
+    "apiErrorTitle": "无法连接到 Workhorse API",
+    "serverRunningHint": "服务器是否正在运行？",
+    "loadingWorkspace": "正在加载工作区…"
+  },
+  "backlog": {
+    "startSprintButton": "开始冲刺",
+    "completeSprintButton": "完成冲刺",
+    "noIssuesInSprint": "此冲刺中暂无事项。",
+    "nothingUnscheduled": "没有未安排的事项 — 一切都已在某个冲刺中。",
+    "newSprintPlaceholder": "新冲刺名称…",
+    "createSprintButton": "创建冲刺",
+    "backlogLabel": "待办事项",
+    "pointsSuffix": "{done}/{total} 点",
+    "issuesCount": {
+      "other": "{count} 个事项"
+    },
+    "sprintStates": {
+      "future": "未开始",
+      "active": "进行中",
+      "closed": "已结束"
+    }
+  },
+  "agentForm": {
+    "namePlaceholder": "代理名称",
+    "instructionsPlaceholder": "指令 — 这个代理应该对工单做什么？",
+    "runtimeLabel": "运行环境",
+    "modelLabel": "模型",
+    "contextScopeLabel": "上下文范围",
+    "contextScopes": {
+      "thread": {
+        "label": "讨论串",
+        "hint": "仅此评论讨论串"
+      },
+      "ticket": {
+        "label": "工单",
+        "hint": "讨论串 + 此工单自身的详情（默认）"
+      },
+      "project": {
+        "label": "项目",
+        "hint": "工单 + 此项目中其他打开的工单"
+      },
+      "workspace": {
+        "label": "工作区",
+        "hint": "项目 + 工作区其余部分"
+      }
+    },
+    "reactsToLabel": "响应事件",
+    "allowedActionsLabel": "允许的操作",
+    "approvalLabel": "审批",
+    "autoApplyAll": "自动应用所有操作",
+    "requireApprovalForAll": "所有操作都需要审批",
+    "requireApprovalFor": "仅以下操作需要审批…",
+    "budgetLabel": "预算（可选 — 留空表示无限制）",
+    "maxRunsPerHour": "每小时最大运行次数",
+    "maxRunsPerDay": "每天最大运行次数",
+    "maxActionsPerRun": "每次运行最大操作数",
+    "maxSpendPerDay": "每天最大花费",
+    "ignoreSelfEvents": "忽略此代理自身触发的事件（推荐 — 防止其重复触发自身）"
+  },
+  "agentsSettings": {
+    "awaitingApproval": "等待你的审批",
+    "agentsLabel": "代理",
+    "hint": "代理代表团队成员处理工单 — 将代理添加到事项（在事项的「AI 代理」部分）后，它可以在推进过程中发表评论、更改状态、重新分配或更新字段，操作始终归属于它所代表的人。它的指令决定了每次触发时的决策。",
+    "noAgentsYet": "暂无代理 — 在下方创建一个，开始自动化工单处理。",
+    "approveButton": "批准",
+    "rejectButton": "拒绝",
+    "addAgentLabel": "添加代理",
+    "addAgentButton": "添加代理",
+    "saveButton": "保存",
+    "statusLabels": {
+      "pending": "待处理",
+      "awaitingApproval": "等待审批",
+      "applied": "已应用",
+      "rejected": "已拒绝",
+      "failed": "失败"
+    },
+    "recentActivity": "最近活动",
+    "totalTokensTitle": "所有运行累计使用的 token 数",
+    "aiBadge": "AI"
+  },
+  "agentOverview": {
+    "capabilitiesLabel": "能力",
+    "usageLabel": "使用情况",
+    "tokensSuffix": "个 token（总计）",
+    "budgetLabel": "预算",
+    "noActivityYet": "暂无活动。",
+    "manageButton": "管理代理设置"
+  },
+  "workflowDiagram": {
+    "newStatusPlaceholder": "新状态名称",
+    "addStatusButton": "添加状态",
+    "dragHint": "从一个状态的边缘拖动到另一个状态即可连接它们。选中某个状态或转换，按 Delete/Backspace 即可删除 — 「待办」和「已完成」状态无法删除。",
+    "editStatusTitle": "编辑状态",
+    "nameLabel": "名称",
+    "colorLabel": "颜色（十六进制，可选）",
+    "savingButton": "保存中…",
+    "transitionsFromAnyLabel": "从任意状态转换",
+    "transitionNamePlaceholder": "转换名称（例如 Reopen）",
+    "addGlobalTransitionButton": "添加全局转换",
+    "pathErrorTransition": "删除此转换将导致从「待办」到「已完成」没有任何路径",
+    "pathErrorStatus": "删除此状态将导致从「待办」到「已完成」没有任何路径",
+    "failedDeleteTransition": "删除转换失败",
+    "failedDeleteStatus": "删除状态失败"
+  },
+  "statusNode": {
+    "lockedTitle": "「待办」和「已完成」状态无法删除",
+    "editTitle": "编辑状态"
+  },
+  "relativeDate": {
+    "today": "今天",
+    "daysAgo": {
+      "other": "{count} 天前"
+    }
+  },
+  "storyPointWarning": {
+    "pastDue": "此截止日期已过，但该事项仍估算为 {points} 点。",
+    "tooSoon": "通常 {points} 点需要长达 {maxDuration}，但距截止日期只剩 {daysUntilDue}。",
+    "hoursDuration": "{hours} 小时",
+    "daysDuration": {
+      "other": "{count} 天"
+    }
+  },
+  "activity": {
+    "eventType": {
+      "issueCreated": "创建了此事项",
+      "issueStatusChanged": "更改了状态",
+      "issueResolved": "解决了此事项",
+      "issueReopened": "重新打开了此事项",
+      "issueAssigneesChanged": "更改了经办人",
+      "issueAgentAssigned": "添加了一个 AI 代理",
+      "issueAgentUnassigned": "移除了一个 AI 代理",
+      "issuePriorityChanged": "更改了优先级",
+      "issueLabelsChanged": "更改了标签",
+      "issueDueDateChanged": "更改了截止日期",
+      "issueSprintChanged": "更改了冲刺",
+      "issueUpdated": "更新了此事项",
+      "issueLinked": "关联了另一个事项",
+      "issueUnlinked": "移除了一个关联事项",
+      "issueDeleted": "删除了此事项",
+      "issueWorklogAdded": "记录了工作时间",
+      "issueAttachmentAdded": "添加了附件",
+      "issueAttachmentRemoved": "移除了附件",
+      "issueBranchCreated": "创建了一个分支",
+      "issueBranchDeleted": "删除了分支",
+      "commentCreated": "添加了评论",
+      "commentEdited": "编辑了评论",
+      "commentDeleted": "删除了评论",
+      "commentMentioned": "在评论中提到了某人"
+    },
+    "event": {
+      "issueCreated": "创建了此事项",
+      "issueStatusChanged": "将状态从 {from} 更改为 {to}",
+      "issueResolved": "解决了此事项（{status}）",
+      "issueReopened": "重新打开了此事项（{status}）",
+      "assigneesChangedTo": "将经办人从 {from} 更改为 {to}",
+      "assigneesUnassignedAll": "移除了所有经办人（原为 {from}）",
+      "noOne": "无人",
+      "issueAgentAssigned": "添加了一个 AI 代理",
+      "issueAgentUnassigned": "移除了一个 AI 代理",
+      "issuePriorityChanged": "将优先级从 {from} 更改为 {to}",
+      "issueLabelsChanged": "将标签从 {from} 更改为 {to}",
+      "labelsNone": "无",
+      "dueDateSet": "将截止日期设为 {date}",
+      "dueDateCleared": "清除了截止日期",
+      "sprintSet": "将此事项移动到某个冲刺",
+      "sprintCleared": "将此事项移出了冲刺",
+      "issueUpdated": "更新了 {fields}",
+      "issueUpdatedFallback": "此事项",
+      "issueLinked": "关联了另一个事项",
+      "issueUnlinked": "移除了一个关联事项",
+      "issueDeleted": "删除了此事项",
+      "worklogAdded": "记录了 {duration} 的工作",
+      "attachmentAdded": "添加了附件 {fileName}",
+      "attachmentRemoved": "移除了附件",
+      "branchCreated": "创建了分支 {name}",
+      "branchDeleted": "删除了分支",
+      "commentReplied": "回复了一条评论",
+      "commentCreated": "添加了评论",
+      "commentEdited": "编辑了评论",
+      "commentDeleted": "删除了评论",
+      "commentMentioned": "在评论中提到了某人"
+    }
+  },
+  "automation": {
+    "action": {
+      "transitionStatus": "→ {status}",
+      "assignTo": "分配给 {name}",
+      "addComment": "评论「{body}」",
+      "setField": "将 {field} 设为 {value}",
+      "readRepoFile": "读取 {path}",
+      "writeRepoFile": "写入 {path} → 分支「{branch}」"
+    }
+  }
+}

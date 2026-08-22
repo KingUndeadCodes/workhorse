@@ -1,0 +1,523 @@
+{
+  "common": {
+    "cancel": "रद्द करें",
+    "save": "सहेजें",
+    "saving": "सहेजा जा रहा है…",
+    "create": "बनाएँ",
+    "creating": "बनाया जा रहा है…",
+    "add": "जोड़ें",
+    "delete": "हटाएँ",
+    "deleting": "हटाया जा रहा है…",
+    "edit": "संपादित करें",
+    "remove": "निकालें",
+    "members": {
+      "one": "{count} सदस्य",
+      "other": "{count} सदस्य"
+    },
+    "priority": {
+      "highest": "सर्वोच्च",
+      "high": "उच्च",
+      "medium": "मध्यम",
+      "low": "निम्न",
+      "lowest": "सबसे कम"
+    }
+  },
+  "nav": {
+    "board": "बोर्ड",
+    "backlog": "बैकलॉग"
+  },
+  "topBar": {
+    "workhorseBrand": "Workhorse",
+    "noActiveSprint": "कोई सक्रिय स्प्रिंट नहीं",
+    "newButton": "नया…",
+    "newIssue": "इश्यू",
+    "newSprint": "स्प्रिंट",
+    "newLabel": "लेबल",
+    "newComponent": "कॉम्पोनेंट",
+    "newVersion": "वर्शन",
+    "statsTitle": "आँकड़े",
+    "projectSettingsTitle": "प्रोजेक्ट सेटिंग्स",
+    "workspaceSettingsTitle": "वर्कस्पेस सेटिंग्स",
+    "accountSettings": "खाता सेटिंग्स",
+    "logOut": "लॉग आउट"
+  },
+  "sidebar": {
+    "newProjectPlaceholder": "प्रोजेक्ट का नाम",
+    "newProjectKeyPlaceholder": "की (जैसे, MOB)",
+    "newProjectButton": "नया प्रोजेक्ट",
+    "projectsLabel": "प्रोजेक्ट्स",
+    "failedCreateProject": "प्रोजेक्ट बनाने में विफल"
+  },
+  "mobileNav": {
+    "newTab": "नया",
+    "projectsTab": "प्रोजेक्ट्स",
+    "moreTab": "और",
+    "newProjectRow": "नया प्रोजेक्ट",
+    "statsRow": "आँकड़े",
+    "projectSettingsRow": "प्रोजेक्ट सेटिंग्स",
+    "workspaceSettingsRow": "वर्कस्पेस सेटिंग्स",
+    "accountSettingsRow": "खाता सेटिंग्स",
+    "logOutRow": "लॉग आउट"
+  },
+  "board": {
+    "noEpic": "कोई एपिक नहीं",
+    "noIssues": "कोई इश्यू नहीं"
+  },
+  "filters": {
+    "searchPlaceholder": "इश्यू खोजें…",
+    "title": "फ़िल्टर",
+    "button": "फ़िल्टर",
+    "clear": "फ़िल्टर साफ़ करें",
+    "sectionAssignee": "असाइनी",
+    "sectionLabel": "लेबल",
+    "sectionPriority": "प्राथमिकता",
+    "sectionType": "प्रकार",
+    "sectionStatus": "स्थिति"
+  },
+  "issueCard": {
+    "moveToTitle": "इसमें ले जाएँ…"
+  },
+  "issueDrawer": {
+    "descriptionLabel": "विवरण",
+    "descriptionPlaceholder": "विवरण जोड़ें… (मार्कडाउन समर्थित)",
+    "assigneesLabel": "असाइनीज़",
+    "addChip": "+ जोड़ें",
+    "reporterLabel": "रिपोर्टर",
+    "unassigned": "असाइन नहीं किया गया",
+    "priorityLabel": "प्राथमिकता",
+    "storyPointsLabel": "Story Points",
+    "sprintLabel": "स्प्रिंट",
+    "noSprint": "कोई स्प्रिंट नहीं",
+    "dueDateLabel": "नियत तारीख",
+    "aiAgentsLabel": "AI एजेंट",
+    "agentsHint": "इस टिकट पर काम करने के लिए एक एजेंट संलग्न करें।",
+    "runNowTitle": "अभी चलाएँ",
+    "runNowButton": "चलाएँ",
+    "runningButton": "…",
+    "noMoreAgents": "संलग्न करने के लिए और एजेंट नहीं हैं",
+    "branchLabel": "ब्रांच",
+    "createBranchButton": "+ ब्रांच बनाएँ",
+    "advancedToggle": "उन्नत",
+    "linkedIssuesLabel": "लिंक्ड इश्यूज़",
+    "relationRelatesTo": "से संबंधित है",
+    "relationBlocks": "को रोकता है",
+    "relationDuplicates": "की डुप्लिकेट है",
+    "relationClones": "का क्लोन है",
+    "relationCauses": "का कारण है",
+    "relationInverse": "{type} (उलटा)",
+    "issueKeyPlaceholder": "इश्यू की (जैसे, ATL-131)",
+    "linkButton": "लिंक करें",
+    "timeTrackingLabel": "समय ट्रैकिंग",
+    "loggedSuffix": "{hours} घंटे लॉग किए गए",
+    "estimateSuffix": "{hours} घंटे अनुमानित",
+    "hoursPlaceholder": "घंटे",
+    "workNotePlaceholder": "आपने किस पर काम किया? (वैकल्पिक)",
+    "logButton": "लॉग करें",
+    "commentsTab": "टिप्पणियाँ",
+    "activityTab": "गतिविधि",
+    "nothingLoggedYet": "अभी तक कुछ भी लॉग नहीं हुआ है।",
+    "loadingDetails": "विवरण लोड हो रहे हैं…",
+    "couldntLoadDetails": "इस इवेंट का विवरण लोड नहीं हो सका।",
+    "runAgentConfirm": "\"{name}\" को अभी इस इश्यू पर चलाएँ?",
+    "failedAttachAgent": "एजेंट संलग्न करने में विफल",
+    "failedLoadBranch": "ब्रांच लोड करने में विफल",
+    "failedCreateBranch": "ब्रांच बनाने में विफल",
+    "actorSomeone": "कोई",
+    "actorAutomationRule": "एक ऑटोमेशन नियम",
+    "actorSystem": "सिस्टम",
+    "commentPlaceholder": "टिप्पणी जोड़ें… (मार्कडाउन समर्थित)",
+    "commentSubmitLabel": "टिप्पणी करें"
+  },
+  "settings": {
+    "tabs": {
+      "appearance": "रूप-रंग",
+      "labels": "लेबल",
+      "fields": "फ़ील्ड",
+      "workflow": "वर्कफ़्लो",
+      "automations": "ऑटोमेशन",
+      "agents": "एजेंट",
+      "webhooks": "वेबहुक"
+    },
+    "appearance": {
+      "themeLabel": "थीम",
+      "themeHint": "इस ब्राउज़र के लिए लाइट और डार्क थीम के बीच बदलता है, या यदि \"ब्राउज़र से मिलाएँ\" चुना गया है तो लाइव सिस्टम थीम का अनुसरण करता है।",
+      "themeLight": "लाइट",
+      "themeDark": "डार्क",
+      "themeSystem": "ब्राउज़र से मिलाएँ",
+      "languageLabel": "भाषा",
+      "languageHint": "चुनें कि Workhorse किस भाषा में दिखे।",
+      "nonEnglishDisclaimer": "यह केवल ऐप के अपने इंटरफ़ेस का अनुवाद करता है — कृपया इश्यू के शीर्षक, विवरण, टिप्पणियाँ, लेबल और अन्य सामग्री अंग्रेज़ी में ही रखें ताकि पूरी टीम उन्हें पढ़ सके।"
+    },
+    "labelNamePlaceholder": "लेबल का नाम",
+    "addLabelButton": "लेबल जोड़ें",
+    "fieldNamePlaceholder": "फ़ील्ड का नाम (जैसे, Severity)",
+    "fieldKeyPlaceholder": "मशीन की (जैसे, severity)",
+    "fieldOptionsPlaceholder": "विकल्प, कॉमा से अलग (जैसे, Low, Medium, High)",
+    "addFieldButton": "फ़ील्ड जोड़ें",
+    "statusCategoriesLabel": "स्थिति श्रेणियाँ",
+    "categoryNamePlaceholder": "श्रेणी का नाम (जैसे, Resolving Differences)",
+    "addCategoryButton": "श्रेणी जोड़ें",
+    "workflowLabel": "वर्कफ़्लो",
+    "workflowDesktopOnly": "वर्कफ़्लो डायग्राम माउस के लिए बनाया गया ड्रैग-एंड-ड्रॉप एडिटिंग कैनवास है — स्थिति और ट्रांज़िशन संपादित करने के लिए डेस्कटॉप ब्राउज़र पर सेटिंग्स खोलें।",
+    "ruleNamePlaceholder": "नियम का नाम",
+    "triggerLabel": "ट्रिगर",
+    "conditionsLabel": "शर्तें (वैकल्पिक — कोई न होने पर नियम बिना शर्त चलता है)",
+    "valuePlaceholder": "मान",
+    "addConditionButton": "+ शर्त जोड़ें",
+    "actionsLabel": "क्रियाएँ",
+    "addActionButton": "+ क्रिया जोड़ें",
+    "addRuleButton": "नियम जोड़ें",
+    "commentBodyPlaceholder": "टिप्पणी का टेक्स्ट",
+    "pathPlaceholder": "path/to/file.ts",
+    "branchNamePlaceholder": "ब्रांच का नाम",
+    "fileContentPlaceholder": "फ़ाइल की सामग्री",
+    "commitMessagePlaceholder": "कमिट संदेश (वैकल्पिक)",
+    "statusPlaceholder": "स्थिति…",
+    "userPlaceholder": "उपयोगकर्ता…",
+    "fieldPlaceholder": "फ़ील्ड…",
+    "enabledLabel": "सक्षम",
+    "webhookUrlPlaceholder": "https://your-service.example/webhook",
+    "addWebhookButton": "वेबहुक जोड़ें",
+    "failedDeleteCategory": "श्रेणी हटाने में विफल"
+  },
+  "projectSettings": {
+    "tabs": {
+      "project": "प्रोजेक्ट",
+      "components": "कॉम्पोनेंट्स",
+      "versions": "वर्शन",
+      "git": "Git"
+    },
+    "nameLabel": "नाम",
+    "keyLabel": "की",
+    "keyHint": "की स्थायी है — यह हर इश्यू की की में समाहित है (जैसे, \"{key}-142\")।",
+    "colorLabel": "रंग",
+    "featuresLabel": "फ़ीचर्स",
+    "featuresHint": "जो प्रक्रिया इस प्रोजेक्ट को नहीं चाहिए उसे बंद कर दें — कुछ भी हटाया नहीं जाता, और फिर से सक्षम करने पर तुरंत वापस आ जाता है।",
+    "features": {
+      "reporters": "रिपोर्टर",
+      "storyPoints": "Story Points",
+      "dueDates": "नियत तारीखें",
+      "timeTracking": "समय ट्रैकिंग",
+      "priority": "प्राथमिकता",
+      "componentsAndVersions": "कॉम्पोनेंट्स और वर्शन",
+      "sprints": "स्प्रिंट",
+      "labels": "लेबल"
+    },
+    "archiveButton": "यह प्रोजेक्ट आर्काइव करें",
+    "archiveConfirm": "\"{name}\" आर्काइव करें? यह वर्कस्पेस में बना रहेगा लेकिन प्रोजेक्ट स्विचर से छिपा रहेगा।",
+    "componentNamePlaceholder": "कॉम्पोनेंट का नाम",
+    "addComponentButton": "कॉम्पोनेंट जोड़ें",
+    "versionNamePlaceholder": "वर्शन का नाम (जैसे, v3.5.0)",
+    "addVersionButton": "वर्शन जोड़ें",
+    "released": "रिलीज़ हुआ",
+    "unreleased": "रिलीज़ नहीं हुआ",
+    "releaseButton": "रिलीज़ करें",
+    "gitHint": "किसी भी टिकट के लिए सीधे उसके ड्रॉअर से असली ब्रांच बनाने के लिए इस प्रोजेक्ट को एक git रिपॉज़िटरी से लिंक करें।",
+    "noGitProviderHint": "इस सर्वर पर कोई git प्रोवाइडर कॉन्फ़िगर नहीं है, इसलिए अभी लिंक करने के लिए कुछ नहीं है — देखें server/src/services/GitProvider.ts।",
+    "ownerPlaceholder": "मालिक",
+    "repoPlaceholder": "रिपॉज़िटरी",
+    "defaultBranchPlaceholder": "डिफ़ॉल्ट ब्रांच (main)",
+    "accessTokenPlaceholder": "एक्सेस टोकन",
+    "linkRepoButton": "रिपॉज़िटरी लिंक करें",
+    "linkingRepoButton": "लिंक किया जा रहा है…",
+    "failedLinkRepo": "रिपॉज़िटरी लिंक करने में विफल",
+    "defaultBranchSuffix": "डिफ़ॉल्ट ब्रांच: {branch}"
+  },
+  "workspaceView": {
+    "youBadge": "आप",
+    "canManageRoles": "आप भूमिकाएँ प्रबंधित कर सकते हैं",
+    "roles": {
+      "owner": "मालिक",
+      "admin": "एडमिन",
+      "member": "सदस्य",
+      "guest": "गेस्ट"
+    }
+  },
+  "stats": {
+    "title": "आँकड़े",
+    "window24h": "24घं",
+    "window1w": "1 सप्ताह",
+    "window30d": "30 दिन",
+    "timeSpentLabel": "व्यतीत समय",
+    "mostActiveLabel": "सबसे सक्रिय टिकट",
+    "noActivity": "अभी तक कोई गतिविधि नहीं।",
+    "loading": "आँकड़े लोड हो रहे हैं…"
+  },
+  "newIssueModal": {
+    "title": "नया इश्यू",
+    "titleFieldLabel": "शीर्षक",
+    "titlePlaceholder": "क्या करने की ज़रूरत है?",
+    "typeLabel": "प्रकार",
+    "priorityLabel": "प्राथमिकता",
+    "assigneesLabel": "असाइनीज़",
+    "failedCreate": "इश्यू बनाने में विफल",
+    "createButton": "इश्यू बनाएँ",
+    "creatingButton": "बनाया जा रहा है…"
+  },
+  "accountSettingsModal": {
+    "title": "खाता सेटिंग्स",
+    "uploadPicture": "फ़ोटो अपलोड करें",
+    "removePicture": "हटाएँ",
+    "nameLabel": "नाम",
+    "namePlaceholder": "आपका नाम",
+    "emailLabel": "ईमेल",
+    "emailPlaceholder": "you@example.com",
+    "invalidImage": "कृपया एक इमेज फ़ाइल चुनें",
+    "failedUpdate": "खाता अपडेट करने में विफल",
+    "saveButton": "बदलाव सहेजें",
+    "savingButton": "सहेजा जा रहा है…",
+    "youFallback": "आप"
+  },
+  "commentThread": {
+    "reply": "जवाब दें",
+    "edit": "संपादित करें",
+    "delete": "हटाएँ",
+    "deleting": "हटाया जा रहा है…",
+    "deleteConfirm": "यह टिप्पणी हटाएँ? इसे वापस नहीं किया जा सकता।",
+    "deleteConfirmWithReplies": "यह टिप्पणी और इसके सभी जवाब हटाएँ? इसे वापस नहीं किया जा सकता।",
+    "edited": "(संपादित)",
+    "repliesHidden": {
+      "one": "{count} जवाब छिपा है",
+      "other": "{count} जवाब छिपे हैं"
+    },
+    "continueThread": {
+      "one": "थ्रेड जारी रखें ({count} और जवाब)",
+      "other": "थ्रेड जारी रखें ({count} और जवाब)"
+    },
+    "showReplies": {
+      "one": "{count} जवाब दिखाएँ",
+      "other": "{count} जवाब दिखाएँ"
+    },
+    "replyPlaceholder": "जवाब लिखें… (मार्कडाउन समर्थित)",
+    "replyButton": "जवाब दें"
+  },
+  "markdownEditor": {
+    "boldTitle": "बोल्ड",
+    "italicTitle": "इटैलिक",
+    "codeTitle": "कोड",
+    "linkTitle": "लिंक",
+    "listTitle": "बुलेटेड सूची",
+    "quoteTitle": "उद्धरण",
+    "boldPlaceholder": "बोल्ड टेक्स्ट",
+    "italicPlaceholder": "इटैलिक टेक्स्ट",
+    "codePlaceholder": "कोड",
+    "linkPlaceholder": "लिंक टेक्स्ट",
+    "markdownSupported": "मार्कडाउन समर्थित",
+    "wordCount": {
+      "one": "{count} शब्द",
+      "other": "{count} शब्द"
+    }
+  },
+  "login": {
+    "logInTitle": "लॉग इन",
+    "signUpTitle": "खाता बनाएँ",
+    "displayNameLabel": "प्रदर्शित नाम",
+    "displayNamePlaceholder": "Ada Lovelace",
+    "emailLabel": "ईमेल",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "पासवर्ड",
+    "pleaseWait": "कृपया प्रतीक्षा करें…",
+    "logInButton": "लॉग इन करें",
+    "signUpButton": "साइन अप करें",
+    "toggleToSignUp": "खाता नहीं है? साइन अप करें",
+    "toggleToLogIn": "पहले से खाता है? लॉग इन करें",
+    "genericError": "कुछ गलत हो गया"
+  },
+  "app": {
+    "apiErrorTitle": "Workhorse API तक नहीं पहुँच सका",
+    "serverRunningHint": "क्या सर्वर चल रहा है?",
+    "loadingWorkspace": "वर्कस्पेस लोड हो रहा है…"
+  },
+  "backlog": {
+    "startSprintButton": "स्प्रिंट शुरू करें",
+    "completeSprintButton": "स्प्रिंट पूरा करें",
+    "noIssuesInSprint": "इस स्प्रिंट में अभी तक कोई इश्यू नहीं है।",
+    "nothingUnscheduled": "कोई अनिर्धारित इश्यू नहीं — सब कुछ किसी स्प्रिंट में है।",
+    "newSprintPlaceholder": "नए स्प्रिंट का नाम…",
+    "createSprintButton": "स्प्रिंट बनाएँ",
+    "backlogLabel": "बैकलॉग",
+    "pointsSuffix": "{done}/{total} SP",
+    "issuesCount": {
+      "one": "{count} इश्यू",
+      "other": "{count} इश्यू"
+    },
+    "sprintStates": {
+      "future": "भविष्य",
+      "active": "सक्रिय",
+      "closed": "बंद"
+    }
+  },
+  "agentForm": {
+    "namePlaceholder": "एजेंट का नाम",
+    "instructionsPlaceholder": "निर्देश — इस एजेंट को टिकट के साथ क्या करना चाहिए?",
+    "runtimeLabel": "रनटाइम",
+    "modelLabel": "मॉडल",
+    "contextScopeLabel": "संदर्भ का दायरा",
+    "contextScopes": {
+      "thread": {
+        "label": "थ्रेड",
+        "hint": "केवल यह टिप्पणी थ्रेड"
+      },
+      "ticket": {
+        "label": "टिकट",
+        "hint": "थ्रेड + इस टिकट का अपना विवरण (डिफ़ॉल्ट)"
+      },
+      "project": {
+        "label": "प्रोजेक्ट",
+        "hint": "टिकट + इस प्रोजेक्ट के अन्य खुले टिकट"
+      },
+      "workspace": {
+        "label": "वर्कस्पेस",
+        "hint": "प्रोजेक्ट + बाकी वर्कस्पेस"
+      }
+    },
+    "reactsToLabel": "इन पर प्रतिक्रिया देता है",
+    "allowedActionsLabel": "अनुमत क्रियाएँ",
+    "approvalLabel": "स्वीकृति",
+    "autoApplyAll": "सब कुछ अपने आप लागू करें",
+    "requireApprovalForAll": "सब कुछ के लिए स्वीकृति चाहिए",
+    "requireApprovalFor": "केवल इनके लिए स्वीकृति चाहिए…",
+    "budgetLabel": "बजट (वैकल्पिक — खाली = असीमित)",
+    "maxRunsPerHour": "अधिकतम रन/घंटा",
+    "maxRunsPerDay": "अधिकतम रन/दिन",
+    "maxActionsPerRun": "अधिकतम क्रियाएँ/रन",
+    "maxSpendPerDay": "अधिकतम खर्च/दिन",
+    "ignoreSelfEvents": "एजेंट की अपनी घटनाओं को नज़रअंदाज़ करें (अनुशंसित — इसे खुद को फिर से ट्रिगर करने से रोकता है)"
+  },
+  "agentsSettings": {
+    "awaitingApproval": "आपकी स्वीकृति की प्रतीक्षा में",
+    "agentsLabel": "एजेंट",
+    "hint": "एजेंट किसी टीम सदस्य की ओर से टिकटों पर काम करते हैं — किसी इश्यू पर एक एजेंट संलग्न करें (इश्यू के \"AI एजेंट\" सेक्शन से) और वह टिप्पणी कर सकता है, स्थिति बदल सकता है, फिर से असाइन कर सकता है, या प्रगति के साथ फ़ील्ड अपडेट कर सकता है, हमेशा उस व्यक्ति के नाम पर जिसकी ओर से वह काम कर रहा है। इसके निर्देश ही हर बार ट्रिगर होने पर इसके निर्णयों को तय करते हैं।",
+    "noAgentsYet": "अभी तक कोई एजेंट नहीं है — टिकट के काम को स्वचालित करना शुरू करने के लिए नीचे एक बनाएँ।",
+    "approveButton": "स्वीकृत करें",
+    "rejectButton": "अस्वीकार करें",
+    "addAgentLabel": "एजेंट जोड़ें",
+    "addAgentButton": "एजेंट जोड़ें",
+    "saveButton": "सहेजें",
+    "statusLabels": {
+      "pending": "लंबित",
+      "awaitingApproval": "स्वीकृति की प्रतीक्षा में",
+      "applied": "लागू हुआ",
+      "rejected": "अस्वीकृत",
+      "failed": "विफल"
+    },
+    "recentActivity": "हाल की गतिविधि",
+    "totalTokensTitle": "सभी रन में उपयोग किए गए कुल टोकन",
+    "aiBadge": "AI"
+  },
+  "agentOverview": {
+    "capabilitiesLabel": "क्षमताएँ",
+    "usageLabel": "उपयोग",
+    "tokensSuffix": "कुल टोकन",
+    "budgetLabel": "बजट",
+    "noActivityYet": "अभी तक कोई गतिविधि नहीं।",
+    "manageButton": "एजेंट सेटिंग्स प्रबंधित करें"
+  },
+  "workflowDiagram": {
+    "newStatusPlaceholder": "नई स्थिति का नाम",
+    "addStatusButton": "स्थिति जोड़ें",
+    "dragHint": "उन्हें जोड़ने के लिए एक स्थिति के किनारे से दूसरी तक खींचें। किसी स्थिति या ट्रांज़िशन को चुनें और हटाने के लिए Delete/Backspace दबाएँ — \"To Do\" और \"Done\" स्थितियाँ हटाई नहीं जा सकतीं।",
+    "editStatusTitle": "स्थिति संपादित करें",
+    "nameLabel": "नाम",
+    "colorLabel": "रंग (hex, वैकल्पिक)",
+    "savingButton": "सहेजा जा रहा है…",
+    "transitionsFromAnyLabel": "किसी भी स्थिति से ट्रांज़िशन",
+    "transitionNamePlaceholder": "ट्रांज़िशन का नाम (जैसे, Reopen)",
+    "addGlobalTransitionButton": "ग्लोबल ट्रांज़िशन जोड़ें",
+    "pathErrorTransition": "इस ट्रांज़िशन को हटाने से To Do से Done तक का एकमात्र रास्ता खत्म हो जाएगा",
+    "pathErrorStatus": "इस स्थिति को हटाने से To Do से Done तक का एकमात्र रास्ता खत्म हो जाएगा",
+    "failedDeleteTransition": "ट्रांज़िशन हटाने में विफल",
+    "failedDeleteStatus": "स्थिति हटाने में विफल"
+  },
+  "statusNode": {
+    "lockedTitle": "\"To Do\" और \"Done\" स्थितियाँ हटाई नहीं जा सकतीं",
+    "editTitle": "स्थिति संपादित करें"
+  },
+  "relativeDate": {
+    "today": "आज",
+    "daysAgo": {
+      "one": "{count} दिन पहले",
+      "other": "{count} दिन पहले"
+    }
+  },
+  "storyPointWarning": {
+    "pastDue": "यह नियत तारीख पहले ही बीत चुकी है, लेकिन इश्यू अभी भी {points} पॉइंट्स का अनुमानित है।",
+    "tooSoon": "आमतौर पर {points} पॉइंट्स में {maxDuration} तक लगते हैं, लेकिन नियत तारीख में केवल {daysUntilDue} बचा है।",
+    "hoursDuration": "{hours}घं",
+    "daysDuration": {
+      "one": "{count} दिन",
+      "other": "{count} दिन"
+    }
+  },
+  "activity": {
+    "eventType": {
+      "issueCreated": "यह इश्यू बनाया",
+      "issueStatusChanged": "स्थिति बदली",
+      "issueResolved": "यह इश्यू हल किया",
+      "issueReopened": "यह इश्यू फिर से खोला",
+      "issueAssigneesChanged": "असाइनीज़ बदले",
+      "issueAgentAssigned": "एक AI एजेंट संलग्न किया",
+      "issueAgentUnassigned": "एक AI एजेंट हटाया",
+      "issuePriorityChanged": "प्राथमिकता बदली",
+      "issueLabelsChanged": "लेबल बदले",
+      "issueDueDateChanged": "नियत तारीख बदली",
+      "issueSprintChanged": "स्प्रिंट बदला",
+      "issueUpdated": "यह इश्यू अपडेट किया",
+      "issueLinked": "दूसरा इश्यू लिंक किया",
+      "issueUnlinked": "लिंक्ड इश्यू हटाया",
+      "issueDeleted": "यह इश्यू हटाया",
+      "issueWorklogAdded": "काम का समय लॉग किया",
+      "issueAttachmentAdded": "एक अटैचमेंट जोड़ा",
+      "issueAttachmentRemoved": "एक अटैचमेंट हटाया",
+      "issueBranchCreated": "एक ब्रांच बनाई",
+      "issueBranchDeleted": "ब्रांच हटाई",
+      "commentCreated": "एक टिप्पणी जोड़ी",
+      "commentEdited": "एक टिप्पणी संपादित की",
+      "commentDeleted": "एक टिप्पणी हटाई",
+      "commentMentioned": "टिप्पणी में किसी का उल्लेख किया"
+    },
+    "event": {
+      "issueCreated": "यह इश्यू बनाया",
+      "issueStatusChanged": "स्थिति {from} से {to} में बदली",
+      "issueResolved": "यह इश्यू हल किया ({status})",
+      "issueReopened": "यह इश्यू फिर से खोला ({status})",
+      "assigneesChangedTo": "असाइनीज़ {from} से {to} में बदले",
+      "assigneesUnassignedAll": "सभी को अनअसाइन किया (था {from})",
+      "noOne": "कोई नहीं",
+      "issueAgentAssigned": "एक AI एजेंट संलग्न किया",
+      "issueAgentUnassigned": "एक AI एजेंट हटाया",
+      "issuePriorityChanged": "प्राथमिकता {from} से {to} में बदली",
+      "issueLabelsChanged": "लेबल {from} से {to} में बदले",
+      "labelsNone": "कोई नहीं",
+      "dueDateSet": "नियत तारीख {date} पर सेट की",
+      "dueDateCleared": "नियत तारीख हटाई",
+      "sprintSet": "इस इश्यू को एक स्प्रिंट में ले जाया",
+      "sprintCleared": "इस इश्यू को स्प्रिंट से बाहर किया",
+      "issueUpdated": "{fields} अपडेट किए",
+      "issueUpdatedFallback": "यह इश्यू",
+      "issueLinked": "दूसरा इश्यू लिंक किया",
+      "issueUnlinked": "लिंक्ड इश्यू हटाया",
+      "issueDeleted": "यह इश्यू हटाया",
+      "worklogAdded": "{duration} काम लॉग किया",
+      "attachmentAdded": "{fileName} अटैच किया",
+      "attachmentRemoved": "एक अटैचमेंट हटाया",
+      "branchCreated": "{name} ब्रांच बनाई",
+      "branchDeleted": "ब्रांच हटाई",
+      "commentReplied": "एक टिप्पणी का जवाब दिया",
+      "commentCreated": "एक टिप्पणी जोड़ी",
+      "commentEdited": "एक टिप्पणी संपादित की",
+      "commentDeleted": "एक टिप्पणी हटाई",
+      "commentMentioned": "टिप्पणी में किसी का उल्लेख किया"
+    }
+  },
+  "automation": {
+    "action": {
+      "transitionStatus": "→ {status}",
+      "assignTo": "{name} को असाइन करें",
+      "addComment": "टिप्पणी \"{body}\"",
+      "setField": "{field} = {value} सेट करें",
+      "readRepoFile": "{path} पढ़ें",
+      "writeRepoFile": "{path} लिखें → ब्रांच \"{branch}\""
+    }
+  }
+}

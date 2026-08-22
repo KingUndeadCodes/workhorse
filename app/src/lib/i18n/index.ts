@@ -2,17 +2,25 @@ import { derived, writable } from 'svelte/store';
 import en from './locales/en.json';
 import ru from './locales/ru.json';
 import es from './locales/es.json';
+import uk from './locales/uk.json';
+import hi from './locales/hi.json';
+import zh from './locales/zh.json';
+import ja from './locales/ja.json';
 
 /** Add a new language by adding its id here, adding a matching entry to `SUPPORTED_LOCALES`
  * below, and creating `./locales/{id}.json` with the same nested key shape as `en.json` (start
  * from a copy of `es.json` with every value emptied out — see `README.md` in this directory for
  * the full scaffold/plural/fallback conventions). */
-export type Locale = 'en' | 'ru' | 'es';
+export type Locale = 'en' | 'ru' | 'es' | 'uk' | 'hi' | 'zh' | 'ja';
 
 export const SUPPORTED_LOCALES: { id: Locale; label: string }[] = [
   { id: 'en', label: 'English' },
   { id: 'ru', label: 'Русский' },
   { id: 'es', label: 'Español' },
+  { id: 'uk', label: 'Українська' },
+  { id: 'hi', label: 'हिन्दी' },
+  { id: 'zh', label: '中文' },
+  { id: 'ja', label: '日本語' },
 ];
 
 /** A leaf translation is either a plain string or, for anything consumed through `tn()`, a set
@@ -26,7 +34,7 @@ export interface TranslationDict {
   [key: string]: TranslationValue | TranslationDict;
 }
 
-const DICTS: Record<Locale, TranslationDict> = { en, ru, es };
+const DICTS: Record<Locale, TranslationDict> = { en, ru, es, uk, hi, zh, ja };
 const PLURAL_CATEGORIES = ['zero', 'one', 'two', 'few', 'many', 'other'] as const;
 
 const STORAGE_KEY = 'workhorse-locale';

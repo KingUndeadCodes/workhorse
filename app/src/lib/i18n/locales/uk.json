@@ -1,0 +1,539 @@
+{
+  "common": {
+    "cancel": "Скасувати",
+    "save": "Зберегти",
+    "saving": "Збереження…",
+    "create": "Створити",
+    "creating": "Створення…",
+    "add": "Додати",
+    "delete": "Видалити",
+    "deleting": "Видалення…",
+    "edit": "Редагувати",
+    "remove": "Прибрати",
+    "members": {
+      "one": "{count} учасник",
+      "few": "{count} учасники",
+      "many": "{count} учасників",
+      "other": "{count} учасника"
+    },
+    "priority": {
+      "highest": "найвищий",
+      "high": "високий",
+      "medium": "середній",
+      "low": "низький",
+      "lowest": "найнижчий"
+    }
+  },
+  "nav": {
+    "board": "Дошка",
+    "backlog": "Беклог"
+  },
+  "topBar": {
+    "workhorseBrand": "Workhorse",
+    "noActiveSprint": "Немає активного спринту",
+    "newButton": "Створити…",
+    "newIssue": "Задача",
+    "newSprint": "Спринт",
+    "newLabel": "Мітка",
+    "newComponent": "Компонент",
+    "newVersion": "Версія",
+    "statsTitle": "Статистика",
+    "projectSettingsTitle": "Налаштування проєкту",
+    "workspaceSettingsTitle": "Налаштування робочого простору",
+    "accountSettings": "Налаштування облікового запису",
+    "logOut": "Вийти"
+  },
+  "sidebar": {
+    "newProjectPlaceholder": "Назва проєкту",
+    "newProjectKeyPlaceholder": "Ключ (наприклад, MOB)",
+    "newProjectButton": "Новий проєкт",
+    "projectsLabel": "Проєкти",
+    "failedCreateProject": "Не вдалося створити проєкт"
+  },
+  "mobileNav": {
+    "newTab": "Створити",
+    "projectsTab": "Проєкти",
+    "moreTab": "Ще",
+    "newProjectRow": "Новий проєкт",
+    "statsRow": "Статистика",
+    "projectSettingsRow": "Налаштування проєкту",
+    "workspaceSettingsRow": "Налаштування робочого простору",
+    "accountSettingsRow": "Налаштування облікового запису",
+    "logOutRow": "Вийти"
+  },
+  "board": {
+    "noEpic": "Без епіка",
+    "noIssues": "Немає задач"
+  },
+  "filters": {
+    "searchPlaceholder": "Пошук задач…",
+    "title": "Фільтри",
+    "button": "Фільтри",
+    "clear": "Скинути фільтри",
+    "sectionAssignee": "Виконавець",
+    "sectionLabel": "Мітка",
+    "sectionPriority": "Пріоритет",
+    "sectionType": "Тип",
+    "sectionStatus": "Статус"
+  },
+  "issueCard": {
+    "moveToTitle": "Перемістити в…"
+  },
+  "issueDrawer": {
+    "descriptionLabel": "Опис",
+    "descriptionPlaceholder": "Додайте опис… (підтримується markdown)",
+    "assigneesLabel": "Виконавці",
+    "addChip": "+ Додати",
+    "reporterLabel": "Автор",
+    "unassigned": "Не призначено",
+    "priorityLabel": "Пріоритет",
+    "storyPointsLabel": "Story Points",
+    "sprintLabel": "Спринт",
+    "noSprint": "Немає спринту",
+    "dueDateLabel": "Термін виконання",
+    "aiAgentsLabel": "ШІ-агенти",
+    "agentsHint": "Підключіть агента, щоб він попрацював над цією задачею.",
+    "runNowTitle": "Запустити зараз",
+    "runNowButton": "Запустити",
+    "runningButton": "…",
+    "noMoreAgents": "Більше немає доступних агентів",
+    "branchLabel": "Гілка",
+    "createBranchButton": "+ Створити гілку",
+    "advancedToggle": "Додатково",
+    "linkedIssuesLabel": "Пов'язані задачі",
+    "relationRelatesTo": "пов'язана з",
+    "relationBlocks": "блокує",
+    "relationDuplicates": "дублює",
+    "relationClones": "клонує",
+    "relationCauses": "спричиняє",
+    "relationInverse": "{type} (зворотний зв'язок)",
+    "issueKeyPlaceholder": "Ключ задачі (наприклад, ATL-131)",
+    "linkButton": "Зв'язати",
+    "timeTrackingLabel": "Облік часу",
+    "loggedSuffix": "{hours} год. витрачено",
+    "estimateSuffix": "{hours} год. оцінка",
+    "hoursPlaceholder": "Години",
+    "workNotePlaceholder": "Над чим ви працювали? (необов'язково)",
+    "logButton": "Записати",
+    "commentsTab": "Коментарі",
+    "activityTab": "Активність",
+    "nothingLoggedYet": "Поки нічого не зафіксовано.",
+    "loadingDetails": "Завантаження даних…",
+    "couldntLoadDetails": "Не вдалося завантажити дані про подію.",
+    "runAgentConfirm": "Запустити «{name}» для цієї задачі зараз?",
+    "failedAttachAgent": "Не вдалося підключити агента",
+    "failedLoadBranch": "Не вдалося завантажити гілку",
+    "failedCreateBranch": "Не вдалося створити гілку",
+    "actorSomeone": "Хтось",
+    "actorAutomationRule": "Правило автоматизації",
+    "actorSystem": "Система",
+    "commentPlaceholder": "Додайте коментар… (підтримується markdown)",
+    "commentSubmitLabel": "Коментувати"
+  },
+  "settings": {
+    "tabs": {
+      "appearance": "Вигляд",
+      "labels": "Мітки",
+      "fields": "Поля",
+      "workflow": "Робочий процес",
+      "automations": "Автоматизації",
+      "agents": "Агенти",
+      "webhooks": "Вебхуки"
+    },
+    "appearance": {
+      "themeLabel": "Тема",
+      "themeHint": "Перемикає між світлою і темною темою для цього браузера, або слідує системній темі в реальному часі, якщо обрано «Як у браузері».",
+      "themeLight": "Світла",
+      "themeDark": "Темна",
+      "themeSystem": "Як у браузері",
+      "languageLabel": "Мова",
+      "languageHint": "Оберіть мову інтерфейсу Workhorse.",
+      "nonEnglishDisclaimer": "Це перекладає лише інтерфейс самого застосунку — будь ласка, залишайте назви задач, описи, коментарі, мітки та інший контент англійською мовою, щоб уся команда могла їх прочитати."
+    },
+    "labelNamePlaceholder": "Назва мітки",
+    "addLabelButton": "Додати мітку",
+    "fieldNamePlaceholder": "Назва поля (наприклад, Severity)",
+    "fieldKeyPlaceholder": "Технічний ключ (наприклад, severity)",
+    "fieldOptionsPlaceholder": "Варіанти через кому (наприклад, Low, Medium, High)",
+    "addFieldButton": "Додати поле",
+    "statusCategoriesLabel": "Категорії статусів",
+    "categoryNamePlaceholder": "Назва категорії (наприклад, Resolving Differences)",
+    "addCategoryButton": "Додати категорію",
+    "workflowLabel": "Робочий процес",
+    "workflowDesktopOnly": "Діаграма робочого процесу — це полотно для редагування перетягуванням, створене для миші. Відкрийте налаштування в браузері на комп'ютері, щоб редагувати статуси та переходи.",
+    "ruleNamePlaceholder": "Назва правила",
+    "triggerLabel": "Тригер",
+    "conditionsLabel": "Умови (необов'язково — без них правило виконується завжди)",
+    "valuePlaceholder": "значення",
+    "addConditionButton": "+ Додати умову",
+    "actionsLabel": "Дії",
+    "addActionButton": "+ Додати дію",
+    "addRuleButton": "Додати правило",
+    "commentBodyPlaceholder": "Текст коментаря",
+    "pathPlaceholder": "шлях/до/файлу.ts",
+    "branchNamePlaceholder": "назва гілки",
+    "fileContentPlaceholder": "вміст файлу",
+    "commitMessagePlaceholder": "повідомлення коміту (необов'язково)",
+    "statusPlaceholder": "статус…",
+    "userPlaceholder": "користувач…",
+    "fieldPlaceholder": "поле…",
+    "enabledLabel": "увімкнено",
+    "webhookUrlPlaceholder": "https://your-service.example/webhook",
+    "addWebhookButton": "Додати вебхук",
+    "failedDeleteCategory": "Не вдалося видалити категорію"
+  },
+  "projectSettings": {
+    "tabs": {
+      "project": "Проєкт",
+      "components": "Компоненти",
+      "versions": "Версії",
+      "git": "Git"
+    },
+    "nameLabel": "Назва",
+    "keyLabel": "Ключ",
+    "keyHint": "Ключ незмінний — він вбудований у ключ кожної задачі (наприклад, «{key}-142»).",
+    "colorLabel": "Колір",
+    "featuresLabel": "Функції",
+    "featuresHint": "Вимкніть те, що не потрібно цьому проєкту — нічого не видаляється, і повернути можна будь-коли.",
+    "features": {
+      "reporters": "Автори",
+      "storyPoints": "Story Points",
+      "dueDates": "Терміни виконання",
+      "timeTracking": "Облік часу",
+      "priority": "Пріоритет",
+      "componentsAndVersions": "Компоненти та версії",
+      "sprints": "Спринти",
+      "labels": "Мітки"
+    },
+    "archiveButton": "Архівувати проєкт",
+    "archiveConfirm": "Архівувати «{name}»? Він залишиться в робочому просторі, але буде прихований з перемикача проєктів.",
+    "componentNamePlaceholder": "Назва компонента",
+    "addComponentButton": "Додати компонент",
+    "versionNamePlaceholder": "Назва версії (наприклад, v3.5.0)",
+    "addVersionButton": "Додати версію",
+    "released": "Випущено",
+    "unreleased": "Не випущено",
+    "releaseButton": "Випустити",
+    "gitHint": "Зв'яжіть проєкт з git-репозиторієм, щоб створювати справжні гілки для будь-якої задачі прямо з її картки.",
+    "noGitProviderHint": "На сервері не налаштовано жодного git-провайдера, тому поки нема з чим пов'язувати — див. server/src/services/GitProvider.ts.",
+    "ownerPlaceholder": "Власник",
+    "repoPlaceholder": "Репозиторій",
+    "defaultBranchPlaceholder": "Гілка за замовчуванням (main)",
+    "accessTokenPlaceholder": "Токен доступу",
+    "linkRepoButton": "Пов'язати репозиторій",
+    "linkingRepoButton": "Пов'язування…",
+    "failedLinkRepo": "Не вдалося пов'язати репозиторій",
+    "defaultBranchSuffix": "гілка за замовчуванням: {branch}"
+  },
+  "workspaceView": {
+    "youBadge": "ви",
+    "canManageRoles": "ви можете керувати ролями",
+    "roles": {
+      "owner": "власник",
+      "admin": "адміністратор",
+      "member": "учасник",
+      "guest": "гість"
+    }
+  },
+  "stats": {
+    "title": "Статистика",
+    "window24h": "24г",
+    "window1w": "1 тиждень",
+    "window30d": "30 днів",
+    "timeSpentLabel": "Витрачений час",
+    "mostActiveLabel": "Найактивніші задачі",
+    "noActivity": "Поки немає активності.",
+    "loading": "Завантаження статистики…"
+  },
+  "newIssueModal": {
+    "title": "Нова задача",
+    "titleFieldLabel": "Заголовок",
+    "titlePlaceholder": "Що потрібно зробити?",
+    "typeLabel": "Тип",
+    "priorityLabel": "Пріоритет",
+    "assigneesLabel": "Виконавці",
+    "failedCreate": "Не вдалося створити задачу",
+    "createButton": "Створити задачу",
+    "creatingButton": "Створення…"
+  },
+  "accountSettingsModal": {
+    "title": "Налаштування облікового запису",
+    "uploadPicture": "Завантажити фото",
+    "removePicture": "Видалити",
+    "nameLabel": "Ім'я",
+    "namePlaceholder": "Ваше ім'я",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "invalidImage": "Будь ласка, оберіть файл зображення",
+    "failedUpdate": "Не вдалося оновити обліковий запис",
+    "saveButton": "Зберегти зміни",
+    "savingButton": "Збереження…",
+    "youFallback": "Ви"
+  },
+  "commentThread": {
+    "reply": "Відповісти",
+    "edit": "Редагувати",
+    "delete": "Видалити",
+    "deleting": "Видалення…",
+    "deleteConfirm": "Видалити цей коментар? Цю дію не можна скасувати.",
+    "deleteConfirmWithReplies": "Видалити цей коментар і всі відповіді на нього? Цю дію не можна скасувати.",
+    "edited": "(змінено)",
+    "repliesHidden": {
+      "one": "{count} відповідь прихована",
+      "few": "{count} відповіді приховано",
+      "many": "{count} відповідей приховано",
+      "other": "{count} відповіді приховано"
+    },
+    "continueThread": {
+      "one": "Продовжити обговорення (ще {count} відповідь)",
+      "few": "Продовжити обговорення (ще {count} відповіді)",
+      "many": "Продовжити обговорення (ще {count} відповідей)",
+      "other": "Продовжити обговорення (ще {count} відповіді)"
+    },
+    "showReplies": {
+      "one": "Показати {count} відповідь",
+      "few": "Показати {count} відповіді",
+      "many": "Показати {count} відповідей",
+      "other": "Показати {count} відповіді"
+    },
+    "replyPlaceholder": "Напишіть відповідь… (підтримується markdown)",
+    "replyButton": "Відповісти"
+  },
+  "markdownEditor": {
+    "boldTitle": "Жирний",
+    "italicTitle": "Курсив",
+    "codeTitle": "Код",
+    "linkTitle": "Посилання",
+    "listTitle": "Маркований список",
+    "quoteTitle": "Цитата",
+    "boldPlaceholder": "жирний текст",
+    "italicPlaceholder": "курсивний текст",
+    "codePlaceholder": "код",
+    "linkPlaceholder": "текст посилання",
+    "markdownSupported": "Підтримується markdown",
+    "wordCount": {
+      "one": "{count} слово",
+      "few": "{count} слова",
+      "many": "{count} слів",
+      "other": "{count} слова"
+    }
+  },
+  "login": {
+    "logInTitle": "Вхід",
+    "signUpTitle": "Створити обліковий запис",
+    "displayNameLabel": "Відображуване ім'я",
+    "displayNamePlaceholder": "Ada Lovelace",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "Пароль",
+    "pleaseWait": "Будь ласка, зачекайте…",
+    "logInButton": "Увійти",
+    "signUpButton": "Зареєструватися",
+    "toggleToSignUp": "Немає облікового запису? Зареєструватися",
+    "toggleToLogIn": "Вже є обліковий запис? Увійти",
+    "genericError": "щось пішло не так"
+  },
+  "app": {
+    "apiErrorTitle": "Не вдалося з'єднатися з API Workhorse",
+    "serverRunningHint": "Сервер запущено?",
+    "loadingWorkspace": "Завантаження робочого простору…"
+  },
+  "backlog": {
+    "startSprintButton": "Почати спринт",
+    "completeSprintButton": "Завершити спринт",
+    "noIssuesInSprint": "У цьому спринті поки немає задач.",
+    "nothingUnscheduled": "Немає незапланованих задач — усе вже в спринтах.",
+    "newSprintPlaceholder": "Назва нового спринту…",
+    "createSprintButton": "Створити спринт",
+    "backlogLabel": "Беклог",
+    "pointsSuffix": "{done}/{total} SP",
+    "issuesCount": {
+      "one": "{count} задача",
+      "few": "{count} задачі",
+      "many": "{count} задач",
+      "other": "{count} задачі"
+    },
+    "sprintStates": {
+      "future": "майбутній",
+      "active": "активний",
+      "closed": "завершено"
+    }
+  },
+  "agentForm": {
+    "namePlaceholder": "Назва агента",
+    "instructionsPlaceholder": "Інструкції — що має робити цей агент із задачею?",
+    "runtimeLabel": "Середовище виконання",
+    "modelLabel": "Модель",
+    "contextScopeLabel": "Область контексту",
+    "contextScopes": {
+      "thread": {
+        "label": "Тред",
+        "hint": "Лише цей тред коментарів"
+      },
+      "ticket": {
+        "label": "Задача",
+        "hint": "Тред + власні дані цієї задачі (за замовчуванням)"
+      },
+      "project": {
+        "label": "Проєкт",
+        "hint": "Задача + інші відкриті задачі в цьому проєкті"
+      },
+      "workspace": {
+        "label": "Робочий простір",
+        "hint": "Проєкт + решта робочого простору"
+      }
+    },
+    "reactsToLabel": "Реагує на",
+    "allowedActionsLabel": "Дозволені дії",
+    "approvalLabel": "Підтвердження",
+    "autoApplyAll": "Застосовувати все автоматично",
+    "requireApprovalForAll": "Вимагати підтвердження для всього",
+    "requireApprovalFor": "Вимагати підтвердження лише для…",
+    "budgetLabel": "Бюджет (необов'язково — порожньо = без обмежень)",
+    "maxRunsPerHour": "Макс. запусків/годину",
+    "maxRunsPerDay": "Макс. запусків/день",
+    "maxActionsPerRun": "Макс. дій за запуск",
+    "maxSpendPerDay": "Макс. витрат/день",
+    "ignoreSelfEvents": "Ігнорувати власні події агента (рекомендовано — запобігає повторному запуску самим собою)"
+  },
+  "agentsSettings": {
+    "awaitingApproval": "Очікує вашого підтвердження",
+    "agentsLabel": "Агенти",
+    "hint": "Агенти виконують задачі від імені учасника команди — підключіть агента до задачі (у розділі «ШІ-агенти» картки задачі), і він зможе коментувати, змінювати статус, перепризначати або оновлювати поля в міру просування, завжди із зазначенням людини, від імені якої він діє. Саме інструкції агента визначають його рішення під час кожного запуску.",
+    "noAgentsYet": "Поки немає агентів — створіть першого нижче, щоб почати автоматизувати роботу із задачами.",
+    "approveButton": "Підтвердити",
+    "rejectButton": "Відхилити",
+    "addAgentLabel": "Додати агента",
+    "addAgentButton": "Додати агента",
+    "saveButton": "Зберегти",
+    "statusLabels": {
+      "pending": "В очікуванні",
+      "awaitingApproval": "Очікує підтвердження",
+      "applied": "Застосовано",
+      "rejected": "Відхилено",
+      "failed": "Помилка"
+    },
+    "recentActivity": "Недавня активність",
+    "totalTokensTitle": "Усього токенів використано за всі запуски",
+    "aiBadge": "ШІ"
+  },
+  "agentOverview": {
+    "capabilitiesLabel": "Можливості",
+    "usageLabel": "Використання",
+    "tokensSuffix": "токенів усього",
+    "budgetLabel": "Бюджет",
+    "noActivityYet": "Поки немає активності.",
+    "manageButton": "Налаштування агента"
+  },
+  "workflowDiagram": {
+    "newStatusPlaceholder": "Назва нового статусу",
+    "addStatusButton": "Додати статус",
+    "dragHint": "Перетягніть від краю одного статусу до іншого, щоб з'єднати їх. Виберіть статус або перехід і натисніть Delete/Backspace, щоб видалити — статуси «To Do» і «Done» видалити не можна.",
+    "editStatusTitle": "Змінити статус",
+    "nameLabel": "Назва",
+    "colorLabel": "Колір (hex, необов'язково)",
+    "savingButton": "Збереження…",
+    "transitionsFromAnyLabel": "Переходи з будь-якого статусу",
+    "transitionNamePlaceholder": "Назва переходу (наприклад, Reopen)",
+    "addGlobalTransitionButton": "Додати глобальний перехід",
+    "pathErrorTransition": "Видалення цього переходу прибере єдиний шлях від To Do до Done",
+    "pathErrorStatus": "Видалення цього статусу прибере єдиний шлях від To Do до Done",
+    "failedDeleteTransition": "Не вдалося видалити перехід",
+    "failedDeleteStatus": "Не вдалося видалити статус"
+  },
+  "statusNode": {
+    "lockedTitle": "Статуси «To Do» і «Done» видалити не можна",
+    "editTitle": "Змінити статус"
+  },
+  "relativeDate": {
+    "today": "сьогодні",
+    "daysAgo": {
+      "one": "{count} день тому",
+      "few": "{count} дні тому",
+      "many": "{count} днів тому",
+      "other": "{count} дня тому"
+    }
+  },
+  "storyPointWarning": {
+    "pastDue": "Цей термін виконання вже минув, а задача все ще оцінена в {points} балів.",
+    "tooSoon": "Зазвичай на {points} балів іде до {maxDuration}, а до терміну виконання залишилося лише {daysUntilDue}.",
+    "hoursDuration": "{hours} год.",
+    "daysDuration": {
+      "one": "{count} день",
+      "few": "{count} дні",
+      "many": "{count} днів",
+      "other": "{count} дня"
+    }
+  },
+  "activity": {
+    "eventType": {
+      "issueCreated": "створив цю задачу",
+      "issueStatusChanged": "змінив статус",
+      "issueResolved": "вирішив цю задачу",
+      "issueReopened": "повторно відкрив цю задачу",
+      "issueAssigneesChanged": "змінив виконавців",
+      "issueAgentAssigned": "підключив ШІ-агента",
+      "issueAgentUnassigned": "відключив ШІ-агента",
+      "issuePriorityChanged": "змінив пріоритет",
+      "issueLabelsChanged": "змінив мітки",
+      "issueDueDateChanged": "змінив термін виконання",
+      "issueSprintChanged": "змінив спринт",
+      "issueUpdated": "оновив цю задачу",
+      "issueLinked": "пов'язав іншу задачу",
+      "issueUnlinked": "прибрав пов'язану задачу",
+      "issueDeleted": "видалив цю задачу",
+      "issueWorklogAdded": "зафіксував витрачений час",
+      "issueAttachmentAdded": "додав вкладення",
+      "issueAttachmentRemoved": "видалив вкладення",
+      "issueBranchCreated": "створив гілку",
+      "issueBranchDeleted": "видалив гілку",
+      "commentCreated": "додав коментар",
+      "commentEdited": "змінив коментар",
+      "commentDeleted": "видалив коментар",
+      "commentMentioned": "згадав когось у коментарі"
+    },
+    "event": {
+      "issueCreated": "створив цю задачу",
+      "issueStatusChanged": "змінив статус з {from} на {to}",
+      "issueResolved": "вирішив цю задачу ({status})",
+      "issueReopened": "повторно відкрив цю задачу ({status})",
+      "assigneesChangedTo": "змінив виконавців з {from} на {to}",
+      "assigneesUnassignedAll": "зняв усіх виконавців (було {from})",
+      "noOne": "нікого",
+      "issueAgentAssigned": "підключив ШІ-агента",
+      "issueAgentUnassigned": "відключив ШІ-агента",
+      "issuePriorityChanged": "змінив пріоритет з {from} на {to}",
+      "issueLabelsChanged": "змінив мітки з {from} на {to}",
+      "labelsNone": "немає",
+      "dueDateSet": "встановив термін виконання на {date}",
+      "dueDateCleared": "прибрав термін виконання",
+      "sprintSet": "перемістив цю задачу до спринту",
+      "sprintCleared": "прибрав цю задачу зі спринту",
+      "issueUpdated": "оновив {fields}",
+      "issueUpdatedFallback": "цю задачу",
+      "issueLinked": "пов'язав іншу задачу",
+      "issueUnlinked": "прибрав пов'язану задачу",
+      "issueDeleted": "видалив цю задачу",
+      "worklogAdded": "зафіксував {duration} роботи",
+      "attachmentAdded": "додав вкладення {fileName}",
+      "attachmentRemoved": "видалив вкладення",
+      "branchCreated": "створив гілку {name}",
+      "branchDeleted": "видалив гілку",
+      "commentReplied": "відповів на коментар",
+      "commentCreated": "додав коментар",
+      "commentEdited": "змінив коментар",
+      "commentDeleted": "видалив коментар",
+      "commentMentioned": "згадав когось у коментарі"
+    }
+  },
+  "automation": {
+    "action": {
+      "transitionStatus": "→ {status}",
+      "assignTo": "призначити {name}",
+      "addComment": "коментар «{body}»",
+      "setField": "встановити {field} = {value}",
+      "readRepoFile": "прочитати {path}",
+      "writeRepoFile": "записати {path} → гілка «{branch}»"
+    }
+  }
+}

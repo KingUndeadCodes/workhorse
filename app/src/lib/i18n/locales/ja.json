@@ -1,0 +1,515 @@
+{
+  "common": {
+    "cancel": "キャンセル",
+    "save": "保存",
+    "saving": "保存中…",
+    "create": "作成",
+    "creating": "作成中…",
+    "add": "追加",
+    "delete": "削除",
+    "deleting": "削除中…",
+    "edit": "編集",
+    "remove": "削除",
+    "members": {
+      "other": "メンバー {count} 人"
+    },
+    "priority": {
+      "highest": "最高",
+      "high": "高",
+      "medium": "中",
+      "low": "低",
+      "lowest": "最低"
+    }
+  },
+  "nav": {
+    "board": "ボード",
+    "backlog": "バックログ"
+  },
+  "topBar": {
+    "workhorseBrand": "Workhorse",
+    "noActiveSprint": "進行中のスプリントはありません",
+    "newButton": "新規作成…",
+    "newIssue": "課題",
+    "newSprint": "スプリント",
+    "newLabel": "ラベル",
+    "newComponent": "コンポーネント",
+    "newVersion": "バージョン",
+    "statsTitle": "統計",
+    "projectSettingsTitle": "プロジェクト設定",
+    "workspaceSettingsTitle": "ワークスペース設定",
+    "accountSettings": "アカウント設定",
+    "logOut": "ログアウト"
+  },
+  "sidebar": {
+    "newProjectPlaceholder": "プロジェクト名",
+    "newProjectKeyPlaceholder": "キー（例: MOB）",
+    "newProjectButton": "新規プロジェクト",
+    "projectsLabel": "プロジェクト",
+    "failedCreateProject": "プロジェクトの作成に失敗しました"
+  },
+  "mobileNav": {
+    "newTab": "新規作成",
+    "projectsTab": "プロジェクト",
+    "moreTab": "その他",
+    "newProjectRow": "新規プロジェクト",
+    "statsRow": "統計",
+    "projectSettingsRow": "プロジェクト設定",
+    "workspaceSettingsRow": "ワークスペース設定",
+    "accountSettingsRow": "アカウント設定",
+    "logOutRow": "ログアウト"
+  },
+  "board": {
+    "noEpic": "エピックなし",
+    "noIssues": "課題はありません"
+  },
+  "filters": {
+    "searchPlaceholder": "課題を検索…",
+    "title": "フィルター",
+    "button": "フィルター",
+    "clear": "フィルターをクリア",
+    "sectionAssignee": "担当者",
+    "sectionLabel": "ラベル",
+    "sectionPriority": "優先度",
+    "sectionType": "タイプ",
+    "sectionStatus": "ステータス"
+  },
+  "issueCard": {
+    "moveToTitle": "移動先…"
+  },
+  "issueDrawer": {
+    "descriptionLabel": "説明",
+    "descriptionPlaceholder": "説明を追加…（Markdown対応）",
+    "assigneesLabel": "担当者",
+    "addChip": "+ 追加",
+    "reporterLabel": "報告者",
+    "unassigned": "未割り当て",
+    "priorityLabel": "優先度",
+    "storyPointsLabel": "ストーリーポイント",
+    "sprintLabel": "スプリント",
+    "noSprint": "スプリントなし",
+    "dueDateLabel": "期限",
+    "aiAgentsLabel": "AIエージェント",
+    "agentsHint": "このチケットを処理させるエージェントを割り当てます。",
+    "runNowTitle": "今すぐ実行",
+    "runNowButton": "実行",
+    "runningButton": "…",
+    "noMoreAgents": "追加できるエージェントはこれ以上ありません",
+    "branchLabel": "ブランチ",
+    "createBranchButton": "+ ブランチを作成",
+    "advancedToggle": "詳細設定",
+    "linkedIssuesLabel": "リンクされた課題",
+    "relationRelatesTo": "関連する",
+    "relationBlocks": "ブロックする",
+    "relationDuplicates": "重複する",
+    "relationClones": "クローンである",
+    "relationCauses": "原因となる",
+    "relationInverse": "{type}（逆方向）",
+    "issueKeyPlaceholder": "課題キー（例: ATL-131）",
+    "linkButton": "リンク",
+    "timeTrackingLabel": "時間トラッキング",
+    "loggedSuffix": "{hours} 時間記録済み",
+    "estimateSuffix": "見積もり {hours} 時間",
+    "hoursPlaceholder": "時間",
+    "workNotePlaceholder": "何の作業をしましたか？（任意）",
+    "logButton": "記録",
+    "commentsTab": "コメント",
+    "activityTab": "アクティビティ",
+    "nothingLoggedYet": "まだ何も記録されていません。",
+    "loadingDetails": "詳細を読み込み中…",
+    "couldntLoadDetails": "このイベントの詳細を読み込めませんでした。",
+    "runAgentConfirm": "「{name}」をこの課題に対して今すぐ実行しますか？",
+    "failedAttachAgent": "エージェントの追加に失敗しました",
+    "failedLoadBranch": "ブランチの読み込みに失敗しました",
+    "failedCreateBranch": "ブランチの作成に失敗しました",
+    "actorSomeone": "誰か",
+    "actorAutomationRule": "自動化ルール",
+    "actorSystem": "システム",
+    "commentPlaceholder": "コメントを追加…（Markdown対応）",
+    "commentSubmitLabel": "コメントする"
+  },
+  "settings": {
+    "tabs": {
+      "appearance": "外観",
+      "labels": "ラベル",
+      "fields": "フィールド",
+      "workflow": "ワークフロー",
+      "automations": "自動化",
+      "agents": "エージェント",
+      "webhooks": "Webhook"
+    },
+    "appearance": {
+      "themeLabel": "テーマ",
+      "themeHint": "このブラウザでライトテーマとダークテーマを切り替えます。「ブラウザに合わせる」を選択すると、システムのテーマにリアルタイムで従います。",
+      "themeLight": "ライト",
+      "themeDark": "ダーク",
+      "themeSystem": "ブラウザに合わせる",
+      "languageLabel": "言語",
+      "languageHint": "Workhorseの表示言語を選択してください。",
+      "nonEnglishDisclaimer": "これはアプリ自体のインターフェースのみを翻訳します — チーム全員が読めるように、課題のタイトル、説明、コメント、ラベルなどのコンテンツは英語のままにしてください。"
+    },
+    "labelNamePlaceholder": "ラベル名",
+    "addLabelButton": "ラベルを追加",
+    "fieldNamePlaceholder": "フィールド名（例: Severity）",
+    "fieldKeyPlaceholder": "マシンキー（例: severity）",
+    "fieldOptionsPlaceholder": "カンマ区切りの選択肢（例: Low, Medium, High）",
+    "addFieldButton": "フィールドを追加",
+    "statusCategoriesLabel": "ステータスカテゴリ",
+    "categoryNamePlaceholder": "カテゴリ名（例: Resolving Differences）",
+    "addCategoryButton": "カテゴリを追加",
+    "workflowLabel": "ワークフロー",
+    "workflowDesktopOnly": "ワークフロー図はマウス操作向けのドラッグ＆ドロップ編集キャンバスです。ステータスや遷移を編集するには、デスクトップブラウザで設定を開いてください。",
+    "ruleNamePlaceholder": "ルール名",
+    "triggerLabel": "トリガー",
+    "conditionsLabel": "条件（任意 — 未設定の場合は無条件で実行）",
+    "valuePlaceholder": "値",
+    "addConditionButton": "+ 条件を追加",
+    "actionsLabel": "アクション",
+    "addActionButton": "+ アクションを追加",
+    "addRuleButton": "ルールを追加",
+    "commentBodyPlaceholder": "コメント本文",
+    "pathPlaceholder": "path/to/file.ts",
+    "branchNamePlaceholder": "ブランチ名",
+    "fileContentPlaceholder": "ファイルの内容",
+    "commitMessagePlaceholder": "コミットメッセージ（任意）",
+    "statusPlaceholder": "ステータス…",
+    "userPlaceholder": "ユーザー…",
+    "fieldPlaceholder": "フィールド…",
+    "enabledLabel": "有効",
+    "webhookUrlPlaceholder": "https://your-service.example/webhook",
+    "addWebhookButton": "Webhookを追加",
+    "failedDeleteCategory": "カテゴリの削除に失敗しました"
+  },
+  "projectSettings": {
+    "tabs": {
+      "project": "プロジェクト",
+      "components": "コンポーネント",
+      "versions": "バージョン",
+      "git": "Git"
+    },
+    "nameLabel": "名前",
+    "keyLabel": "キー",
+    "keyHint": "キーは変更できません — 各課題のキーに組み込まれています（例: 「{key}-142」）。",
+    "colorLabel": "カラー",
+    "featuresLabel": "機能",
+    "featuresHint": "このプロジェクトに不要な機能はオフにできます — 何も削除されず、再度有効にすればすぐに戻ります。",
+    "features": {
+      "reporters": "報告者",
+      "storyPoints": "ストーリーポイント",
+      "dueDates": "期限",
+      "timeTracking": "時間トラッキング",
+      "priority": "優先度",
+      "componentsAndVersions": "コンポーネントとバージョン",
+      "sprints": "スプリント",
+      "labels": "ラベル"
+    },
+    "archiveButton": "このプロジェクトをアーカイブ",
+    "archiveConfirm": "「{name}」をアーカイブしますか？ワークスペースには残りますが、プロジェクト切り替えには表示されなくなります。",
+    "componentNamePlaceholder": "コンポーネント名",
+    "addComponentButton": "コンポーネントを追加",
+    "versionNamePlaceholder": "バージョン名（例: v3.5.0）",
+    "addVersionButton": "バージョンを追加",
+    "released": "リリース済み",
+    "unreleased": "未リリース",
+    "releaseButton": "リリース",
+    "gitHint": "このプロジェクトをgitリポジトリにリンクすると、任意のチケットのドロワーから直接実際のブランチを作成できます。",
+    "noGitProviderHint": "このサーバーにはgitプロバイダーが設定されていないため、リンクできるものがまだありません — server/src/services/GitProvider.tsを参照してください。",
+    "ownerPlaceholder": "オーナー",
+    "repoPlaceholder": "リポジトリ",
+    "defaultBranchPlaceholder": "デフォルトブランチ（main）",
+    "accessTokenPlaceholder": "アクセストークン",
+    "linkRepoButton": "リポジトリをリンク",
+    "linkingRepoButton": "リンク中…",
+    "failedLinkRepo": "リポジトリのリンクに失敗しました",
+    "defaultBranchSuffix": "デフォルトブランチ: {branch}"
+  },
+  "workspaceView": {
+    "youBadge": "あなた",
+    "canManageRoles": "ロールを管理できます",
+    "roles": {
+      "owner": "オーナー",
+      "admin": "管理者",
+      "member": "メンバー",
+      "guest": "ゲスト"
+    }
+  },
+  "stats": {
+    "title": "統計",
+    "window24h": "24時間",
+    "window1w": "1週間",
+    "window30d": "30日間",
+    "timeSpentLabel": "作業時間",
+    "mostActiveLabel": "最もアクティブなチケット",
+    "noActivity": "まだアクティビティがありません。",
+    "loading": "統計を読み込み中…"
+  },
+  "newIssueModal": {
+    "title": "新しい課題",
+    "titleFieldLabel": "タイトル",
+    "titlePlaceholder": "何をする必要がありますか？",
+    "typeLabel": "タイプ",
+    "priorityLabel": "優先度",
+    "assigneesLabel": "担当者",
+    "failedCreate": "課題の作成に失敗しました",
+    "createButton": "課題を作成",
+    "creatingButton": "作成中…"
+  },
+  "accountSettingsModal": {
+    "title": "アカウント設定",
+    "uploadPicture": "画像をアップロード",
+    "removePicture": "削除",
+    "nameLabel": "名前",
+    "namePlaceholder": "あなたの名前",
+    "emailLabel": "メールアドレス",
+    "emailPlaceholder": "you@example.com",
+    "invalidImage": "画像ファイルを選択してください",
+    "failedUpdate": "アカウントの更新に失敗しました",
+    "saveButton": "変更を保存",
+    "savingButton": "保存中…",
+    "youFallback": "あなた"
+  },
+  "commentThread": {
+    "reply": "返信",
+    "edit": "編集",
+    "delete": "削除",
+    "deleting": "削除中…",
+    "deleteConfirm": "このコメントを削除しますか？この操作は取り消せません。",
+    "deleteConfirmWithReplies": "このコメントとすべての返信を削除しますか？この操作は取り消せません。",
+    "edited": "（編集済み）",
+    "repliesHidden": {
+      "other": "{count} 件の返信が非表示"
+    },
+    "continueThread": {
+      "other": "スレッドを続ける（あと {count} 件の返信）"
+    },
+    "showReplies": {
+      "other": "{count} 件の返信を表示"
+    },
+    "replyPlaceholder": "返信を書く…（Markdown対応）",
+    "replyButton": "返信"
+  },
+  "markdownEditor": {
+    "boldTitle": "太字",
+    "italicTitle": "斜体",
+    "codeTitle": "コード",
+    "linkTitle": "リンク",
+    "listTitle": "箇条書き",
+    "quoteTitle": "引用",
+    "boldPlaceholder": "太字テキスト",
+    "italicPlaceholder": "斜体テキスト",
+    "codePlaceholder": "コード",
+    "linkPlaceholder": "リンクテキスト",
+    "markdownSupported": "Markdown対応",
+    "wordCount": {
+      "other": "{count} 語"
+    }
+  },
+  "login": {
+    "logInTitle": "ログイン",
+    "signUpTitle": "アカウントを作成",
+    "displayNameLabel": "表示名",
+    "displayNamePlaceholder": "Ada Lovelace",
+    "emailLabel": "メールアドレス",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "パスワード",
+    "pleaseWait": "お待ちください…",
+    "logInButton": "ログイン",
+    "signUpButton": "登録",
+    "toggleToSignUp": "アカウントをお持ちでないですか？登録する",
+    "toggleToLogIn": "すでにアカウントをお持ちですか？ログイン",
+    "genericError": "問題が発生しました"
+  },
+  "app": {
+    "apiErrorTitle": "Workhorse APIに接続できませんでした",
+    "serverRunningHint": "サーバーは起動していますか？",
+    "loadingWorkspace": "ワークスペースを読み込み中…"
+  },
+  "backlog": {
+    "startSprintButton": "スプリントを開始",
+    "completeSprintButton": "スプリントを完了",
+    "noIssuesInSprint": "このスプリントにはまだ課題がありません。",
+    "nothingUnscheduled": "未スケジュールの課題はありません — すべてスプリントに含まれています。",
+    "newSprintPlaceholder": "新しいスプリント名…",
+    "createSprintButton": "スプリントを作成",
+    "backlogLabel": "バックログ",
+    "pointsSuffix": "{done}/{total} pt",
+    "issuesCount": {
+      "other": "課題 {count} 件"
+    },
+    "sprintStates": {
+      "future": "未開始",
+      "active": "進行中",
+      "closed": "終了"
+    }
+  },
+  "agentForm": {
+    "namePlaceholder": "エージェント名",
+    "instructionsPlaceholder": "指示 — このエージェントはチケットに対して何をすべきですか？",
+    "runtimeLabel": "ランタイム",
+    "modelLabel": "モデル",
+    "contextScopeLabel": "コンテキストの範囲",
+    "contextScopes": {
+      "thread": {
+        "label": "スレッド",
+        "hint": "このコメントスレッドのみ"
+      },
+      "ticket": {
+        "label": "チケット",
+        "hint": "スレッド + このチケット自体の詳細（デフォルト）"
+      },
+      "project": {
+        "label": "プロジェクト",
+        "hint": "チケット + このプロジェクト内の他の未解決チケット"
+      },
+      "workspace": {
+        "label": "ワークスペース",
+        "hint": "プロジェクト + ワークスペースの残り全体"
+      }
+    },
+    "reactsToLabel": "反応するイベント",
+    "allowedActionsLabel": "許可されたアクション",
+    "approvalLabel": "承認",
+    "autoApplyAll": "すべて自動的に適用",
+    "requireApprovalForAll": "すべてに承認が必要",
+    "requireApprovalFor": "次のみ承認が必要…",
+    "budgetLabel": "予算（任意 — 空欄は無制限）",
+    "maxRunsPerHour": "最大実行回数/時間",
+    "maxRunsPerDay": "最大実行回数/日",
+    "maxActionsPerRun": "実行あたりの最大アクション数",
+    "maxSpendPerDay": "最大支出/日",
+    "ignoreSelfEvents": "このエージェント自身のイベントを無視する（推奨 — 自己再トリガーを防ぎます）"
+  },
+  "agentsSettings": {
+    "awaitingApproval": "あなたの承認待ち",
+    "agentsLabel": "エージェント",
+    "hint": "エージェントはチームメンバーに代わってチケットを処理します — 課題にエージェントを割り当てると（課題の「AIエージェント」セクションから）、進行に応じてコメント、ステータス変更、再割り当て、フィールドの更新を行うことができ、常に代理している本人の名前で記録されます。エージェントの指示が、実行のたびにその判断を決定します。",
+    "noAgentsYet": "まだエージェントがありません — 下で作成して、チケット作業の自動化を始めましょう。",
+    "approveButton": "承認",
+    "rejectButton": "却下",
+    "addAgentLabel": "エージェントを追加",
+    "addAgentButton": "エージェントを追加",
+    "saveButton": "保存",
+    "statusLabels": {
+      "pending": "保留中",
+      "awaitingApproval": "承認待ち",
+      "applied": "適用済み",
+      "rejected": "却下済み",
+      "failed": "失敗"
+    },
+    "recentActivity": "最近のアクティビティ",
+    "totalTokensTitle": "すべての実行で使用された合計トークン数",
+    "aiBadge": "AI"
+  },
+  "agentOverview": {
+    "capabilitiesLabel": "能力",
+    "usageLabel": "使用状況",
+    "tokensSuffix": "トークン（合計）",
+    "budgetLabel": "予算",
+    "noActivityYet": "まだアクティビティがありません。",
+    "manageButton": "エージェント設定を管理"
+  },
+  "workflowDiagram": {
+    "newStatusPlaceholder": "新しいステータス名",
+    "addStatusButton": "ステータスを追加",
+    "dragHint": "あるステータスの端から別のステータスへドラッグして接続します。ステータスまたは遷移を選択してDelete/Backspaceキーを押すと削除できます — 「To Do」と「Done」のステータスは削除できません。",
+    "editStatusTitle": "ステータスを編集",
+    "nameLabel": "名前",
+    "colorLabel": "カラー（16進数、任意）",
+    "savingButton": "保存中…",
+    "transitionsFromAnyLabel": "任意のステータスからの遷移",
+    "transitionNamePlaceholder": "遷移名（例: Reopen）",
+    "addGlobalTransitionButton": "グローバル遷移を追加",
+    "pathErrorTransition": "この遷移を削除すると、To DoからDoneへの唯一の経路がなくなります",
+    "pathErrorStatus": "このステータスを削除すると、To DoからDoneへの唯一の経路がなくなります",
+    "failedDeleteTransition": "遷移の削除に失敗しました",
+    "failedDeleteStatus": "ステータスの削除に失敗しました"
+  },
+  "statusNode": {
+    "lockedTitle": "「To Do」と「Done」のステータスは削除できません",
+    "editTitle": "ステータスを編集"
+  },
+  "relativeDate": {
+    "today": "今日",
+    "daysAgo": {
+      "other": "{count} 日前"
+    }
+  },
+  "storyPointWarning": {
+    "pastDue": "この期限はすでに過ぎていますが、この課題はまだ {points} ポイントと見積もられています。",
+    "tooSoon": "通常 {points} ポイントには最大 {maxDuration} かかりますが、期限まで残り {daysUntilDue} しかありません。",
+    "hoursDuration": "{hours} 時間",
+    "daysDuration": {
+      "other": "{count} 日"
+    }
+  },
+  "activity": {
+    "eventType": {
+      "issueCreated": "この課題を作成しました",
+      "issueStatusChanged": "ステータスを変更しました",
+      "issueResolved": "この課題を解決しました",
+      "issueReopened": "この課題を再オープンしました",
+      "issueAssigneesChanged": "担当者を変更しました",
+      "issueAgentAssigned": "AIエージェントを割り当てました",
+      "issueAgentUnassigned": "AIエージェントを外しました",
+      "issuePriorityChanged": "優先度を変更しました",
+      "issueLabelsChanged": "ラベルを変更しました",
+      "issueDueDateChanged": "期限を変更しました",
+      "issueSprintChanged": "スプリントを変更しました",
+      "issueUpdated": "この課題を更新しました",
+      "issueLinked": "別の課題をリンクしました",
+      "issueUnlinked": "リンクされた課題を削除しました",
+      "issueDeleted": "この課題を削除しました",
+      "issueWorklogAdded": "作業時間を記録しました",
+      "issueAttachmentAdded": "添付ファイルを追加しました",
+      "issueAttachmentRemoved": "添付ファイルを削除しました",
+      "issueBranchCreated": "ブランチを作成しました",
+      "issueBranchDeleted": "ブランチを削除しました",
+      "commentCreated": "コメントを追加しました",
+      "commentEdited": "コメントを編集しました",
+      "commentDeleted": "コメントを削除しました",
+      "commentMentioned": "コメントで誰かにメンションしました"
+    },
+    "event": {
+      "issueCreated": "この課題を作成しました",
+      "issueStatusChanged": "ステータスを {from} から {to} に変更しました",
+      "issueResolved": "この課題を解決しました（{status}）",
+      "issueReopened": "この課題を再オープンしました（{status}）",
+      "assigneesChangedTo": "担当者を {from} から {to} に変更しました",
+      "assigneesUnassignedAll": "すべての担当者を解除しました（元は {from}）",
+      "noOne": "誰もいません",
+      "issueAgentAssigned": "AIエージェントを割り当てました",
+      "issueAgentUnassigned": "AIエージェントを外しました",
+      "issuePriorityChanged": "優先度を {from} から {to} に変更しました",
+      "issueLabelsChanged": "ラベルを {from} から {to} に変更しました",
+      "labelsNone": "なし",
+      "dueDateSet": "期限を {date} に設定しました",
+      "dueDateCleared": "期限をクリアしました",
+      "sprintSet": "この課題をスプリントに移動しました",
+      "sprintCleared": "この課題をスプリントから外しました",
+      "issueUpdated": "{fields} を更新しました",
+      "issueUpdatedFallback": "この課題",
+      "issueLinked": "別の課題をリンクしました",
+      "issueUnlinked": "リンクされた課題を削除しました",
+      "issueDeleted": "この課題を削除しました",
+      "worklogAdded": "{duration} の作業を記録しました",
+      "attachmentAdded": "添付ファイル {fileName} を追加しました",
+      "attachmentRemoved": "添付ファイルを削除しました",
+      "branchCreated": "ブランチ {name} を作成しました",
+      "branchDeleted": "ブランチを削除しました",
+      "commentReplied": "コメントに返信しました",
+      "commentCreated": "コメントを追加しました",
+      "commentEdited": "コメントを編集しました",
+      "commentDeleted": "コメントを削除しました",
+      "commentMentioned": "コメントで誰かにメンションしました"
+    }
+  },
+  "automation": {
+    "action": {
+      "transitionStatus": "→ {status}",
+      "assignTo": "{name} に割り当て",
+      "addComment": "コメント「{body}」",
+      "setField": "{field} = {value} を設定",
+      "readRepoFile": "{path} を読み取り",
+      "writeRepoFile": "{path} を書き込み → ブランチ「{branch}」"
+    }
+  }
+}
