@@ -25,6 +25,7 @@ import { EventEngine } from './services/EventEngine';
 import { EventProjector } from './services/EventProjector';
 import { GitProviderRegistry } from './services/GitProvider';
 import { OllamaAgentRuntime } from './services/OllamaAgentRuntime';
+import { StatsService } from './services/StatsService';
 
 export let workspaceRepo: WorkspaceRepository;
 export let userRepo: UserRepository;
@@ -42,6 +43,7 @@ export let projectRepo: ProjectRepository;
 export let projector: EventProjector;
 export let engine: EventEngine;
 export let auditService: AuditService;
+export let statsService: StatsService;
 /**
  * Every supported git host, keyed by `GitRepoLink.provider` — see services/GitProvider.ts. No
  * provider is registered here; this app ships only the harness (the `GitProvider` interface +
@@ -86,4 +88,5 @@ export function initContainer(): void {
     projector, projectRepo, agentRuntimes, gitRepoLinkRepo, gitProviders,
   );
   auditService = new AuditService(workspaceRepo, issueRepo);
+  statsService = new StatsService(workspaceRepo, issueRepo);
 }

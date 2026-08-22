@@ -37,6 +37,7 @@
     "newLabel": "Метка",
     "newComponent": "Компонент",
     "newVersion": "Версия",
+    "statsTitle": "Статистика",
     "projectSettingsTitle": "Настройки проекта",
     "workspaceSettingsTitle": "Настройки рабочего пространства",
     "accountSettings": "Настройки аккаунта",
@@ -54,6 +55,7 @@
     "projectsTab": "Проекты",
     "moreTab": "Ещё",
     "newProjectRow": "Новый проект",
+    "statsRow": "Статистика",
     "projectSettingsRow": "Настройки проекта",
     "workspaceSettingsRow": "Настройки рабочего пространства",
     "accountSettingsRow": "Настройки аккаунта",
@@ -232,6 +234,16 @@
       "member": "участник",
       "guest": "гость"
     }
+  },
+  "stats": {
+    "title": "Статистика",
+    "window24h": "24ч",
+    "window1w": "1 неделя",
+    "window30d": "30 дней",
+    "timeSpentLabel": "Затраченное время",
+    "mostActiveLabel": "Самые активные задачи",
+    "noActivity": "Пока нет активности.",
+    "loading": "Загрузка статистики…"
   },
   "newIssueModal": {
     "title": "Новая задача",

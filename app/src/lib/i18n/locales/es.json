@@ -35,6 +35,7 @@
     "newLabel": "Etiqueta",
     "newComponent": "Componente",
     "newVersion": "Versión",
+    "statsTitle": "Estadísticas",
     "projectSettingsTitle": "Configuración del proyecto",
     "workspaceSettingsTitle": "Configuración del espacio de trabajo",
     "accountSettings": "Configuración de la cuenta",
@@ -52,6 +53,7 @@
     "projectsTab": "Proyectos",
     "moreTab": "Más",
     "newProjectRow": "Nuevo proyecto",
+    "statsRow": "Estadísticas",
     "projectSettingsRow": "Configuración del proyecto",
     "workspaceSettingsRow": "Configuración del espacio de trabajo",
     "accountSettingsRow": "Configuración de la cuenta",
@@ -230,6 +232,16 @@
       "member": "miembro",
       "guest": "invitado"
     }
+  },
+  "stats": {
+    "title": "Estadísticas",
+    "window24h": "24h",
+    "window1w": "1 semana",
+    "window30d": "30 días",
+    "timeSpentLabel": "Tiempo dedicado",
+    "mostActiveLabel": "Tickets más activos",
+    "noActivity": "Todavía no hay actividad.",
+    "loading": "Cargando estadísticas…"
   },
   "newIssueModal": {
     "title": "Nueva tarea",

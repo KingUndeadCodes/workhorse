@@ -15,6 +15,7 @@ export * from './planning';
 export * from './board';
 export * from './collaboration';
 export * from './events';
+export * from './stats';
 export * from './subscription';
 export * from './agent';
 export * from './notifications';

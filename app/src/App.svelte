@@ -8,6 +8,7 @@
   import Settings from './lib/components/Settings.svelte';
   import ProjectSettings from './lib/components/ProjectSettings.svelte';
   import WorkspaceView from './lib/components/WorkspaceView.svelte';
+  import Stats from './lib/components/Stats.svelte';
   import IssueDrawer from './lib/components/IssueDrawer.svelte';
   import Login from './lib/components/Login.svelte';
   import { currentUser } from './lib/stores/auth';
@@ -63,6 +64,8 @@
         <WorkspaceView />
       {:else if $currentView === 'projectSettings'}
         <ProjectSettings />
+      {:else if $currentView === 'stats'}
+        <Stats />
       {:else}
         <Settings />
       {/if}

@@ -93,7 +93,7 @@
     }
   }
 
-  function goTo(view: 'settings' | 'projectSettings' | 'workspace') {
+  function goTo(view: 'settings' | 'projectSettings' | 'workspace' | 'stats') {
     showMore = false;
     $currentView = view;
     $selectedIssueId = null;
@@ -131,7 +131,7 @@
   <button
     type="button"
     class="nav-btn"
-    class:active={showMore || $currentView === 'settings' || $currentView === 'projectSettings' || $currentView === 'workspace'}
+    class:active={showMore || $currentView === 'settings' || $currentView === 'projectSettings' || $currentView === 'workspace' || $currentView === 'stats'}
     on:click={() => (showMore = true)}
   >
     <Icon name="gear" size={19} />
@@ -212,6 +212,10 @@
     <button type="button" class="sheet-row" on:click={() => goTo('workspace')}>
       <Icon name="bars" size={15} />
       <span class="sheet-row-label">{$workspace?.name ?? ''} · {$tn('common.members', memberCount)}</span>
+    </button>
+    <button type="button" class="sheet-row" on:click={() => goTo('stats')}>
+      <Icon name="columns" size={15} />
+      <span class="sheet-row-label">{$t('mobileNav.statsRow')}</span>
     </button>
     <button type="button" class="sheet-row" on:click={() => goTo('projectSettings')}>
       <Icon name="grid" size={15} />

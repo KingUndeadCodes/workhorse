@@ -103,8 +103,8 @@ function evaluateCondition(condition: AutomationCondition, issue: Issue): boolea
   }
 }
 
-/** The `issueId` field on whichever `EventPayload` variants carry one — see `issueForEvent`. */
-function issueIdFromPayload(payload: EventPayload): string | undefined {
+/** The `issueId` field on whichever `EventPayload` variants carry one — see `issueForEvent`, also used by `StatsService`. */
+export function issueIdFromPayload(payload: EventPayload): string | undefined {
   return 'issueId' in payload && typeof payload.issueId === 'string' ? payload.issueId : undefined;
 }
 

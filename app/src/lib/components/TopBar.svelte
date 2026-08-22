@@ -106,6 +106,7 @@
         </div>
       {/if}
     </div>
+    <button class="icon-btn stats-btn" title={$t('topBar.statsTitle')} on:click={() => ($currentView = 'stats')}><Icon name="columns" /></button>
     <button class="icon-btn project-settings-btn" title={$t('topBar.projectSettingsTitle')} on:click={() => ($currentView = 'projectSettings')}><Icon name="grid" /></button>
     <button class="icon-btn workspace-settings-btn" title={$t('topBar.workspaceSettingsTitle')} on:click={() => ($currentView = 'settings')}><Icon name="gear" /></button>
     {#if $currentUser}
@@ -197,7 +198,7 @@
        — Board/Backlog/Projects/Settings are all one tap away there instead of a second tap
        through a menu, so the icon-only project/workspace settings buttons (now reachable from
        MobileNav's More sheet) stay hidden on mobile too. */
-    .project-settings-btn, .workspace-settings-btn { display: none; }
+    .stats-btn, .project-settings-btn, .workspace-settings-btn { display: none; }
     .crumb { display: none; }
     /* Nothing else occupies the bar's left side on mobile (crumb hidden, tabs hidden below) —
        shows the wordmark instead of leaving it blank, same identity Sidebar's .brand carries

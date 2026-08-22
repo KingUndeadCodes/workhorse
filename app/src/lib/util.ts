@@ -3,7 +3,7 @@ import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js';
 import DOMPurify from 'dompurify';
 import { PROJECT_COLORS, replaceMentions, STORY_POINT_VALUES } from '$domain';
-import type { AgentRun, AgentRunStatus, AutomationAction, Comment, EventEnvelope, EventType, FieldDefinition, Label, Mentionable, User, Workflow } from '$domain';
+import type { AgentRun, AgentRunStatus, AutomationAction, Comment, EventEnvelope, EventType, FieldDefinition, Label, Mentionable, StatsWindow, User, Workflow } from '$domain';
 
 /** The resolved value of the `t`/`tn` i18n stores (see `lib/i18n/index.ts`) — plain functions,
  * not stores, since these are called from ordinary functions below rather than `.svelte`
@@ -187,6 +187,14 @@ export function formatRelativeDate(iso: string, t: Translate, tn: TranslatePlura
 export function formatDuration(seconds: number): string {
   const hours = seconds / 3600;
   return `${hours % 1 === 0 ? hours : hours.toFixed(1)}h`;
+}
+
+/** X-axis label for one time-spent bucket — hour-of-day for the 24h window (hourly buckets), short weekday/date for 1w/30d (daily buckets). */
+export function formatBucketLabel(iso: string, window: StatsWindow, localeId = 'en'): string {
+  const date = new Date(iso);
+  if (window === '24h') return date.toLocaleTimeString(localeId, { hour: 'numeric' });
+  if (window === '1w') return date.toLocaleDateString(localeId, { weekday: 'short' });
+  return date.toLocaleDateString(localeId, { month: 'short', day: 'numeric' });
 }
 
 export type StoryPointValue = (typeof STORY_POINT_VALUES)[number];

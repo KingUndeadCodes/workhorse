@@ -46,6 +46,11 @@ export class IssueRepository {
     return (await this.db.selectFrom('issues').selectAll().execute()).map(rowToIssue);
   }
 
+  /** Every worklog across every project — for {@link StatsService}, which aggregates the whole workspace, not one project's slice of it. */
+  async listAllWorklogs(): Promise<Worklog[]> {
+    return (await this.db.selectFrom('worklogs').selectAll().orderBy('started_at', 'asc').execute()).map(rowToWorklog);
+  }
+
   async get(id: string): Promise<Issue | undefined> {
     const row = await this.db.selectFrom('issues').selectAll().where('id', '=', id).executeTakeFirst();
     return row ? rowToIssue(row) : undefined;

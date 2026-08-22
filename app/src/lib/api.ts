@@ -37,6 +37,7 @@ import type {
   Workspace,
   WorkspaceMember,
   WorkspaceRole,
+  WorkspaceStats,
 } from '$domain';
 import { authToken, clearAuth } from './stores/auth';
 
@@ -147,6 +148,11 @@ export function fetchEventDetail(eventId: string): Promise<{ event: EventEnvelop
 /** Fetches every event with `sequence` greater than the given one. */
 export function fetchEventsSince(sequence: number): Promise<EventEnvelope[]> {
   return get<EventEnvelope[]>(`/events?since=${sequence}`);
+}
+
+/** Workspace-wide activity/time-spent report for all three windows (24h/1w/30d) in one call. */
+export function fetchStats(): Promise<WorkspaceStats> {
+  return get<WorkspaceStats>('/stats');
 }
 
 // ---- Issues -----------------------------------------------------------------

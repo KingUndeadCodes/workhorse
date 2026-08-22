@@ -35,6 +35,7 @@
     "newLabel": "Label",
     "newComponent": "Component",
     "newVersion": "Version",
+    "statsTitle": "Stats",
     "projectSettingsTitle": "Project settings",
     "workspaceSettingsTitle": "Workspace settings",
     "accountSettings": "Account settings",
@@ -52,6 +53,7 @@
     "projectsTab": "Projects",
     "moreTab": "More",
     "newProjectRow": "New project",
+    "statsRow": "Stats",
     "projectSettingsRow": "Project settings",
     "workspaceSettingsRow": "Workspace settings",
     "accountSettingsRow": "Account settings",
@@ -230,6 +232,16 @@
       "member": "member",
       "guest": "guest"
     }
+  },
+  "stats": {
+    "title": "Stats",
+    "window24h": "24h",
+    "window1w": "1 week",
+    "window30d": "30 days",
+    "timeSpentLabel": "Time spent",
+    "mostActiveLabel": "Most active tickets",
+    "noActivity": "No activity yet.",
+    "loading": "Loading stats…"
   },
   "newIssueModal": {
     "title": "New issue",

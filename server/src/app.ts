@@ -10,6 +10,7 @@ import {
   issueRepo,
   planningRepo,
   projectRepo,
+  statsService,
   userRepo,
   webhookRepo,
   workflowRepo,
@@ -100,6 +101,12 @@ app.get('/api/events/:id', async (c) => {
  * read-only report, never a repair.
  */
 app.get('/api/audit', async (c) => c.json(await auditService.run()));
+
+/**
+ * GET /api/stats — workspace-wide activity/time-spent report for all three windows (24h/1w/30d)
+ * in one response; see services/StatsService.ts. Computed fresh on every call, not cached.
+ */
+app.get('/api/stats', async (c) => c.json(await statsService.run()));
 
 app.route('/api', issuesRouter);
 app.route('/api', catalogRouter);
