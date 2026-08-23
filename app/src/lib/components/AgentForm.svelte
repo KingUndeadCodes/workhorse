@@ -100,8 +100,8 @@
 </script>
 
 <form class="agent-form" on:submit|preventDefault={submit}>
-  <input type="text" placeholder={$t('agentForm.namePlaceholder')} bind:value={name} />
-  <input type="text" placeholder={$t('agentForm.instructionsPlaceholder')} bind:value={description} />
+  <input type="text" placeholder={$t('agentForm.namePlaceholder')} aria-label={$t('agentForm.namePlaceholder')} bind:value={name} />
+  <input type="text" placeholder={$t('agentForm.instructionsPlaceholder')} aria-label={$t('agentForm.instructionsPlaceholder')} bind:value={description} />
   {#if availableRuntimes.length > 1}
     <label class="agent-form-label">
       {$t('agentForm.runtimeLabel')}

@@ -54,7 +54,7 @@
     background: rgba(10, 12, 18, 0.5);
   }
   .sheet {
-    width: 100%; max-height: 75vh; overflow-y: auto; background: var(--surface);
+    width: 100%; max-height: 75vh; overflow-y: auto; overscroll-behavior: contain; background: var(--surface);
     border-radius: 18px 18px 0 0; padding: 10px 16px calc(16px + env(safe-area-inset-bottom));
     display: flex; flex-direction: column; gap: 10px;
   }

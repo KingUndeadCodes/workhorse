@@ -80,8 +80,8 @@
     {/each}
     {#if showNewProjectForm}
       <form class="proj-new-form" on:submit|preventDefault={submitNewProject}>
-        <input class="proj-new-input" type="text" placeholder={$t('sidebar.newProjectPlaceholder')} bind:value={newProjectName} />
-        <input class="proj-new-input" type="text" placeholder={$t('sidebar.newProjectKeyPlaceholder')} bind:value={newProjectKey} />
+        <input class="proj-new-input" type="text" placeholder={$t('sidebar.newProjectPlaceholder')} aria-label={$t('sidebar.newProjectPlaceholder')} bind:value={newProjectName} />
+        <input class="proj-new-input" type="text" placeholder={$t('sidebar.newProjectKeyPlaceholder')} aria-label={$t('sidebar.newProjectKeyPlaceholder')} bind:value={newProjectKey} />
         <div class="proj-new-actions">
           <button type="submit" class="proj-new-btn" disabled={creatingProject}>{creatingProject ? '…' : $t('common.create')}</button>
           <button type="button" class="proj-new-btn ghost" on:click={() => (showNewProjectForm = false)}>{$t('common.cancel')}</button>

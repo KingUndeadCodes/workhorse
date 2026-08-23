@@ -51,7 +51,7 @@
 <div class="search-filter-bar">
   <div class="search-field">
     <Icon name="search" size={14} />
-    <input type="text" placeholder={$t('filters.searchPlaceholder')} bind:value={$issueFiltersStore.query} />
+    <input type="text" placeholder={$t('filters.searchPlaceholder')} aria-label={$t('filters.searchPlaceholder')} bind:value={$issueFiltersStore.query} />
   </div>
   <div class="filter-control">
     <button type="button" class="filter-btn" class:active={$activeFilterCount > 0} on:click={() => (showFilterPanel = !showFilterPanel)}>
@@ -139,6 +139,7 @@
     box-sizing: border-box; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px;
     color: var(--text-3);
   }
+  .search-field:focus-within { border-color: var(--accent); }
   .search-field input {
     flex: 1; min-width: 0; height: 100%; font: inherit; font-size: 12.5px; color: var(--text); background: none;
     border: none; outline: none; padding: 0;

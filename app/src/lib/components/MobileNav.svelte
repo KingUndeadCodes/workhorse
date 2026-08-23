@@ -182,8 +182,8 @@
   </div>
   {#if showNewProjectForm}
     <form class="new-project-form" on:submit|preventDefault={submitNewProject}>
-      <input class="new-project-input" type="text" placeholder={$t('sidebar.newProjectPlaceholder')} bind:value={newProjectName} />
-      <input class="new-project-input" type="text" placeholder={$t('sidebar.newProjectKeyPlaceholder')} bind:value={newProjectKey} />
+      <input class="new-project-input" type="text" placeholder={$t('sidebar.newProjectPlaceholder')} aria-label={$t('sidebar.newProjectPlaceholder')} bind:value={newProjectName} />
+      <input class="new-project-input" type="text" placeholder={$t('sidebar.newProjectKeyPlaceholder')} aria-label={$t('sidebar.newProjectKeyPlaceholder')} bind:value={newProjectKey} />
       <div class="new-project-actions">
         <button type="button" class="sheet-btn ghost" on:click={() => (showNewProjectForm = false)}>{$t('common.cancel')}</button>
         <button type="submit" class="sheet-btn primary" disabled={creatingProject}>{creatingProject ? $t('common.creating') : $t('common.create')}</button>

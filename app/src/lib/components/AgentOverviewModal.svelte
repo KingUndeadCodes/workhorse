@@ -91,7 +91,7 @@
 
 <style>
   .backdrop { position: fixed; inset: 0; background: rgba(10, 12, 18, 0.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
-  .modal { width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; background: var(--surface); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 20px; }
+  .modal { width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain; background: var(--surface); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 20px; }
 
   .modal-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
   .avatar-ring { display: flex; padding: 3px; border-radius: 50%; background: var(--agent-accent-soft); flex: 0 0 auto; }

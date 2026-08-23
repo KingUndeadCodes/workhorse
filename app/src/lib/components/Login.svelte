@@ -34,16 +34,16 @@
     {#if mode === 'signup'}
       <label>
         <span>{$t('login.displayNameLabel')}</span>
-        <input placeholder={$t('login.displayNamePlaceholder')} bind:value={displayName} required />
+        <input type="text" name="name" autocomplete="name" placeholder={$t('login.displayNamePlaceholder')} bind:value={displayName} required />
       </label>
     {/if}
     <label>
       <span>{$t('login.emailLabel')}</span>
-      <input type="email" placeholder={$t('login.emailPlaceholder')} bind:value={email} required autocomplete="email" />
+      <input type="email" name="email" placeholder={$t('login.emailPlaceholder')} bind:value={email} required autocomplete="email" />
     </label>
     <label>
       <span>{$t('login.passwordLabel')}</span>
-      <input type="password" placeholder="••••••••" bind:value={password} required minlength="8" autocomplete={mode === 'login' ? 'current-password' : 'new-password'} />
+      <input type="password" name="password" placeholder="••••••••" bind:value={password} required minlength="8" autocomplete={mode === 'login' ? 'current-password' : 'new-password'} />
     </label>
     {#if error}<p class="error">{error}</p>{/if}
     <button type="submit" class="primary" disabled={busy}>{busy ? $t('login.pleaseWait') : mode === 'login' ? $t('login.logInButton') : $t('login.signUpButton')}</button>

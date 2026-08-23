@@ -786,7 +786,7 @@
   .icon-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 7px; color: var(--text-2); }
   .icon-btn:hover { background: var(--surface-sunken); color: var(--text); }
   .icon-btn.small { width: 22px; height: 22px; flex: 0 0 auto; }
-  .drawer-body { flex: 1; overflow-y: auto; padding: 20px 24px 32px; }
+  .drawer-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 20px 24px 32px; }
   .key-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
   .type-icon { width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: var(--success-soft); color: var(--success); }
   .type-icon.bug { background: var(--critical-soft); color: var(--critical); }

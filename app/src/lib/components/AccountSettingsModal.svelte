@@ -82,11 +82,11 @@
       </div>
       <label class="field">
         <span>{$t('accountSettingsModal.nameLabel')}</span>
-        <input type="text" bind:value={displayName} placeholder={$t('accountSettingsModal.namePlaceholder')} />
+        <input type="text" name="name" autocomplete="name" bind:value={displayName} placeholder={$t('accountSettingsModal.namePlaceholder')} />
       </label>
       <label class="field">
         <span>{$t('accountSettingsModal.emailLabel')}</span>
-        <input type="email" bind:value={email} placeholder={$t('accountSettingsModal.emailPlaceholder')} />
+        <input type="email" name="email" autocomplete="email" bind:value={email} placeholder={$t('accountSettingsModal.emailPlaceholder')} />
       </label>
       {#if error}<p class="error" aria-live="polite">{error}</p>{/if}
       <div class="actions">
@@ -99,7 +99,7 @@
 
 <style>
   .backdrop { position: fixed; inset: 0; background: rgba(10, 12, 18, 0.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
-  .modal { width: min(420px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; background: var(--surface); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 20px; }
+  .modal { width: min(420px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain; background: var(--surface); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 20px; }
   .modal-title { font-size: 15px; font-weight: 700; color: var(--text); margin: 0 0 14px; }
   form { display: flex; flex-direction: column; gap: 12px; }
   .avatar-row { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
