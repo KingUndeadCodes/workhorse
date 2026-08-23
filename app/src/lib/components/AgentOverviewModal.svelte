@@ -28,7 +28,7 @@
         <span class="agent-name">{agent.name}<span class="ai-badge">{$t('agentsSettings.aiBadge')}</span><span class="status-dot" class:enabled={agent.enabled}></span></span>
         {#if agent.description}<p class="agent-description">{agent.description}</p>{/if}
       </div>
-      <button type="button" class="icon-btn" on:click={onClose}><Icon name="x" /></button>
+      <button type="button" class="icon-btn" aria-label={$t('common.close')} on:click={onClose}><Icon name="x" /></button>
     </div>
 
     <div class="subsection-label">{$t('agentOverview.capabilitiesLabel')}</div>

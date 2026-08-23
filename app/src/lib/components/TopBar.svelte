@@ -106,9 +106,9 @@
         </div>
       {/if}
     </div>
-    <button class="icon-btn stats-btn" title={$t('topBar.statsTitle')} on:click={() => ($currentView = 'stats')}><Icon name="columns" /></button>
-    <button class="icon-btn project-settings-btn" title={$t('topBar.projectSettingsTitle')} on:click={() => ($currentView = 'projectSettings')}><Icon name="grid" /></button>
-    <button class="icon-btn workspace-settings-btn" title={$t('topBar.workspaceSettingsTitle')} on:click={() => ($currentView = 'settings')}><Icon name="gear" /></button>
+    <button class="icon-btn stats-btn" title={$t('topBar.statsTitle')} aria-label={$t('topBar.statsTitle')} on:click={() => ($currentView = 'stats')}><Icon name="columns" /></button>
+    <button class="icon-btn project-settings-btn" title={$t('topBar.projectSettingsTitle')} aria-label={$t('topBar.projectSettingsTitle')} on:click={() => ($currentView = 'projectSettings')}><Icon name="grid" /></button>
+    <button class="icon-btn workspace-settings-btn" title={$t('topBar.workspaceSettingsTitle')} aria-label={$t('topBar.workspaceSettingsTitle')} on:click={() => ($currentView = 'settings')}><Icon name="gear" /></button>
     {#if $currentUser}
       <div class="user-menu-wrap" bind:this={userMenuWrap}>
         <button class="avatar-btn" on:click={toggleUserMenu}>

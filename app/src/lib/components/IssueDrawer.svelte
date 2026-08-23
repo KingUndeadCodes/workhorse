@@ -379,7 +379,7 @@
   <div class="drawer">
     <div class="drawer-head">
       <div class="crumb"><b>{$sprints.find((s) => s.id === issue?.sprintId)?.name ?? $t('backlog.backlogLabel')}</b></div>
-      <button class="icon-btn" on:click={close}><Icon name="x" /></button>
+      <button class="icon-btn" aria-label={$t('common.close')} on:click={close}><Icon name="x" /></button>
     </div>
     <div class="drawer-body">
       <div class="key-row">
@@ -440,7 +440,7 @@
                   <span class="assignee-chip">
                     <Avatar userId={u.id} name={displayName(u)} avatarUrl={u.avatarUrl} kind={u.kind} size={16} />
                     {displayName(u)}
-                    <button type="button" class="chip-remove" on:click={() => toggleAssignee(u.id)}><Icon name="x" size={10} /></button>
+                    <button type="button" class="chip-remove" aria-label={$t('common.removeNamed', { name: displayName(u) })} on:click={() => toggleAssignee(u.id)}><Icon name="x" size={10} /></button>
                   </span>
                 {/if}
               {/each}
@@ -468,7 +468,7 @@
                   <span class="assignee-chip">
                     <Avatar userId={u.id} name={displayName(u)} avatarUrl={u.avatarUrl} kind={u.kind} size={16} />
                     {displayName(u)}
-                    <button type="button" class="chip-remove" on:click={() => toggleAssignee(u.id)}><Icon name="x" size={10} /></button>
+                    <button type="button" class="chip-remove" aria-label={$t('common.removeNamed', { name: displayName(u) })} on:click={() => toggleAssignee(u.id)}><Icon name="x" size={10} /></button>
                   </span>
                 {/if}
               {/each}
@@ -573,7 +573,7 @@
                 disabled={triggeringAgentId === agent.id}
                 on:click={() => runAgentNow(agent.id, displayName(agent))}
               >{triggeringAgentId === agent.id ? $t('issueDrawer.runningButton') : $t('issueDrawer.runNowButton')}</button>
-              <button type="button" class="chip-remove" on:click={() => detachAgent(agent.id)}><Icon name="x" size={10} /></button>
+              <button type="button" class="chip-remove" aria-label={$t('common.removeNamed', { name: displayName(agent) })} on:click={() => detachAgent(agent.id)}><Icon name="x" size={10} /></button>
             </span>
           {/each}
           <button type="button" class="assignee-add" on:click={toggleAgentPicker}>{$t('issueDrawer.addChip')}</button>
@@ -620,7 +620,7 @@
               <a class="branch-link" href={branch.url} target="_blank" rel="noopener">
                 <Icon name="branch" size={13} />{branch.name}
               </a>
-              <button type="button" class="chip-remove" on:click={removeBranch}><Icon name="x" size={10} /></button>
+              <button type="button" class="chip-remove" aria-label={$t('issueDrawer.removeBranchLabel', { name: branch.name })} on:click={removeBranch}><Icon name="x" size={10} /></button>
             </span>
           {:else if showBranchForm}
             <form class="inline-form" on:submit|preventDefault={confirmCreateBranch}>
@@ -652,7 +652,7 @@
                     <span class="link-type">{link.sourceIssueId === issue.id ? $t(RELATION_LABEL_KEYS[link.type]) : $t('issueDrawer.relationInverse', { type: $t(RELATION_LABEL_KEYS[link.type]) })}</span>
                     <span class="key mono">{other.key}</span>
                     <span class="link-title">{other.title}</span>
-                    <button class="icon-btn small" on:click={() => removeIssueLink(issue.id, link.id)}><Icon name="x" size={12} /></button>
+                    <button class="icon-btn small" aria-label={$t('issueDrawer.removeLinkLabel', { key: other.key })} on:click={() => removeIssueLink(issue.id, link.id)}><Icon name="x" size={12} /></button>
                   </div>
                 {/if}
               {/each}

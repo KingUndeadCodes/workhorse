@@ -24,6 +24,7 @@
   <button
     class="edit-btn"
     title={$t('statusNode.editTitle')}
+    aria-label={$t('statusNode.editTitle')}
     onmousedown={(e) => e.stopPropagation()}
     onclick={(e) => {
       e.stopPropagation();

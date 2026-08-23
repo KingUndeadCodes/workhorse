@@ -297,7 +297,7 @@
 <div class="subsection-label">{$t('workflowDiagram.transitionsFromAnyLabel')}</div>
 <div class="list">
   {#each globalTransitions as gt (gt.id)}
-    <div class="row"><span class="row-name">{gt.name}</span><span class="row-tag">→ {statusName(gt.toStatusId)}</span><button class="icon-btn small" onclick={() => removeGlobalTransition(gt.id)}><Icon name="x" size={12} /></button></div>
+    <div class="row"><span class="row-name">{gt.name}</span><span class="row-tag">→ {statusName(gt.toStatusId)}</span><button class="icon-btn small" aria-label={$t('workflowDiagram.removeTransitionLabel', { status: statusName(gt.toStatusId) })} onclick={() => removeGlobalTransition(gt.id)}><Icon name="x" size={12} /></button></div>
   {/each}
 </div>
 <form class="add-form" onsubmit={(e) => (e.preventDefault(), addGlobalTransition())}>

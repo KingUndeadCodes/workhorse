@@ -182,7 +182,7 @@
              before the click handler below ever runs, which used to tear the editor down
              on save-on-blur — kept even now that saving is explicit, since losing the
              selection mid-format is still a bad click. -->
-        <button type="button" title={$t(b.titleKey)} on:mousedown|preventDefault on:click={() => applyFormat(b.key)}><Icon name={b.icon} size={13} /></button>
+        <button type="button" title={$t(b.titleKey)} aria-label={$t(b.titleKey)} on:mousedown|preventDefault on:click={() => applyFormat(b.key)}><Icon name={b.icon} size={13} /></button>
       {/each}
     </div>
     <div class="textarea-wrap">

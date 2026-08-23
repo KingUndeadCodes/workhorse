@@ -94,8 +94,8 @@
       {/if}
       {#if onMove && columns.length > 1}
         {#if moveMenuMode === 'sheet'}
-          <button class="move-trigger sheet-trigger" title={$t('issueCard.moveToTitle')} on:click|stopPropagation={toggleMoveMenu}><Icon name="chevron" size={10} /></button>
-          <BottomSheet open={showMoveMenu} title={$t('issueCard.moveToTitle')} onClose={() => (showMoveMenu = false)}>
+          <button class="move-trigger sheet-trigger" title={$t('issueCard.moveToTitle')} aria-label={$t('issueCard.moveToTitle')} on:click|stopPropagation={toggleMoveMenu}><Icon name="chevron" size={10} /></button>
+          <BottomSheet open={showMoveMenu} title={$t('issueCard.moveToTitle')} aria-label={$t('issueCard.moveToTitle')} onClose={() => (showMoveMenu = false)}>
             <div class="move-sheet-list">
               {#each columns as col (col.id)}
                 {#if !col.statusIds.includes(issue.statusId)}
@@ -106,7 +106,7 @@
           </BottomSheet>
         {:else}
           <div class="move-wrap" use:closeOnClickOutside>
-            <button class="move-trigger" title={$t('issueCard.moveToTitle')} on:click={toggleMoveMenu}><Icon name="chevron" size={10} /></button>
+            <button class="move-trigger" title={$t('issueCard.moveToTitle')} aria-label={$t('issueCard.moveToTitle')} on:click={toggleMoveMenu}><Icon name="chevron" size={10} /></button>
             {#if showMoveMenu}
               <div class="move-menu">
                 {#each columns as col (col.id)}

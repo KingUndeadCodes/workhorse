@@ -295,7 +295,7 @@
     {:else if activeTab === 'Labels'}
       <div class="list">
         {#each $labels as l (l.id)}
-          <div class="row"><span class="dot" style="background:{l.color}"></span><span class="row-name">{l.name}</span><button class="icon-btn" on:click={() => removeLabel(l.id)}><Icon name="trash" size={13} /></button></div>
+          <div class="row"><span class="dot" style="background:{l.color}"></span><span class="row-name">{l.name}</span><button class="icon-btn" aria-label={$t('common.deleteNamed', { name: l.name })} on:click={() => removeLabel(l.id)}><Icon name="trash" size={13} /></button></div>
         {/each}
       </div>
       <form class="add-form" on:submit|preventDefault={addLabel}>
@@ -305,7 +305,7 @@
     {:else if activeTab === 'Fields'}
       <div class="list">
         {#each $fieldDefinitions as f (f.id)}
-          <div class="row"><span class="row-name">{f.name}</span><span class="row-tag">{f.type}</span><button class="icon-btn" on:click={() => removeField(f.id)}><Icon name="trash" size={13} /></button></div>
+          <div class="row"><span class="row-name">{f.name}</span><span class="row-tag">{f.type}</span><button class="icon-btn" aria-label={$t('common.deleteNamed', { name: f.name })} on:click={() => removeField(f.id)}><Icon name="trash" size={13} /></button></div>
         {/each}
       </div>
       <form class="add-form column" on:submit|preventDefault={addField}>
@@ -322,7 +322,7 @@
           <div class="row">
             <span class="row-name">{cat.name}</span><span class="row-tag">{cat.type}</span>
             {#if cat.type === 'inProgress'}
-              <button class="icon-btn" on:click={() => removeCategory(cat.id)}><Icon name="trash" size={12} /></button>
+              <button class="icon-btn" aria-label={$t('common.deleteNamed', { name: cat.name })} on:click={() => removeCategory(cat.id)}><Icon name="trash" size={12} /></button>
             {/if}
           </div>
         {/each}
@@ -351,7 +351,7 @@
               <span class="row-name">{rule.name}</span>
               <span class="row-tag">on {Array.isArray(rule.eventFilter) ? rule.eventFilter.join(', ') : 'all events'}</span>
               <label class="toggle"><input type="checkbox" checked={rule.enabled} on:change={(e) => toggleRule(rule.id, (e.target as HTMLInputElement).checked)} />{$t('settings.enabledLabel')}</label>
-              <button class="icon-btn" on:click={() => removeRule(rule.id)}><Icon name="trash" size={13} /></button>
+              <button class="icon-btn" aria-label={$t('common.deleteNamed', { name: rule.name })} on:click={() => removeRule(rule.id)}><Icon name="trash" size={13} /></button>
             </div>
             {#if rule.conditions.length}
               <p class="rule-detail">if {rule.conditions.map((c) => `${c.field} ${c.op} ${JSON.stringify(c.value)}`).join(' and ')}</p>
@@ -381,7 +381,7 @@
             {#if condition.op !== 'isEmpty'}
               <input type="text" placeholder={$t('settings.valuePlaceholder')} bind:value={condition.value} />
             {/if}
-            <button type="button" class="icon-btn" on:click={() => removeCondition(i)}><Icon name="x" size={13} /></button>
+            <button type="button" class="icon-btn" aria-label={$t('settings.removeConditionLabel')} on:click={() => removeCondition(i)}><Icon name="x" size={13} /></button>
           </div>
         {/each}
         <button type="button" class="text-btn add-row-btn" on:click={addCondition}>{$t('settings.addConditionButton')}</button>
@@ -419,7 +419,7 @@
               <input type="text" placeholder={$t('settings.commitMessagePlaceholder')} bind:value={action.commitMessage} />
             {/if}
             {#if newRuleActions.length > 1}
-              <button type="button" class="icon-btn" on:click={() => removeAction(i)}><Icon name="x" size={13} /></button>
+              <button type="button" class="icon-btn" aria-label={$t('settings.removeActionLabel')} on:click={() => removeAction(i)}><Icon name="x" size={13} /></button>
             {/if}
           </div>
         {/each}
@@ -435,7 +435,7 @@
           <div class="row">
             <span class="row-name">{hook.targetUrl}</span>
             <label class="toggle"><input type="checkbox" checked={hook.enabled} on:change={(e) => toggleWebhook(hook.id, (e.target as HTMLInputElement).checked)} />{$t('settings.enabledLabel')}</label>
-            <button class="icon-btn" on:click={() => removeWebhook(hook.id)}><Icon name="trash" size={13} /></button>
+            <button class="icon-btn" aria-label={$t('common.deleteNamed', { name: hook.targetUrl })} on:click={() => removeWebhook(hook.id)}><Icon name="trash" size={13} /></button>
           </div>
         {/each}
       </div>

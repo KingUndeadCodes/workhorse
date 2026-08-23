@@ -157,6 +157,7 @@
                 class:active={c === $currentProject.color}
                 style="background:{c}"
                 title={c}
+                aria-label={$t('projectSettings.colorSwatchLabel', { color: c })}
                 on:click={() => setProjectColor(c)}
               ><Icon name="check" size={11} /></button>
             {/each}
@@ -178,7 +179,7 @@
     {:else if activeTab === 'Components'}
       <div class="list">
         {#each $componentsStore as c (c.id)}
-          <div class="row"><span class="row-name">{c.name}</span><button class="icon-btn" on:click={() => removeComponent(c.id)}><Icon name="trash" size={13} /></button></div>
+          <div class="row"><span class="row-name">{c.name}</span><button class="icon-btn" aria-label={$t('common.deleteNamed', { name: c.name })} on:click={() => removeComponent(c.id)}><Icon name="trash" size={13} /></button></div>
         {/each}
       </div>
       <form class="add-form" on:submit|preventDefault={addComponent}>
@@ -192,7 +193,7 @@
             <span class="row-name">{v.name}</span>
             <span class="row-tag" class:released={!!v.releasedAt}>{v.releasedAt ? $t('projectSettings.released') : $t('projectSettings.unreleased')}</span>
             {#if !v.releasedAt}<button class="text-btn" on:click={() => releaseVersion(v.id)}>{$t('projectSettings.releaseButton')}</button>{/if}
-            <button class="icon-btn" on:click={() => removeVersion(v.id)}><Icon name="trash" size={13} /></button>
+            <button class="icon-btn" aria-label={$t('common.deleteNamed', { name: v.name })} on:click={() => removeVersion(v.id)}><Icon name="trash" size={13} /></button>
           </div>
         {/each}
       </div>
@@ -207,7 +208,7 @@
           <Icon name="branch" size={13} />
           <span class="row-name">{$gitRepoLink.owner}/{$gitRepoLink.repo}</span>
           <span class="row-tag">{$gitRepoLink.provider} · {$t('projectSettings.defaultBranchSuffix', { branch: $gitRepoLink.defaultBranch })}</span>
-          <button class="icon-btn" on:click={removeGitRepoLink}><Icon name="trash" size={13} /></button>
+          <button class="icon-btn" aria-label={$t('projectSettings.unlinkRepoLabel')} on:click={removeGitRepoLink}><Icon name="trash" size={13} /></button>
         </div>
       {:else if availableGitProviders.length === 0}
         <p class="section-hint">{$t('projectSettings.noGitProviderHint')}</p>
