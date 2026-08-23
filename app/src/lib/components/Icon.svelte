@@ -4,6 +4,6 @@
   export let size = 16;
 </script>
 
-<svg style="width:{size}px;height:{size}px;flex:0 0 {size}px">
+<svg style="width:{size}px;height:{size}px;flex:0 0 {size}px" aria-hidden="true">
   <use href={`/icons.svg#i-${name}`} />
 </svg>
