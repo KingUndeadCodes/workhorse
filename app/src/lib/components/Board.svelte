@@ -104,8 +104,6 @@
             {@const key = cellKey('no-epic', col.id)}
             <div
               class="cell"
-              role="list"
-              aria-label="{col.name} — {$t('board.noEpic')}"
               class:drag-over={dragOverCell === key}
               on:dragover={(e) => { e.preventDefault(); dragOverCell = key; }}
               on:dragleave={() => (dragOverCell = null)}
@@ -115,16 +113,20 @@
               {#if cellIssues.length === 0}
                 <div class="cell-empty">{$t('board.noIssues')}</div>
               {:else}
-                {#each cellIssues as issue (issue.id)}
-                  <IssueCard
-                    {issue}
-                    selected={issue.id === $selectedIssueId}
-                    onSelect={selectIssue}
-                    {doneStatusIds}
-                    {columns}
-                    onMove={(issueId, statusIds) => statusIds[0] && moveIssueToStatus(issueId, statusIds[0])}
-                  />
-                {/each}
+                <div class="cell-list" role="list" aria-label="{col.name} — {$t('board.noEpic')}">
+                  {#each cellIssues as issue (issue.id)}
+                    <div role="listitem">
+                      <IssueCard
+                        {issue}
+                        selected={issue.id === $selectedIssueId}
+                        onSelect={selectIssue}
+                        {doneStatusIds}
+                        {columns}
+                        onMove={(issueId, statusIds) => statusIds[0] && moveIssueToStatus(issueId, statusIds[0])}
+                      />
+                    </div>
+                  {/each}
+                </div>
               {/if}
             </div>
           {/each}
@@ -150,8 +152,6 @@
             {@const key = cellKey(epic.id, col.id)}
             <div
               class="cell"
-              role="list"
-              aria-label="{col.name} — {epic.title}"
               class:drag-over={dragOverCell === key}
               on:dragover={(e) => { e.preventDefault(); dragOverCell = key; }}
               on:dragleave={() => (dragOverCell = null)}
@@ -161,16 +161,20 @@
               {#if cellIssues.length === 0}
                 <div class="cell-empty">{$t('board.noIssues')}</div>
               {:else}
-                {#each cellIssues as issue (issue.id)}
-                  <IssueCard
-                    {issue}
-                    selected={issue.id === $selectedIssueId}
-                    onSelect={selectIssue}
-                    {doneStatusIds}
-                    {columns}
-                    onMove={(issueId, statusIds) => statusIds[0] && moveIssueToStatus(issueId, statusIds[0])}
-                  />
-                {/each}
+                <div class="cell-list" role="list" aria-label="{col.name} — {epic.title}">
+                  {#each cellIssues as issue (issue.id)}
+                    <div role="listitem">
+                      <IssueCard
+                        {issue}
+                        selected={issue.id === $selectedIssueId}
+                        onSelect={selectIssue}
+                        {doneStatusIds}
+                        {columns}
+                        onMove={(issueId, statusIds) => statusIds[0] && moveIssueToStatus(issueId, statusIds[0])}
+                      />
+                    </div>
+                  {/each}
+                </div>
               {/if}
             </div>
           {/each}
@@ -210,6 +214,7 @@
     background: var(--surface-sunken); border-radius: 10px; padding: 8px; min-height: 56px;
     display: flex; flex-direction: column; gap: 8px; transition: background .1s ease;
   }
+  .cell-list { display: flex; flex-direction: column; gap: 8px; }
   .cell.drag-over { background: var(--accent-soft); outline: 2px dashed var(--accent); outline-offset: -2px; }
   .cell-empty { display: flex; align-items: center; justify-content: center; color: var(--text-3); font-size: 11.5px; min-height: 40px; border: 1px dashed var(--border); border-radius: 8px; }
   .cell-label { display: none; }

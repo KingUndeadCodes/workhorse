@@ -88,7 +88,7 @@
         <span>{$t('accountSettingsModal.emailLabel')}</span>
         <input type="email" bind:value={email} placeholder={$t('accountSettingsModal.emailPlaceholder')} />
       </label>
-      {#if error}<p class="error">{error}</p>{/if}
+      {#if error}<p class="error" aria-live="polite">{error}</p>{/if}
       <div class="actions">
         <button type="button" class="btn ghost" on:click={onClose}>{$t('common.cancel')}</button>
         <button type="submit" class="btn primary" disabled={!displayName.trim() || !email.trim() || submitting}>{submitting ? $t('accountSettingsModal.savingButton') : $t('accountSettingsModal.saveButton')}</button>
