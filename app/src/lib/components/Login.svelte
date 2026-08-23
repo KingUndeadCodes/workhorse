@@ -99,7 +99,7 @@
   }
   .error {
     font-size: 12px;
-    color: #C0392B;
+    color: var(--critical);
     margin: 0;
   }
   button.primary {
