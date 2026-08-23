@@ -75,7 +75,7 @@
 </script>
 
 {#if pendingRuns.length}
-  <div class="subsection-label">Awaiting your approval</div>
+  <div class="subsection-label">{$t('agentsSettings.awaitingApproval')}</div>
   <div class="pending-list">
     {#each pendingRuns as run (run.id)}
       {@const agent = $agents.find((a) => a.userId === run.agentUserId)}

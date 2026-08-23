@@ -80,7 +80,9 @@
     "sectionStatus": "Статус"
   },
   "issueCard": {
-    "moveToTitle": "Переместить в…"
+    "moveToTitle": "Переместить в…",
+    "overdueLabel": "ПРОСРОЧЕНО",
+    "dueSoonLabel": "СКОРО СРОК"
   },
   "issueDrawer": {
     "descriptionLabel": "Описание",
@@ -169,6 +171,8 @@
     "ruleNamePlaceholder": "Название правила",
     "triggerLabel": "Триггер",
     "conditionsLabel": "Условия (необязательно — без них правило выполняется всегда)",
+    "ruleConditionsPrefix": "если",
+    "conditionJoiner": "и",
     "valuePlaceholder": "значение",
     "addConditionButton": "+ Добавить условие",
     "removeConditionLabel": "Убрать условие",

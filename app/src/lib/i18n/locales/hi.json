@@ -78,7 +78,9 @@
     "sectionStatus": "स्थिति"
   },
   "issueCard": {
-    "moveToTitle": "इसमें ले जाएँ…"
+    "moveToTitle": "इसमें ले जाएँ…",
+    "overdueLabel": "समय सीमा पार",
+    "dueSoonLabel": "जल्द देय"
   },
   "issueDrawer": {
     "descriptionLabel": "विवरण",
@@ -167,6 +169,8 @@
     "ruleNamePlaceholder": "नियम का नाम",
     "triggerLabel": "ट्रिगर",
     "conditionsLabel": "शर्तें (वैकल्पिक — कोई न होने पर नियम बिना शर्त चलता है)",
+    "ruleConditionsPrefix": "अगर",
+    "conditionJoiner": "और",
     "valuePlaceholder": "मान",
     "addConditionButton": "+ शर्त जोड़ें",
     "removeConditionLabel": "शर्त हटाएं",

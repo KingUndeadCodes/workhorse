@@ -226,7 +226,7 @@
   </div>
   <div class="actions">
     <button type="button" class="btn primary" disabled={disabled || submitting} on:click={onSubmit}>{submitting ? `${submitLabel}…` : submitLabel}</button>
-    {#if showCancel}<button type="button" class="btn ghost" on:click={onCancel}>Cancel</button>{/if}
+    {#if showCancel}<button type="button" class="btn ghost" on:click={onCancel}>{$t('common.cancel')}</button>{/if}
   </div>
 </div>
 

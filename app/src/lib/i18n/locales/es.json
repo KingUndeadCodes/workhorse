@@ -78,7 +78,9 @@
     "sectionStatus": "Estado"
   },
   "issueCard": {
-    "moveToTitle": "Mover a…"
+    "moveToTitle": "Mover a…",
+    "overdueLabel": "VENCIDO",
+    "dueSoonLabel": "PRÓXIMO"
   },
   "issueDrawer": {
     "descriptionLabel": "Descripción",
@@ -167,6 +169,8 @@
     "ruleNamePlaceholder": "Nombre de la regla",
     "triggerLabel": "Disparador",
     "conditionsLabel": "Condiciones (opcional — sin ellas la regla siempre se ejecuta)",
+    "ruleConditionsPrefix": "si",
+    "conditionJoiner": "y",
     "valuePlaceholder": "valor",
     "addConditionButton": "+ Añadir condición",
     "removeConditionLabel": "Quitar condición",

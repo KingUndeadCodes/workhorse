@@ -78,7 +78,9 @@
     "sectionStatus": "Status"
   },
   "issueCard": {
-    "moveToTitle": "Move to…"
+    "moveToTitle": "Move to…",
+    "overdueLabel": "OVERDUE",
+    "dueSoonLabel": "DUE SOON"
   },
   "issueDrawer": {
     "descriptionLabel": "Description",
@@ -167,6 +169,8 @@
     "ruleNamePlaceholder": "Rule name",
     "triggerLabel": "Trigger",
     "conditionsLabel": "Conditions (optional — runs unconditionally if none)",
+    "ruleConditionsPrefix": "if",
+    "conditionJoiner": "and",
     "valuePlaceholder": "value",
     "addConditionButton": "+ Add condition",
     "removeConditionLabel": "Remove condition",

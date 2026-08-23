@@ -354,7 +354,7 @@
               <button class="icon-btn" aria-label={$t('common.deleteNamed', { name: rule.name })} on:click={() => removeRule(rule.id)}><Icon name="trash" size={13} /></button>
             </div>
             {#if rule.conditions.length}
-              <p class="rule-detail">if {rule.conditions.map((c) => `${c.field} ${c.op} ${JSON.stringify(c.value)}`).join(' and ')}</p>
+              <p class="rule-detail">{$t('settings.ruleConditionsPrefix')} {rule.conditions.map((c) => `${c.field} ${c.op} ${JSON.stringify(c.value)}`).join(` ${$t('settings.conditionJoiner')} `)}</p>
             {/if}
             <p class="rule-detail">{rule.actions.map((a) => describeAutomationAction(a, { workflow: $workflow, users: $users, fieldDefinitions: $fieldDefinitions }, $t)).join('; ')}</p>
           </div>

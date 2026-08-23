@@ -35,7 +35,7 @@
     workflow,
   } from '../stores/workspace';
   import { createBranch as apiCreateBranch, deleteBranch as apiDeleteBranch, fetchEventDetail, fetchIssueEvents, getBranch, triggerAgent, type ActivityEventSummary } from '../api';
-  import { describeEvent, describeEventType, displayName, formatRelativeDate, priorityIcon, renderMarkdown, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
+  import { describeEvent, describeEventType, displayName, formatHours, formatRelativeDate, priorityIcon, renderMarkdown, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
   import { lineNumbers } from '../actions/lineNumbers';
   import { locale, t, tn } from '../i18n';
   import { STORY_POINT_VALUES, slugifyBranchName, type Branch, type EventEnvelope, type IssueLinkType } from '$domain';
@@ -673,10 +673,10 @@
               <div class="subsection">
                 <div class="section-label">{$t('issueDrawer.timeTrackingLabel')}</div>
                 <div class="time-track">
-                  <span class="time-label mono">{$t('issueDrawer.loggedSuffix', { hours: (issue.loggedSeconds / 3600).toFixed(1) })}</span>
+                  <span class="time-label mono">{$t('issueDrawer.loggedSuffix', { hours: formatHours(issue.loggedSeconds / 3600, $locale) })}</span>
                   {#if issue.originalEstimateSeconds}
                     <div class="time-bar"><span style="width:{timePct}%"></span></div>
-                    <span class="time-label mono">{$t('issueDrawer.estimateSuffix', { hours: (issue.originalEstimateSeconds / 3600).toFixed(0) })}</span>
+                    <span class="time-label mono">{$t('issueDrawer.estimateSuffix', { hours: formatHours(issue.originalEstimateSeconds / 3600, $locale, 0) })}</span>
                   {/if}
                 </div>
                 <form class="inline-form" on:submit|preventDefault={submitWorklog}>

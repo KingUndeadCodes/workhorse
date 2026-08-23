@@ -138,9 +138,9 @@
   <div class="bottom">
     <div class="bottom-left">
       {#if $featureFlags.dueDates && isOverdue}
-        <span class="due-chip overdue mono">OVERDUE</span>
+        <span class="due-chip overdue mono">{$t('issueCard.overdueLabel')}</span>
       {:else if $featureFlags.dueDates && isDueSoon}
-        <span class="due-chip due-soon mono">DUE SOON</span>
+        <span class="due-chip due-soon mono">{$t('issueCard.dueSoonLabel')}</span>
       {/if}
     </div>
     <div class="bottom-right">

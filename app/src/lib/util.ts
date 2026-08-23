@@ -189,6 +189,13 @@ export function formatDuration(seconds: number): string {
   return `${hours % 1 === 0 ? hours : hours.toFixed(1)}h`;
 }
 
+/** Formats a fractional hour count via `Intl.NumberFormat` — just the numeral (e.g. "6.5"),
+ * callers supply their own unit/suffix text. Pass the active `Locale` so grouping/decimal
+ * separators match it (e.g. "6,5" in most European locales) rather than always reading English. */
+export function formatHours(hours: number, localeId = 'en', maximumFractionDigits = 1): string {
+  return new Intl.NumberFormat(localeId, { maximumFractionDigits }).format(hours);
+}
+
 /** X-axis label for one time-spent bucket — hour-of-day for the 24h window (hourly buckets), short weekday/date for 1w/30d (daily buckets). */
 export function formatBucketLabel(iso: string, window: StatsWindow, localeId = 'en'): string {
   const date = new Date(iso);

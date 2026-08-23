@@ -77,7 +77,9 @@
     "sectionStatus": "状态"
   },
   "issueCard": {
-    "moveToTitle": "移动到…"
+    "moveToTitle": "移动到…",
+    "overdueLabel": "已逾期",
+    "dueSoonLabel": "即将到期"
   },
   "issueDrawer": {
     "descriptionLabel": "描述",
@@ -166,6 +168,8 @@
     "ruleNamePlaceholder": "规则名称",
     "triggerLabel": "触发条件",
     "conditionsLabel": "条件（可选 — 若不设置则无条件执行）",
+    "ruleConditionsPrefix": "如果",
+    "conditionJoiner": "且",
     "valuePlaceholder": "值",
     "addConditionButton": "+ 添加条件",
     "removeConditionLabel": "移除条件",
