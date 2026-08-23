@@ -222,7 +222,7 @@
           <input type="text" placeholder={$t('projectSettings.ownerPlaceholder')} bind:value={newRepoOwner} />
           <input type="text" placeholder={$t('projectSettings.repoPlaceholder')} bind:value={newRepoName} />
           <input type="text" placeholder={$t('projectSettings.defaultBranchPlaceholder')} bind:value={newRepoDefaultBranch} />
-          <input type="password" placeholder={$t('projectSettings.accessTokenPlaceholder')} bind:value={newRepoToken} />
+          <input type="password" placeholder={$t('projectSettings.accessTokenPlaceholder')} bind:value={newRepoToken} autocomplete="off" />
           <button type="submit" disabled={linkingRepo}>{linkingRepo ? $t('projectSettings.linkingRepoButton') : $t('projectSettings.linkRepoButton')}</button>
         </form>
         {#if linkRepoError}<p class="error">{linkRepoError}</p>{/if}
