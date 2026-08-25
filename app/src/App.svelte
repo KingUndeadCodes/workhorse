@@ -50,9 +50,10 @@
     </div>
   </div>
 {:else}
+  <a href="#main-content" class="skip-link">{$t('app.skipToContent')}</a>
   <div class="app">
     <Sidebar />
-    <div class="main">
+    <main class="main" id="main-content" tabindex="-1">
       <TopBar />
       {#if $selectedIssueId && ($currentView === 'board' || $currentView === 'backlog')}
         <IssueDrawer />
@@ -69,12 +70,18 @@
       {:else}
         <Settings />
       {/if}
-    </div>
+    </main>
     <MobileNav />
   </div>
 {/if}
 
 <style>
+  .skip-link {
+    position: absolute; top: -48px; left: 8px; z-index: 1000;
+    background: var(--accent); color: var(--accent-on); font-size: 12.5px; font-weight: 600;
+    padding: 10px 16px; border-radius: 6px; transition: top .15s ease;
+  }
+  .skip-link:focus-visible { top: 8px; }
   .app {
     display: flex;
     height: 100vh;
@@ -87,6 +94,10 @@
     flex-direction: column;
     background: var(--bg);
   }
+  /* The skip link's jump target — not part of the normal Tab order (tabindex="-1"), so no
+     focus ring is needed here; the visible effect of "skipping" is the content scrolling into
+     view, not a ring around the whole landmark. */
+  .main:focus { outline: none; }
   /* Reserves room for MobileNav's fixed bottom tab bar (~54px + its own 8px gap above the
      safe-area inset — see that component's .mobile-nav padding-bottom) so the last row of
      board/backlog/settings content isn't hidden underneath it. Desktop is untouched — MobileNav

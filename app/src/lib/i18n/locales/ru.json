@@ -349,7 +349,8 @@
   "app": {
     "apiErrorTitle": "Не удалось подключиться к API Workhorse",
     "serverRunningHint": "Сервер запущен?",
-    "loadingWorkspace": "Загрузка рабочего пространства…"
+    "loadingWorkspace": "Загрузка рабочего пространства…",
+    "skipToContent": "Перейти к основному содержимому"
   },
   "backlog": {
     "startSprintButton": "Начать спринт",

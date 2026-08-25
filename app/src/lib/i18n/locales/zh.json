@@ -334,7 +334,8 @@
   "app": {
     "apiErrorTitle": "无法连接到 Workhorse API",
     "serverRunningHint": "服务器是否正在运行？",
-    "loadingWorkspace": "正在加载工作区…"
+    "loadingWorkspace": "正在加载工作区…",
+    "skipToContent": "跳转到主要内容"
   },
   "backlog": {
     "startSprintButton": "开始冲刺",

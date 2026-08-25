@@ -339,7 +339,8 @@
   "app": {
     "apiErrorTitle": "Couldn't reach the Workhorse API",
     "serverRunningHint": "Is the server running?",
-    "loadingWorkspace": "Loading workspace…"
+    "loadingWorkspace": "Loading workspace…",
+    "skipToContent": "Skip to main content"
   },
   "backlog": {
     "startSprintButton": "Start sprint",

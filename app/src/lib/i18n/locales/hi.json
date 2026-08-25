@@ -339,7 +339,8 @@
   "app": {
     "apiErrorTitle": "Workhorse API तक नहीं पहुँच सका",
     "serverRunningHint": "क्या सर्वर चल रहा है?",
-    "loadingWorkspace": "वर्कस्पेस लोड हो रहा है…"
+    "loadingWorkspace": "वर्कस्पेस लोड हो रहा है…",
+    "skipToContent": "मुख्य सामग्री पर जाएं"
   },
   "backlog": {
     "startSprintButton": "स्प्रिंट शुरू करें",

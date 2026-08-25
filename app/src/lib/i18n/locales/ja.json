@@ -334,7 +334,8 @@
   "app": {
     "apiErrorTitle": "Workhorse APIに接続できませんでした",
     "serverRunningHint": "サーバーは起動していますか？",
-    "loadingWorkspace": "ワークスペースを読み込み中…"
+    "loadingWorkspace": "ワークスペースを読み込み中…",
+    "skipToContent": "メインコンテンツへスキップ"
   },
   "backlog": {
     "startSprintButton": "スプリントを開始",

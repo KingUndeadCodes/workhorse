@@ -339,7 +339,8 @@
   "app": {
     "apiErrorTitle": "No se pudo conectar con la API de Workhorse",
     "serverRunningHint": "¿Está el servidor en ejecución?",
-    "loadingWorkspace": "Cargando espacio de trabajo…"
+    "loadingWorkspace": "Cargando espacio de trabajo…",
+    "skipToContent": "Saltar al contenido principal"
   },
   "backlog": {
     "startSprintButton": "Iniciar sprint",

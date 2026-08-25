@@ -16,6 +16,7 @@
   import StatusNode from './StatusNode.svelte';
   import * as api from '../api';
   import { statusCategories, workflow } from '../stores/workspace';
+  import { resolvedTheme } from '../stores/theme';
   import type { StatusCategory, WorkflowStatus, WorkflowTransition } from '$domain';
   import { t } from '../i18n';
 
@@ -270,7 +271,7 @@
 {#if deleteError}<p class="delete-error">{deleteError}</p>{/if}
 
 <div class="flow-wrap">
-  <SvelteFlow bind:nodes bind:edges {nodeTypes} onconnect={handleConnect} {onbeforedelete} {ondelete} fitView colorMode="dark" proOptions={{ hideAttribution: true }}>
+  <SvelteFlow bind:nodes bind:edges {nodeTypes} onconnect={handleConnect} {onbeforedelete} {ondelete} fitView colorMode={$resolvedTheme} proOptions={{ hideAttribution: true }}>
     <Background />
     <Controls showLock={false} />
   </SvelteFlow>
