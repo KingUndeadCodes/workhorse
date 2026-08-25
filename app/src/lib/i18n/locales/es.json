@@ -334,7 +334,49 @@
     "signUpButton": "Registrarse",
     "toggleToSignUp": "¿No tienes cuenta? Regístrate",
     "toggleToLogIn": "¿Ya tienes cuenta? Inicia sesión",
-    "genericError": "algo salió mal"
+    "genericError": "algo salió mal",
+    "backButton": "← Volver"
+  },
+  "landing": {
+    "tagline": "Gestión de proyectos que sigue el ritmo de tu equipo",
+    "subtitle": "Tableros, sprints y automatizaciones — además de agentes de IA que pueden tomar tareas y resolverlas por su cuenta.",
+    "ctaButton": "Comenzar",
+    "previewCaption": "El tablero, de un vistazo",
+    "previewTodo": "Por hacer",
+    "previewInProgress": "En curso",
+    "previewDone": "Hecho",
+    "featureBoardTitle": "Tablero y Backlog",
+    "featureBoardDesc": "Kanban de arrastrar y soltar más planificación completa de sprints, sin salir de la página.",
+    "featureAgentsTitle": "Agentes de IA",
+    "featureAgentsDesc": "Asigna un agente a una tarea y la resolverá de forma autónoma, comentando y actualizando el estado sobre la marcha.",
+    "featureAutomationsTitle": "Automatizaciones",
+    "featureAutomationsDesc": "Los disparadores y acciones basados en reglas se encargan del trabajo repetitivo por tu equipo.",
+    "featureInsightsTitle": "Estadísticas",
+    "featureInsightsDesc": "Gráficos de tiempo dedicado y rankings de tareas más activas, actualizados en tiempo real.",
+    "footerPrivacy": "Política de privacidad",
+    "footerAccessibility": "Declaración de accesibilidad",
+    "copyright": "© {year} Workhorse. Todos los derechos reservados."
+  },
+  "policyPage": {
+    "placeholderNotice": "Este es un texto de marcador de posición, no una política real — reemplázalo antes del lanzamiento."
+  },
+  "privacyPolicy": {
+    "title": "Política de privacidad",
+    "dataCollectedHeading": "Datos que recopilamos",
+    "dataCollectedBody": "Esta sección describirá exactamente qué datos se recopilan: detalles de la cuenta, contenido del espacio de trabajo, datos de uso, etc.",
+    "dataUseHeading": "Cómo los usamos",
+    "dataUseBody": "Esta sección explicará cómo se usan, almacenan y (si corresponde) comparten los datos recopilados.",
+    "contactHeading": "Contacto",
+    "contactBody": "Esta sección dará a los visitantes una forma de contactarte con preguntas o solicitudes sobre privacidad."
+  },
+  "accessibilityStatement": {
+    "title": "Declaración de accesibilidad",
+    "commitmentHeading": "Nuestro compromiso",
+    "commitmentBody": "Esta sección describirá tu compromiso real con la accesibilidad y cualquier estándar al que apuntes (p. ej., WCAG 2.1 AA).",
+    "knownLimitationsHeading": "Limitaciones conocidas",
+    "knownLimitationsBody": "Esta sección enumerará las brechas de accesibilidad conocidas que aún no se han corregido, y el plan para abordarlas.",
+    "feedbackHeading": "Comentarios",
+    "feedbackBody": "Esta sección dará a los visitantes una forma de reportar problemas de accesibilidad que encuentren."
   },
   "app": {
     "apiErrorTitle": "No se pudo conectar con la API de Workhorse",

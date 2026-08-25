@@ -329,7 +329,49 @@
     "signUpButton": "登録",
     "toggleToSignUp": "アカウントをお持ちでないですか？登録する",
     "toggleToLogIn": "すでにアカウントをお持ちですか？ログイン",
-    "genericError": "問題が発生しました"
+    "genericError": "問題が発生しました",
+    "backButton": "← 戻る"
+  },
+  "landing": {
+    "tagline": "チームのスピードに追いつくプロジェクト管理",
+    "subtitle": "ボード、スプリント、自動化 — さらに、チケットを自律的に処理するAIエージェントも。",
+    "ctaButton": "はじめる",
+    "previewCaption": "ひと目でわかるボード",
+    "previewTodo": "未着手",
+    "previewInProgress": "進行中",
+    "previewDone": "完了",
+    "featureBoardTitle": "ボード＆バックログ",
+    "featureBoardDesc": "ドラッグ＆ドロップのカンバンと、ページを離れずに使える本格的なスプリント計画。",
+    "featureAgentsTitle": "AIエージェント",
+    "featureAgentsDesc": "チケットにエージェントを割り当てると、コメントやステータス更新をしながら自律的に作業します。",
+    "featureAutomationsTitle": "自動化",
+    "featureAutomationsDesc": "ルールベースのトリガーとアクションが、面倒な作業を代わりに処理します。",
+    "featureInsightsTitle": "インサイト",
+    "featureInsightsDesc": "作業時間チャートと最も活発なチケットのランキングをリアルタイムで表示。",
+    "footerPrivacy": "プライバシーポリシー",
+    "footerAccessibility": "アクセシビリティに関する声明",
+    "copyright": "© {year} Workhorse. 全著作権所有。"
+  },
+  "policyPage": {
+    "placeholderNotice": "これはプレースホルダーのテキストであり、実際のポリシーではありません — 公開前に置き換えてください。"
+  },
+  "privacyPolicy": {
+    "title": "プライバシーポリシー",
+    "dataCollectedHeading": "収集するデータ",
+    "dataCollectedBody": "このセクションでは、アカウント情報、ワークスペースの内容、利用データなど、実際に収集されるデータについて説明します。",
+    "dataUseHeading": "データの利用方法",
+    "dataUseBody": "このセクションでは、収集したデータがどのように利用・保存され、（該当する場合）共有されるかを説明します。",
+    "contactHeading": "お問い合わせ",
+    "contactBody": "このセクションでは、プライバシーに関する質問や要望について訪問者が連絡できる方法を示します。"
+  },
+  "accessibilityStatement": {
+    "title": "アクセシビリティに関する声明",
+    "commitmentHeading": "私たちの取り組み",
+    "commitmentBody": "このセクションでは、実際のアクセシビリティへの取り組みと、目標とする基準（例：WCAG 2.1 AA）について説明します。",
+    "knownLimitationsHeading": "既知の制限事項",
+    "knownLimitationsBody": "このセクションでは、まだ修正されていない既知のアクセシビリティ上の問題と、その対応計画を示します。",
+    "feedbackHeading": "フィードバック",
+    "feedbackBody": "このセクションでは、訪問者が遭遇したアクセシビリティの問題を報告する方法を示します。"
   },
   "app": {
     "apiErrorTitle": "Workhorse APIに接続できませんでした",

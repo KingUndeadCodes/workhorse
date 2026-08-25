@@ -2,6 +2,10 @@
   import { login, signup } from '../stores/auth';
   import { t } from '../i18n';
 
+  /** Set by App.svelte when Login is reached via the landing page, so a visitor can return to
+   * it without a full reload. Unset when Login is the only unauthenticated screen. */
+  export let onBack: (() => void) | undefined = undefined;
+
   let mode: 'login' | 'signup' = 'login';
   let email = '';
   let password = '';
@@ -30,6 +34,9 @@
 
 <div class="auth-screen">
   <form class="auth-card" on:submit|preventDefault={submit}>
+    {#if onBack}
+      <button type="button" class="link back-link" on:click={onBack}>{$t('login.backButton')}</button>
+    {/if}
     <h1>{mode === 'login' ? $t('login.logInTitle') : $t('login.signUpTitle')}</h1>
     {#if mode === 'signup'}
       <label>
@@ -127,6 +134,10 @@
   }
   button.link:hover {
     color: var(--accent);
+  }
+  .back-link {
+    align-self: flex-start;
+    margin-bottom: 2px;
   }
 
   @media (max-width: 480px) {

@@ -329,7 +329,49 @@
     "signUpButton": "注册",
     "toggleToSignUp": "还没有账户？注册",
     "toggleToLogIn": "已有账户？登录",
-    "genericError": "出了点问题"
+    "genericError": "出了点问题",
+    "backButton": "← 返回"
+  },
+  "landing": {
+    "tagline": "跟得上团队节奏的项目管理",
+    "subtitle": "看板、冲刺规划与自动化 — 还有能自主处理工单的 AI 代理。",
+    "ctaButton": "开始使用",
+    "previewCaption": "一目了然的看板",
+    "previewTodo": "待办",
+    "previewInProgress": "进行中",
+    "previewDone": "已完成",
+    "featureBoardTitle": "看板与待办事项",
+    "featureBoardDesc": "拖放式看板加完整的冲刺规划，无需离开页面。",
+    "featureAgentsTitle": "AI 代理",
+    "featureAgentsDesc": "为工单指派一个代理，它会自主处理，边评论边更新状态。",
+    "featureAutomationsTitle": "自动化",
+    "featureAutomationsDesc": "基于规则的触发器和操作，替团队处理繁琐事务。",
+    "featureInsightsTitle": "数据洞察",
+    "featureInsightsDesc": "实时更新的耗时图表与最活跃工单排行。",
+    "footerPrivacy": "隐私政策",
+    "footerAccessibility": "无障碍声明",
+    "copyright": "© {year} Workhorse。保留所有权利。"
+  },
+  "policyPage": {
+    "placeholderNotice": "这是占位文本，不是真实政策 — 请在上线前替换。"
+  },
+  "privacyPolicy": {
+    "title": "隐私政策",
+    "dataCollectedHeading": "我们收集的数据",
+    "dataCollectedBody": "本节将详细说明所收集的数据 — 账户信息、工作区内容、使用数据等。",
+    "dataUseHeading": "我们如何使用数据",
+    "dataUseBody": "本节将说明所收集的数据如何被使用、存储，以及（如适用）共享。",
+    "contactHeading": "联系方式",
+    "contactBody": "本节将为访客提供联系方式，以便就隐私问题或请求与您联系。"
+  },
+  "accessibilityStatement": {
+    "title": "无障碍声明",
+    "commitmentHeading": "我们的承诺",
+    "commitmentBody": "本节将说明您实际的无障碍承诺以及所参照的标准（例如 WCAG 2.1 AA）。",
+    "knownLimitationsHeading": "已知限制",
+    "knownLimitationsBody": "本节将列出尚未修复的已知无障碍问题，以及解决计划。",
+    "feedbackHeading": "反馈",
+    "feedbackBody": "本节将为访客提供报告所遇到的无障碍问题的方式。"
   },
   "app": {
     "apiErrorTitle": "无法连接到 Workhorse API",
