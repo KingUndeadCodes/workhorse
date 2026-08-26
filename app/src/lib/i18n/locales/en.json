@@ -321,63 +321,6 @@
       "other": "{count} words"
     }
   },
-  "login": {
-    "logInTitle": "Log in",
-    "signUpTitle": "Create an account",
-    "displayNameLabel": "Display name",
-    "displayNamePlaceholder": "Ada Lovelace",
-    "emailLabel": "Email",
-    "emailPlaceholder": "you@example.com",
-    "passwordLabel": "Password",
-    "pleaseWait": "Please wait…",
-    "logInButton": "Log in",
-    "signUpButton": "Sign up",
-    "toggleToSignUp": "Don't have an account? Sign up",
-    "toggleToLogIn": "Already have an account? Log in",
-    "genericError": "something went wrong",
-    "backButton": "← Back"
-  },
-  "landing": {
-    "tagline": "Project management that keeps up with your team",
-    "subtitle": "Boards, sprints, and automations — plus AI agents that can pick up tickets and work them on their own.",
-    "ctaButton": "Get started",
-    "previewCaption": "The board, at a glance",
-    "previewTodo": "To Do",
-    "previewInProgress": "In Progress",
-    "previewDone": "Done",
-    "featureBoardTitle": "Board & Backlog",
-    "featureBoardDesc": "Drag-and-drop kanban plus full sprint planning, without leaving the page.",
-    "featureAgentsTitle": "AI Agents",
-    "featureAgentsDesc": "Attach an agent to a ticket and it works it autonomously, commenting and updating status as it goes.",
-    "featureAutomationsTitle": "Automations",
-    "featureAutomationsDesc": "Rule-based triggers and actions handle the busywork so your team doesn't have to.",
-    "featureInsightsTitle": "Insights",
-    "featureInsightsDesc": "Time-spent charts and most-active-ticket rankings, updated in real time.",
-    "footerPrivacy": "Privacy Policy",
-    "footerAccessibility": "Accessibility Statement",
-    "copyright": "© {year} Workhorse. All rights reserved."
-  },
-  "policyPage": {
-    "placeholderNotice": "This is placeholder text, not a real policy — replace it before launch."
-  },
-  "privacyPolicy": {
-    "title": "Privacy Policy",
-    "dataCollectedHeading": "Data We Collect",
-    "dataCollectedBody": "This section will describe exactly what data is collected — account details, workspace content, usage data, and so on.",
-    "dataUseHeading": "How We Use It",
-    "dataUseBody": "This section will explain how collected data is used, stored, and (if applicable) shared.",
-    "contactHeading": "Contact",
-    "contactBody": "This section will give visitors a way to reach you with privacy questions or requests."
-  },
-  "accessibilityStatement": {
-    "title": "Accessibility Statement",
-    "commitmentHeading": "Our Commitment",
-    "commitmentBody": "This section will describe your actual accessibility commitment and any standard you're targeting (e.g. WCAG 2.1 AA).",
-    "knownLimitationsHeading": "Known Limitations",
-    "knownLimitationsBody": "This section will list any known accessibility gaps that haven't been fixed yet, and the plan for addressing them.",
-    "feedbackHeading": "Feedback",
-    "feedbackBody": "This section will give visitors a way to report accessibility issues they encounter."
-  },
   "app": {
     "apiErrorTitle": "Couldn't reach the Workhorse API",
     "serverRunningHint": "Is the server running?",

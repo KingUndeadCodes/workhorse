@@ -331,63 +331,6 @@
       "other": "{count} слова"
     }
   },
-  "login": {
-    "logInTitle": "Вхід",
-    "signUpTitle": "Створити обліковий запис",
-    "displayNameLabel": "Відображуване ім'я",
-    "displayNamePlaceholder": "Ada Lovelace",
-    "emailLabel": "Email",
-    "emailPlaceholder": "you@example.com",
-    "passwordLabel": "Пароль",
-    "pleaseWait": "Будь ласка, зачекайте…",
-    "logInButton": "Увійти",
-    "signUpButton": "Зареєструватися",
-    "toggleToSignUp": "Немає облікового запису? Зареєструватися",
-    "toggleToLogIn": "Вже є обліковий запис? Увійти",
-    "genericError": "щось пішло не так",
-    "backButton": "← Назад"
-  },
-  "landing": {
-    "tagline": "Управління проєктами, яке встигає за вашою командою",
-    "subtitle": "Дошки, спринти та автоматизації — а ще ШІ-агенти, які можуть самостійно брати задачі в роботу.",
-    "ctaButton": "Почати",
-    "previewCaption": "Дошка — як на долоні",
-    "previewTodo": "До виконання",
-    "previewInProgress": "У роботі",
-    "previewDone": "Готово",
-    "featureBoardTitle": "Дошка та беклог",
-    "featureBoardDesc": "Канбан з перетягуванням і повноцінне планування спринтів — не покидаючи сторінки.",
-    "featureAgentsTitle": "ШІ-агенти",
-    "featureAgentsDesc": "Приєднайте агента до задачі — він виконає її самостійно, залишаючи коментарі та оновлюючи статус.",
-    "featureAutomationsTitle": "Автоматизації",
-    "featureAutomationsDesc": "Тригери та дії за правилами беруть рутину на себе.",
-    "featureInsightsTitle": "Аналітика",
-    "featureInsightsDesc": "Графіки витраченого часу та рейтинг найактивніших задач у реальному часі.",
-    "footerPrivacy": "Політика конфіденційності",
-    "footerAccessibility": "Заява про доступність",
-    "copyright": "© {year} Workhorse. Усі права захищено."
-  },
-  "policyPage": {
-    "placeholderNotice": "Це текст-заповнювач, а не справжня політика — замініть його перед запуском."
-  },
-  "privacyPolicy": {
-    "title": "Політика конфіденційності",
-    "dataCollectedHeading": "Які дані ми збираємо",
-    "dataCollectedBody": "У цьому розділі буде описано, які саме дані збираються — дані облікового запису, вміст робочого простору, дані про використання тощо.",
-    "dataUseHeading": "Як ми їх використовуємо",
-    "dataUseBody": "У цьому розділі буде пояснено, як зібрані дані використовуються, зберігаються та (якщо застосовно) передаються.",
-    "contactHeading": "Контакти",
-    "contactBody": "У цьому розділі буде вказано спосіб зв'язатися з вами щодо питань конфіденційності."
-  },
-  "accessibilityStatement": {
-    "title": "Заява про доступність",
-    "commitmentHeading": "Наші зобов'язання",
-    "commitmentBody": "У цьому розділі буде описано ваше реальне зобов’язання щодо доступності та стандарт, на який ви орієнтуєтесь (наприклад, WCAG 2.1 AA).",
-    "knownLimitationsHeading": "Відомі обмеження",
-    "knownLimitationsBody": "У цьому розділі будуть перелічені відомі прогалини доступності, які ще не виправлено, і план їх усунення.",
-    "feedbackHeading": "Зворотний зв’язок",
-    "feedbackBody": "У цьому розділі буде вказано спосіб повідомити про проблеми з доступністю."
-  },
   "app": {
     "apiErrorTitle": "Не вдалося з'єднатися з API Workhorse",
     "serverRunningHint": "Сервер запущено?",

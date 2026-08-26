@@ -13,6 +13,7 @@
   import Login from './lib/components/Login.svelte';
   import LandingPage from './lib/components/LandingPage.svelte';
   import PrivacyPolicy from './lib/components/PrivacyPolicy.svelte';
+  import TermsOfUse from './lib/components/TermsOfUse.svelte';
   import AccessibilityStatement from './lib/components/AccessibilityStatement.svelte';
   import { currentUser } from './lib/stores/auth';
   import { currentView, initWorkspace, loaded, loadError, selectedIssueId } from './lib/stores/workspace';
@@ -22,7 +23,7 @@
 
   /** Which unauthenticated screen is showing — local, not persisted, so a fresh visit always
    * starts back at the landing page. */
-  let unauthView: 'landing' | 'login' | 'privacy' | 'accessibility' = 'landing';
+  let unauthView: 'landing' | 'login' | 'privacy' | 'terms' | 'accessibility' = 'landing';
 
   // Kicks off the one API call that populates every store in workspace.ts, once there's a
   // logged-in user to make it as; $loaded and $loadError below gate what renders until it
@@ -45,12 +46,15 @@
     <Login onBack={() => (unauthView = 'landing')} />
   {:else if unauthView === 'privacy'}
     <PrivacyPolicy onBack={() => (unauthView = 'landing')} />
+  {:else if unauthView === 'terms'}
+    <TermsOfUse onBack={() => (unauthView = 'landing')} />
   {:else if unauthView === 'accessibility'}
     <AccessibilityStatement onBack={() => (unauthView = 'landing')} />
   {:else}
     <LandingPage
       onGetStarted={() => (unauthView = 'login')}
       onPrivacy={() => (unauthView = 'privacy')}
+      onTerms={() => (unauthView = 'terms')}
       onAccessibility={() => (unauthView = 'accessibility')}
     />
   {/if}

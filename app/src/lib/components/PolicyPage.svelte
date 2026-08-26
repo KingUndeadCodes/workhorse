@@ -1,20 +1,26 @@
 <script lang="ts">
-  import { t } from '../i18n';
-
-  export let titleKey: string;
-  export let sectionKeys: { headingKey: string; bodyKey: string }[];
+  export let title: string;
+  export let sections: { heading: string; body: string }[];
   export let onBack: () => void;
+  /** Set false once a page's content is real, not a stand-in — showing the placeholder warning
+   * over real content would be actively misleading rather than just unnecessary. */
+  export let showPlaceholderNotice = true;
 </script>
 
+<!-- Same rationale as LandingPage.svelte: an unauthenticated page, so no dependency on the
+     shared i18n locale store — every string here is a literal passed in as a prop, always
+     English. -->
 <div class="policy-page">
   <div class="policy-card">
-    <button type="button" class="link back-link" on:click={onBack}>{$t('login.backButton')}</button>
-    <h1>{$t(titleKey)}</h1>
-    <p class="placeholder-notice">{$t('policyPage.placeholderNotice')}</p>
-    {#each sectionKeys as s}
+    <button type="button" class="link back-link" on:click={onBack}>← Back</button>
+    <h1>{title}</h1>
+    {#if showPlaceholderNotice}
+      <p class="placeholder-notice">This is placeholder text, not a real policy — replace it before launch.</p>
+    {/if}
+    {#each sections as s}
       <section>
-        <h2>{$t(s.headingKey)}</h2>
-        <p>{$t(s.bodyKey)}</p>
+        <h2>{s.heading}</h2>
+        <p>{s.body}</p>
       </section>
     {/each}
   </div>

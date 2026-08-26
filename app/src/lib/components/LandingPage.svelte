@@ -1,33 +1,36 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { t } from '../i18n';
 
   export let onGetStarted: () => void;
   export let onPrivacy: () => void;
+  export let onTerms: () => void;
   export let onAccessibility: () => void;
 
-  const FEATURES: { icon: string; titleKey: string; descKey: string }[] = [
-    { icon: 'columns', titleKey: 'landing.featureBoardTitle', descKey: 'landing.featureBoardDesc' },
-    { icon: 'robot', titleKey: 'landing.featureAgentsTitle', descKey: 'landing.featureAgentsDesc' },
-    { icon: 'route', titleKey: 'landing.featureAutomationsTitle', descKey: 'landing.featureAutomationsDesc' },
-    { icon: 'clock', titleKey: 'landing.featureInsightsTitle', descKey: 'landing.featureInsightsDesc' },
+  const FEATURES: { icon: string; title: string; desc: string }[] = [
+    { icon: 'columns', title: 'Board & Backlog', desc: 'Drag-and-drop kanban plus full sprint planning, without leaving the page.' },
+    { icon: 'robot', title: 'AI Agents', desc: 'Attach an agent to a ticket and it works it autonomously, commenting and updating status as it goes.' },
+    { icon: 'route', title: 'Automations', desc: "Rule-based triggers and actions handle the busywork so your team doesn't have to." },
+    { icon: 'clock', title: 'Insights', desc: 'Time-spent charts and most-active-ticket rankings, updated in real time.' },
   ];
 
-  const MOCK_COLUMNS: { labelKey: string; cardWidths: number[] }[] = [
-    { labelKey: 'landing.previewTodo', cardWidths: [70, 55] },
-    { labelKey: 'landing.previewInProgress', cardWidths: [60, 80, 45] },
-    { labelKey: 'landing.previewDone', cardWidths: [65] },
+  const MOCK_COLUMNS: { label: string; cardWidths: number[] }[] = [
+    { label: 'To Do', cardWidths: [70, 55] },
+    { label: 'In Progress', cardWidths: [60, 80, 45] },
+    { label: 'Done', cardWidths: [65] },
   ];
 
   const currentYear = new Date().getFullYear();
 </script>
 
+<!-- This is an unauthenticated marketing page and must not depend on anything the authenticated
+     app can mutate — not the shared theme tokens (see <style> below), and not the shared i18n
+     locale store either. Every string here is a literal, always in English. -->
 <div class="landing">
   <section class="hero">
     <div class="brand"><Icon name="anvil" size={32} />Workhorse</div>
-    <h1>{$t('landing.tagline')}</h1>
-    <p class="subtitle">{$t('landing.subtitle')}</p>
-    <button type="button" class="cta" on:click={onGetStarted}>{$t('landing.ctaButton')}</button>
+    <h1>Project management that keeps up with your team</h1>
+    <p class="subtitle">Boards, sprints, and automations — plus AI agents that can pick up tickets and work them on their own.</p>
+    <button type="button" class="cta" on:click={onGetStarted}>Get started</button>
   </section>
 
   <section class="preview-wrap">
@@ -38,7 +41,7 @@
       <div class="preview-board">
         {#each MOCK_COLUMNS as col}
           <div class="preview-col">
-            <div class="preview-col-label">{$t(col.labelKey)}</div>
+            <div class="preview-col-label">{col.label}</div>
             {#each col.cardWidths as w}
               <div class="preview-card">
                 <div class="preview-line" style="width:{w}%"></div>
@@ -49,27 +52,29 @@
         {/each}
       </div>
     </div>
-    <p class="preview-caption">{$t('landing.previewCaption')}</p>
+    <p class="preview-caption">The board, at a glance</p>
   </section>
 
   <section class="features">
     {#each FEATURES as f}
       <div class="feature">
         <div class="feature-icon"><Icon name={f.icon} size={18} /></div>
-        <div class="feature-title">{$t(f.titleKey)}</div>
-        <p class="feature-desc">{$t(f.descKey)}</p>
+        <div class="feature-title">{f.title}</div>
+        <p class="feature-desc">{f.desc}</p>
       </div>
     {/each}
   </section>
 
   <footer class="footer">
-    <p class="copyright">{$t('landing.copyright', { year: currentYear })}</p>
+    <p class="copyright">© {currentYear} Workhorse. All rights reserved.</p>
     <div class="footer-links">
-      <button type="button" class="footer-link" on:click={onGetStarted}>{$t('landing.ctaButton')}</button>
+      <button type="button" class="footer-link" on:click={onGetStarted}>Get started</button>
       <span class="footer-sep" aria-hidden="true">·</span>
-      <button type="button" class="footer-link" on:click={onPrivacy}>{$t('landing.footerPrivacy')}</button>
+      <button type="button" class="footer-link" on:click={onPrivacy}>Privacy Policy</button>
       <span class="footer-sep" aria-hidden="true">·</span>
-      <button type="button" class="footer-link" on:click={onAccessibility}>{$t('landing.footerAccessibility')}</button>
+      <button type="button" class="footer-link" on:click={onTerms}>Terms of Use</button>
+      <span class="footer-sep" aria-hidden="true">·</span>
+      <button type="button" class="footer-link" on:click={onAccessibility}>Accessibility Statement</button>
     </div>
   </footer>
 </div>
