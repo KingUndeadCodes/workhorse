@@ -75,12 +75,52 @@
 </div>
 
 <style>
+  /* This page is shown to unauthenticated visitors and must render purely off the browser's
+     own prefers-color-scheme — it deliberately does NOT use the app's shared --bg/--text/etc
+     tokens (app.css's :root), since those are mutated at runtime by an explicit [data-theme]
+     choice persisted in localStorage. A returning visitor whose stored in-app theme happens to
+     be "dark" should still see this page follow their current OS/browser preference, not
+     whatever they last picked while logged in. Every color below is local to this component. */
+  .landing {
+    --lp-bg: #F5F5F5;
+    --lp-surface: #FFFFFF;
+    --lp-surface-2: #FAFAFA;
+    --lp-surface-sunken: #EBEBEB;
+    --lp-border: #DDDDDD;
+    --lp-border-strong: #C6C6C6;
+    --lp-text: #1F1F1F;
+    --lp-text-2: #5A5A5A;
+    --lp-text-3: #8C8C8C;
+    --lp-accent: #46484D;
+    --lp-accent-strong: #2E2F33;
+    --lp-accent-soft: #E9E9EA;
+    --lp-accent-on: #FFFFFF;
+    --lp-shadow-lg: 0 12px 32px rgba(12,43,78,.14), 0 2px 8px rgba(12,43,78,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    .landing {
+      --lp-bg: #161616;
+      --lp-surface: #1E1E1E;
+      --lp-surface-2: #232323;
+      --lp-surface-sunken: #121212;
+      --lp-border: #333333;
+      --lp-border-strong: #444444;
+      --lp-text: #EDEDED;
+      --lp-text-2: #B0B0B0;
+      --lp-text-3: #7A7A7A;
+      --lp-accent: #9AA0A6;
+      --lp-accent-strong: #C2C7CC;
+      --lp-accent-soft: rgba(154,160,166,.14);
+      --lp-accent-on: #101114;
+      --lp-shadow-lg: 0 16px 40px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4);
+    }
+  }
   .landing {
     height: 100vh;
     overflow-y: auto;
     overscroll-behavior: contain;
     width: 100%;
-    background: var(--bg);
+    background: var(--lp-bg);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -102,19 +142,19 @@
     gap: 10px;
     font-size: 15px;
     font-weight: 700;
-    color: var(--text-2);
+    color: var(--lp-text-2);
   }
-  .brand :global(svg) { color: var(--accent); }
+  .brand :global(svg) { color: var(--lp-accent); }
   h1 {
     font-size: 30px;
     font-weight: 800;
-    color: var(--text);
+    color: var(--lp-text);
     margin: 4px 0 0;
     line-height: 1.25;
   }
   .subtitle {
     font-size: 14.5px;
-    color: var(--text-2);
+    color: var(--lp-text-2);
     line-height: 1.6;
     margin: 0;
   }
@@ -123,41 +163,41 @@
     padding: 12px 28px;
     border-radius: 9px;
     border: none;
-    background: var(--accent);
-    color: var(--accent-on);
+    background: var(--lp-accent);
+    color: var(--lp-accent-on);
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
   }
-  .cta:hover { background: var(--accent-strong); }
+  .cta:hover { background: var(--lp-accent-strong); }
 
   .preview-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 720px; }
   .preview {
     width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-border);
     border-radius: 12px;
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--lp-shadow-lg);
     overflow: hidden;
   }
   .preview-chrome {
     display: flex; gap: 6px; padding: 10px 12px;
-    background: var(--surface-2); border-bottom: 1px solid var(--border);
+    background: var(--lp-surface-2); border-bottom: 1px solid var(--lp-border);
   }
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border-strong); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--lp-border-strong); }
   .preview-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 16px; }
   .preview-col { display: flex; flex-direction: column; gap: 8px; }
   .preview-col-label {
     font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
-    color: var(--text-3); margin-bottom: 2px;
+    color: var(--lp-text-3); margin-bottom: 2px;
   }
   .preview-card {
-    background: var(--surface-sunken); border-radius: 6px; padding: 8px;
+    background: var(--lp-surface-sunken); border-radius: 6px; padding: 8px;
     display: flex; flex-direction: column; gap: 5px;
   }
-  .preview-line { height: 6px; border-radius: 3px; background: var(--border-strong); }
+  .preview-line { height: 6px; border-radius: 3px; background: var(--lp-border-strong); }
   .preview-line.short { width: 35%; }
-  .preview-caption { font-size: 12px; color: var(--text-3); margin: 0; }
+  .preview-caption { font-size: 12px; color: var(--lp-text-3); margin: 0; }
 
   .features {
     display: grid;
@@ -169,19 +209,19 @@
   .feature { display: flex; flex-direction: column; gap: 6px; }
   .feature-icon {
     width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
-    background: var(--accent-soft); color: var(--accent-strong); margin-bottom: 2px;
+    background: var(--lp-accent-soft); color: var(--lp-accent-strong); margin-bottom: 2px;
   }
-  .feature-title { font-size: 13.5px; font-weight: 700; color: var(--text); }
-  .feature-desc { font-size: 12.5px; color: var(--text-2); line-height: 1.5; margin: 0; }
+  .feature-title { font-size: 13.5px; font-weight: 700; color: var(--lp-text); }
+  .feature-desc { font-size: 12.5px; color: var(--lp-text-2); line-height: 1.5; margin: 0; }
 
   .footer { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-  .copyright { font-size: 12px; color: var(--text-3); margin: 0; }
+  .copyright { font-size: 12px; color: var(--lp-text-3); margin: 0; }
   .footer-links { display: flex; align-items: center; gap: 8px; }
   .footer-link {
-    background: none; border: none; color: var(--text-3); font-size: 12px; cursor: pointer; padding: 4px;
+    background: none; border: none; color: var(--lp-text-3); font-size: 12px; cursor: pointer; padding: 4px;
   }
-  .footer-link:hover { color: var(--accent); }
-  .footer-sep { color: var(--text-3); font-size: 12px; }
+  .footer-link:hover { color: var(--lp-accent); }
+  .footer-sep { color: var(--lp-text-3); font-size: 12px; }
 
   @media (max-width: 700px) {
     .landing { padding: 48px 16px 64px; gap: 40px; }
