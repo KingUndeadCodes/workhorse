@@ -40,6 +40,13 @@
       :root { --font-sans: '{{UI_FONT_FAMILY}}', 'Plex', -apple-system, 'Segoe UI', sans-serif; {{UI_COLOR_SCHEME_LIGHT}} {{UI_COLOR_PREVIEW_LIGHT}} {{UI_COLOR_PREVIEW_DARK}} }
       @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { {{UI_COLOR_SCHEME_DARK}} } }
       :root[data-theme="dark"] { {{UI_COLOR_SCHEME_DARK}} }
+      /* Paints the real background/text color on the very first frame, before app.css even
+         loads — in Vite dev mode, imported stylesheets are injected via a JS-created <style>
+         tag *after* initial parse, so without this the browser's default white background
+         flashes for a moment on every refresh (worse the darker the active theme is) until
+         that stylesheet lands. The --bg/--text vars above are already resolved synchronously
+         by this same inline block, so this just has to consume them. */
+      html, body { background: var(--bg); color: var(--text); }
     </style>
     <!-- Applies a saved light/dark choice before first paint, so it doesn't flash the wrong
          theme while waiting for src/main.ts (which sets this same attribute — see
