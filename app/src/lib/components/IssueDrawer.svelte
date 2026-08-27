@@ -38,7 +38,7 @@
   import { describeEvent, describeEventType, displayName, formatHours, formatRelativeDate, priorityIcon, renderMarkdown, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
   import { lineNumbers } from '../actions/lineNumbers';
   import { locale, t, tn } from '../i18n';
-  import { STORY_POINT_VALUES, slugifyBranchName, type Branch, type EventEnvelope, type IssueLinkType } from '$domain';
+  import { STORY_POINT_VALUES, slugifyBranchName, type Branch, type EventEnvelope, type Issue, type IssueLinkType } from '$domain';
 
   let draftComment = '';
   let submittingComment = false;
@@ -329,19 +329,19 @@
   function handleSprintChange(e: Event) {
     if (!issue) return;
     const value = (e.target as HTMLSelectElement).value;
-    updateIssue(issue.id, { sprintId: value || undefined });
+    updateIssue(issue.id, { sprintId: value || null } as Partial<Issue>);
   }
 
   function handlePointsChange(e: Event) {
     if (!issue) return;
     const value = (e.target as HTMLSelectElement).value;
-    updateIssue(issue.id, { storyPoints: value ? Number(value) : undefined });
+    updateIssue(issue.id, { storyPoints: value ? Number(value) : null });
   }
 
   function handleDueDateChange(e: Event) {
     if (!issue) return;
     const value = (e.target as HTMLInputElement).value;
-    updateIssue(issue.id, { dueDate: value || undefined });
+    updateIssue(issue.id, { dueDate: value || null } as Partial<Issue>);
   }
 
   function handleFieldChange(fieldId: string, e: Event) {
