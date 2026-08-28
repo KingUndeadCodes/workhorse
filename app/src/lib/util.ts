@@ -115,6 +115,13 @@ export function displayName(user: { kind?: string; displayName: string }): strin
   return user.displayName;
 }
 
+/** Renders a stored (lowercased) keybind — e.g. `'w'` or `'shift'` — the way a user typed it:
+ * single letters uppercased, named keys capitalized, symbols like `[`/`?` left as-is. */
+export function formatKeyLabel(key: string): string {
+  if (key.length === 1) return /[a-z]/.test(key) ? key.toUpperCase() : key;
+  return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
 /**
  * Splits a user list into humans first, agents last — the grouping every people-picker
  * (assignee list, etc.) uses so AI agents always sit in their own section at the bottom.

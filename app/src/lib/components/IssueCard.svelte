@@ -32,6 +32,18 @@
    * ever mount below the app's mobile breakpoint, so there's no CSS-visibility gap to bridge.
    */
   export let moveMenuMode: 'dropdown' | 'sheet' = 'dropdown';
+  /** True while this card is the one "picked up" by Board.svelte's WASD keyboard-navigation mode — purely visual. */
+  export let held = false;
+  /**
+   * Which lowercased `KeyboardEvent.key` opens the issue (default: Enter) and which, if any,
+   * triggers `onSecondary` instead (Board.svelte's WASD mode wires this to its configurable
+   * "info" keybind). When `secondaryKey` is left unset — every caller except Board.svelte in
+   * nav mode — Space is treated as an implicit alias for opening, matching this card's original,
+   * simpler behavior everywhere else it's used (Backlog, MobileBoard).
+   */
+  export let openKey = 'enter';
+  export let secondaryKey: string | undefined = undefined;
+  export let onSecondary: (() => void) | undefined = undefined;
 
   let showMoveMenu = false;
 
@@ -72,14 +84,20 @@
 </script>
 
 <div
+  id="issue-card-{issue.id}"
   class="card"
   class:selected
+  class:held
   role="button"
   tabindex="0"
   draggable="true"
   on:dragstart={handleDragStart}
   on:click={() => onSelect(issue.id)}
-  on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelect(issue.id)}
+  on:keydown={(e) => {
+    const key = e.key.toLowerCase();
+    if (key === openKey || (key === ' ' && secondaryKey === undefined)) onSelect(issue.id);
+    else if (secondaryKey && key === secondaryKey) (onSecondary ?? (() => onSelect(issue.id)))();
+  }}
 >
   <div class="top">
     <div class="key-type">
@@ -87,6 +105,7 @@
         <Icon name={typeIcon(issueType?.name ?? 'Story')} size={9} />
       </span>
       <span class="key mono">{issue.key}</span>
+      {#if held}<span class="held-badge">{$t('issueCard.pickedUpLabel')}</span>{/if}
     </div>
     <div class="top-right">
       {#if $featureFlags.priority}
@@ -172,8 +191,17 @@
     transition: box-shadow .12s ease, border-color .12s ease, transform .12s ease;
   }
   .card:hover { box-shadow: var(--shadow); border-color: var(--border-strong); transform: translateY(-1px); }
-  .card:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent); }
+  /* Same treatment for real keyboard focus (Tab, or Board.svelte's WASD nav) as a mouse hover
+     gets, plus an accent ring and tint so it's unmistakable which card you're on. */
+  .card:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent), var(--shadow); border-color: var(--accent); background: var(--accent-soft); transform: translateY(-1px); }
   .card.selected { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow); }
+  /* Board.svelte's WASD keyboard-navigation mode — this card is currently "picked up" and
+     WASD/[/] now choose where it lands instead of just moving focus. */
+  .card.held { border-color: var(--accent); border-style: dashed; box-shadow: 0 0 0 2px var(--accent-soft); }
+  .held-badge {
+    font-size: 9.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-soft); padding: 1px 6px; border-radius: 99px;
+  }
   .top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
   .top-right { display: flex; align-items: center; gap: 4px; }
   /* Tap-to-move menu — the mobile replacement for drag-and-drop (native HTML5 DnD, used by the

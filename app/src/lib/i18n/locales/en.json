@@ -23,7 +23,9 @@
       "medium": "medium",
       "low": "low",
       "lowest": "lowest"
-    }
+    },
+    "on": "On",
+    "off": "Off"
   },
   "nav": {
     "board": "Board",
@@ -64,7 +66,36 @@
   },
   "board": {
     "noEpic": "No Epic",
-    "noIssues": "No issues"
+    "noIssues": "No issues",
+    "keyboardNav": {
+      "pickedUp": "Picked up {title}. Choose a column and press {dropKey} to drop, or {cancelKey} to cancel.",
+      "dropped": "Moved {title} to {column}.",
+      "cancelled": "Move cancelled.",
+      "infoColumn": "Column",
+      "infoAssignees": "Assignees",
+      "infoDueDate": "Due",
+      "infoNone": "—",
+      "hintDismiss": "Dismiss hint",
+      "hintShort": "Keyboard navigation is on. Press {key} for shortcuts.",
+      "hideShortcuts": "Hide shortcuts",
+      "showShortcuts": "Show shortcuts",
+      "actions": {
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "moveLeft": "Move left",
+        "moveRight": "Move right",
+        "pickUpDrop": "Pick up / drop",
+        "goBack": "Go back",
+        "openDetails": "Open full details",
+        "info": "Quick info",
+        "prevSwimlane": "Previous group",
+        "nextSwimlane": "Next group",
+        "firstColumn": "Jump to start",
+        "lastColumn": "Jump to end",
+        "cancel": "Cancel / close",
+        "showHint": "Show shortcuts"
+      }
+    }
   },
   "filters": {
     "searchPlaceholder": "Search issues…",
@@ -80,7 +111,8 @@
   "issueCard": {
     "moveToTitle": "Move to…",
     "overdueLabel": "OVERDUE",
-    "dueSoonLabel": "DUE SOON"
+    "dueSoonLabel": "DUE SOON",
+    "pickedUpLabel": "Picked up"
   },
   "issueDrawer": {
     "descriptionLabel": "Description",
@@ -153,7 +185,19 @@
       "themeSystem": "Match Browser",
       "languageLabel": "Language",
       "languageHint": "Choose which language Workhorse displays in.",
-      "nonEnglishDisclaimer": "This only translates the app's own interface — please keep issue titles, descriptions, comments, labels, and other content in English so the whole team can read it."
+      "nonEnglishDisclaimer": "This only translates the app's own interface — please keep issue titles, descriptions, comments, labels, and other content in English so the whole team can read it.",
+      "keyboardNavLabel": "Keyboard board navigation",
+      "keyboardNavHint": "Move and drop issue cards on the Board using the keyboard, without a mouse. Off by default.",
+      "keybinds": {
+        "label": "Keyboard Shortcuts",
+        "hint": "Customize the keys used by Board keyboard navigation above. Click a key to change it.",
+        "changeAria": "Change shortcut for {action}",
+        "pressKey": "Press a key…",
+        "reset": "Reset to defaults",
+        "conflict": "{key} is already used for \"{action}\"",
+        "protected": "{key} can’t be reassigned — it must stay free to leave the board",
+        "goBackHint": "Hold Shift, then press"
+      }
     },
     "labelNamePlaceholder": "Label name",
     "addLabelButton": "Add label",
@@ -344,6 +388,12 @@
       "future": "future",
       "active": "active",
       "closed": "closed"
+    },
+    "keyboardNav": {
+      "hintShort": "Keyboard navigation is on. Press {key} for shortcuts.",
+      "pickedUp": "Picked up {title}. Choose a sprint and press {dropKey} to drop, or {cancelKey} to cancel.",
+      "dropped": "Moved {title} to {section}.",
+      "cancelled": "Move cancelled."
     }
   },
   "agentForm": {

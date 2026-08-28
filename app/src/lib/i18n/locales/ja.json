@@ -22,7 +22,9 @@
       "medium": "中",
       "low": "低",
       "lowest": "最低"
-    }
+    },
+    "on": "オン",
+    "off": "オフ"
   },
   "nav": {
     "board": "ボード",
@@ -63,7 +65,36 @@
   },
   "board": {
     "noEpic": "エピックなし",
-    "noIssues": "課題はありません"
+    "noIssues": "課題はありません",
+    "keyboardNav": {
+      "pickedUp": "「{title}」を持ち上げました。列を選んで {dropKey} で置くか、{cancelKey} でキャンセルしてください。",
+      "dropped": "「{title}」を「{column}」に移動しました。",
+      "cancelled": "移動をキャンセルしました。",
+      "infoColumn": "列",
+      "infoAssignees": "担当者",
+      "infoDueDate": "期限",
+      "infoNone": "—",
+      "hintDismiss": "ヒントを閉じる",
+      "hintShort": "キーボード操作がオンです。{key} を押すとショートカットを表示します。",
+      "hideShortcuts": "ショートカットを隠す",
+      "showShortcuts": "ショートカットを表示",
+      "actions": {
+        "moveUp": "上へ移動",
+        "moveDown": "下へ移動",
+        "moveLeft": "左へ移動",
+        "moveRight": "右へ移動",
+        "pickUpDrop": "持ち上げる/置く",
+        "goBack": "戻る",
+        "openDetails": "詳細をすべて開く",
+        "info": "簡易情報",
+        "prevSwimlane": "前のグループ",
+        "nextSwimlane": "次のグループ",
+        "firstColumn": "先頭へ移動",
+        "lastColumn": "末尾へ移動",
+        "cancel": "キャンセル/閉じる",
+        "showHint": "ショートカットを表示"
+      }
+    }
   },
   "filters": {
     "searchPlaceholder": "課題を検索…",
@@ -79,7 +110,8 @@
   "issueCard": {
     "moveToTitle": "移動先…",
     "overdueLabel": "期限超過",
-    "dueSoonLabel": "期限間近"
+    "dueSoonLabel": "期限間近",
+    "pickedUpLabel": "持ち上げ中"
   },
   "issueDrawer": {
     "descriptionLabel": "説明",
@@ -152,7 +184,19 @@
       "themeSystem": "ブラウザに合わせる",
       "languageLabel": "言語",
       "languageHint": "Workhorseの表示言語を選択してください。",
-      "nonEnglishDisclaimer": "これはアプリ自体のインターフェースのみを翻訳します — チーム全員が読めるように、課題のタイトル、説明、コメント、ラベルなどのコンテンツは英語のままにしてください。"
+      "nonEnglishDisclaimer": "これはアプリ自体のインターフェースのみを翻訳します — チーム全員が読めるように、課題のタイトル、説明、コメント、ラベルなどのコンテンツは英語のままにしてください。",
+      "keyboardNavLabel": "キーボード操作",
+      "keyboardNavHint": "マウスなしでキーボードだけでボード上のカードを移動できます。既定ではオフです。",
+      "keybinds": {
+        "label": "キーボードショートカット",
+        "hint": "ボードのキーボード操作で使うキーをカスタマイズします。キーをクリックすると変更できます。",
+        "changeAria": "{action} のショートカットを変更",
+        "pressKey": "キーを押してください…",
+        "reset": "既定値に戻す",
+        "conflict": "{key} はすでに「{action}」に使われています",
+        "protected": "{key} は割り当てを変更できません —— ボードから抜けるために空けておく必要があります",
+        "goBackHint": "Shift を押しながら"
+      }
     },
     "labelNamePlaceholder": "ラベル名",
     "addLabelButton": "ラベルを追加",
@@ -338,6 +382,12 @@
       "future": "未開始",
       "active": "進行中",
       "closed": "終了"
+    },
+    "keyboardNav": {
+      "hintShort": "キーボード操作がオンです。{key} を押すとショートカットを表示します。",
+      "pickedUp": "「{title}」を持ち上げました。スプリントを選んで {dropKey} で置くか、{cancelKey} でキャンセルしてください。",
+      "dropped": "「{title}」を「{section}」に移動しました。",
+      "cancelled": "移動をキャンセルしました。"
     }
   },
   "agentForm": {

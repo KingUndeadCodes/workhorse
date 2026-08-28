@@ -22,7 +22,9 @@
       "medium": "中",
       "low": "低",
       "lowest": "最低"
-    }
+    },
+    "on": "开启",
+    "off": "关闭"
   },
   "nav": {
     "board": "看板",
@@ -63,7 +65,36 @@
   },
   "board": {
     "noEpic": "无史诗任务",
-    "noIssues": "没有事项"
+    "noIssues": "没有事项",
+    "keyboardNav": {
+      "pickedUp": "已拾取\"{title}\"。选择一列后按 {dropKey} 放下，或按 {cancelKey} 取消。",
+      "dropped": "已将\"{title}\"移至\"{column}\"。",
+      "cancelled": "已取消移动。",
+      "infoColumn": "列",
+      "infoAssignees": "负责人",
+      "infoDueDate": "截止日期",
+      "infoNone": "—",
+      "hintDismiss": "关闭提示",
+      "hintShort": "键盘导航已开启。按 {key} 查看快捷键。",
+      "hideShortcuts": "隐藏快捷键",
+      "showShortcuts": "显示快捷键",
+      "actions": {
+        "moveUp": "上移",
+        "moveDown": "下移",
+        "moveLeft": "左移",
+        "moveRight": "右移",
+        "pickUpDrop": "拾取/放下",
+        "goBack": "返回",
+        "openDetails": "打开完整详情",
+        "info": "快速信息",
+        "prevSwimlane": "上一组",
+        "nextSwimlane": "下一组",
+        "firstColumn": "跳到开头",
+        "lastColumn": "跳到末尾",
+        "cancel": "取消/关闭",
+        "showHint": "显示快捷键"
+      }
+    }
   },
   "filters": {
     "searchPlaceholder": "搜索事项…",
@@ -79,7 +110,8 @@
   "issueCard": {
     "moveToTitle": "移动到…",
     "overdueLabel": "已逾期",
-    "dueSoonLabel": "即将到期"
+    "dueSoonLabel": "即将到期",
+    "pickedUpLabel": "已拾取"
   },
   "issueDrawer": {
     "descriptionLabel": "描述",
@@ -152,7 +184,19 @@
       "themeSystem": "跟随浏览器",
       "languageLabel": "语言",
       "languageHint": "选择 Workhorse 显示所用的语言。",
-      "nonEnglishDisclaimer": "这只会翻译应用本身的界面 — 请将事项标题、描述、评论、标签及其他内容保留为英文，以便整个团队都能阅读。"
+      "nonEnglishDisclaimer": "这只会翻译应用本身的界面 — 请将事项标题、描述、评论、标签及其他内容保留为英文，以便整个团队都能阅读。",
+      "keyboardNavLabel": "键盘导航",
+      "keyboardNavHint": "无需鼠标，使用键盘在看板上移动和放置卡片。默认关闭。",
+      "keybinds": {
+        "label": "键盘快捷键",
+        "hint": "自定义看板键盘导航使用的按键。点击某个按键即可更改。",
+        "changeAria": "更改\"{action}\"的快捷键",
+        "pressKey": "请按一个键…",
+        "reset": "恢复默认设置",
+        "conflict": "{key} 已被\"{action}\"占用",
+        "protected": "{key} 无法重新分配 —— 必须保留它以便离开看板",
+        "goBackHint": "按住 Shift，然后按"
+      }
     },
     "labelNamePlaceholder": "标签名称",
     "addLabelButton": "添加标签",
@@ -338,6 +382,12 @@
       "future": "未开始",
       "active": "进行中",
       "closed": "已结束"
+    },
+    "keyboardNav": {
+      "hintShort": "键盘导航已开启。按 {key} 查看快捷键。",
+      "pickedUp": "已拾取\"{title}\"。选择一个冲刺后按 {dropKey} 放下，或按 {cancelKey} 取消。",
+      "dropped": "已将\"{title}\"移至\"{section}\"。",
+      "cancelled": "已取消移动。"
     }
   },
   "agentForm": {

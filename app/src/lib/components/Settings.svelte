@@ -13,6 +13,8 @@
     workflow,
   } from '../stores/workspace';
   import { theme, type Theme } from '../stores/theme';
+  import { keyboardNavEnabled } from '../stores/keyboardNav';
+  import { ACTION_LABEL_KEYS, ACTION_ORDER, keybinds, resetKeybinds, setKeybind, type BoardNavAction } from '../stores/keybinds';
   import { isMobile } from '../stores/viewport';
   import { locale, t, tn, SUPPORTED_LOCALES, type Locale } from '../i18n';
 
@@ -22,7 +24,7 @@
     { id: 'system', labelKey: 'settings.appearance.themeSystem' },
   ];
   import * as api from '../api';
-  import { describeAutomationAction, splitHumansAndAgents } from '../util';
+  import { describeAutomationAction, formatKeyLabel, splitHumansAndAgents } from '../util';
   import type { AutomationAction, AutomationCondition, EventType, FilterOp } from '$domain';
 
   const tabs = ['Appearance', 'Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Webhooks'] as const;
@@ -44,6 +46,45 @@
   $: if ($settingsJumpTab && (tabs as readonly string[]).includes($settingsJumpTab)) {
     activeTab = $settingsJumpTab as (typeof tabs)[number];
     settingsJumpTab.set(null);
+  }
+
+  // ---- Board keyboard-navigation shortcuts (Appearance tab) ----
+  /** Action currently in "press a key…" capture mode, if any — only one row records at a time. */
+  let recordingAction: BoardNavAction | null = null;
+  let keybindError: string | null = null;
+
+  // Closes out any in-progress rebind if the feature itself gets switched off while the
+  // shortcuts list is mid-edit (the section below disappears along with it).
+  $: if (!$keyboardNavEnabled) {
+    recordingAction = null;
+    keybindError = null;
+  }
+
+  function startRecording(action: BoardNavAction) {
+    recordingAction = action;
+    keybindError = null;
+  }
+
+  /** Escape always cancels the recorder itself rather than ever being assignable while it's
+   *  open — the one key every "press a key to rebind" row can't capture. */
+  function handleRecorderKeydown(e: KeyboardEvent, action: BoardNavAction) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.key === 'Escape') {
+      recordingAction = null;
+      return;
+    }
+    const result = setKeybind(action, e.key);
+    if (result.ok) {
+      recordingAction = null;
+      keybindError = null;
+      return;
+    }
+    const key = formatKeyLabel(e.key.toLowerCase());
+    keybindError =
+      result.reason === 'protected'
+        ? $t('settings.appearance.keybinds.protected', { key })
+        : $t('settings.appearance.keybinds.conflict', { key, action: $t(ACTION_LABEL_KEYS[result.conflictsWith!]) });
   }
 
   const commonEventTypes: EventType[] = [
@@ -292,6 +333,59 @@
           <p class="language-disclaimer">{$t('settings.appearance.nonEnglishDisclaimer')}</p>
         {/if}
       </div>
+
+      <div class="appearance-row">
+        <div class="appearance-copy">
+          <span class="row-name">{$t('settings.appearance.keyboardNavLabel')}</span>
+          <span class="row-hint">{$t('settings.appearance.keyboardNavHint')}</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" checked={$keyboardNavEnabled} on:change={(e) => keyboardNavEnabled.set((e.target as HTMLInputElement).checked)} />
+          {$t($keyboardNavEnabled ? 'common.on' : 'common.off')}
+        </label>
+      </div>
+
+      {#if $keyboardNavEnabled}
+        <div class="appearance-row">
+          <div class="appearance-copy">
+            <span class="row-name">{$t('settings.appearance.keybinds.label')}</span>
+            <span class="row-hint">{$t('settings.appearance.keybinds.hint')}</span>
+          </div>
+          <div class="keybind-list">
+            {#each ACTION_ORDER as action (action)}
+              <div class="keybind-row">
+                <span class="keybind-label">
+                  {$t(ACTION_LABEL_KEYS[action])}
+                  {#if action === 'goBack'}<span class="keybind-modifier">{$t('settings.appearance.keybinds.goBackHint')}</span>{/if}
+                </span>
+                {#if recordingAction === action}
+                  <!-- svelte-ignore a11y-autofocus -->
+                  <input
+                    type="text"
+                    class="keybind-recorder"
+                    readonly
+                    autofocus
+                    value={$t('settings.appearance.keybinds.pressKey')}
+                    on:keydown={(e) => handleRecorderKeydown(e, action)}
+                    on:blur={() => (recordingAction = null)}
+                  />
+                {:else}
+                  <button
+                    type="button"
+                    class="keybind-btn"
+                    aria-label={$t('settings.appearance.keybinds.changeAria', { action: $t(ACTION_LABEL_KEYS[action]) })}
+                    on:click={() => startRecording(action)}
+                  >
+                    {formatKeyLabel($keybinds[action])}
+                  </button>
+                {/if}
+              </div>
+            {/each}
+          </div>
+          {#if keybindError}<p class="keybind-error" aria-live="polite">{keybindError}</p>{/if}
+          <button type="button" class="text-btn" on:click={resetKeybinds}>{$t('settings.appearance.keybinds.reset')}</button>
+        </div>
+      {/if}
     {:else if activeTab === 'Labels'}
       <div class="list">
         {#each $labels as l (l.id)}
@@ -491,6 +585,30 @@
   .appearance-copy { display: flex; flex-direction: column; gap: 5px; }
   .row-name { font-size: 15px; }
   .row-hint { color: var(--text-3); font-size: 12.5px; max-width: 480px; }
+
+  .keybind-list {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 24px; margin-top: 4px;
+  }
+  .keybind-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .keybind-label { font-size: 12.5px; color: var(--text-2); display: flex; align-items: baseline; gap: 6px; }
+  .keybind-modifier { font-size: 10.5px; color: var(--text-3); }
+  .keybind-btn {
+    font-family: 'Mono', ui-monospace, monospace; font-size: 11.5px; font-weight: 700; color: var(--text);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; min-width: 44px; text-align: center;
+  }
+  .keybind-btn:hover { border-color: var(--accent); color: var(--accent-strong); }
+  .keybind-recorder {
+    font: inherit; font-size: 11px; font-weight: 600; color: var(--accent-strong); text-align: center;
+    background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 6px; padding: 4px 10px; min-width: 96px;
+    cursor: default;
+  }
+  .keybind-error { color: var(--critical); font-size: 12px; margin: 10px 0 0; }
+  @media (max-width: 640px) {
+    .keybind-list { grid-template-columns: 1fr; }
+  }
 
   /* iOS-Settings-style theme picker: each option is a large, abstract preview of this app's
      own chrome (sidebar + content + accent) rendered in that theme's actual colors — via the

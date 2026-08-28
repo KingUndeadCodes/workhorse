@@ -23,7 +23,9 @@
       "medium": "media",
       "low": "baja",
       "lowest": "más baja"
-    }
+    },
+    "on": "Activado",
+    "off": "Desactivado"
   },
   "nav": {
     "board": "Tablero",
@@ -64,7 +66,36 @@
   },
   "board": {
     "noEpic": "Sin épica",
-    "noIssues": "Sin tareas"
+    "noIssues": "Sin tareas",
+    "keyboardNav": {
+      "pickedUp": "Tarjeta tomada: {title}. Elige una columna y pulsa {dropKey} para soltarla, o {cancelKey} para cancelar.",
+      "dropped": "{title} se movió a {column}.",
+      "cancelled": "Movimiento cancelado.",
+      "infoColumn": "Columna",
+      "infoAssignees": "Asignados",
+      "infoDueDate": "Vencimiento",
+      "infoNone": "—",
+      "hintDismiss": "Ocultar aviso",
+      "hintShort": "La navegación por teclado está activada. Pulsa {key} para ver los atajos.",
+      "hideShortcuts": "Ocultar atajos",
+      "showShortcuts": "Ver atajos",
+      "actions": {
+        "moveUp": "Subir",
+        "moveDown": "Bajar",
+        "moveLeft": "Mover a la izquierda",
+        "moveRight": "Mover a la derecha",
+        "pickUpDrop": "Tomar / soltar",
+        "goBack": "Retroceder",
+        "openDetails": "Ver todos los detalles",
+        "info": "Detalles rápidos",
+        "prevSwimlane": "Grupo anterior",
+        "nextSwimlane": "Grupo siguiente",
+        "firstColumn": "Ir al principio",
+        "lastColumn": "Ir al final",
+        "cancel": "Cancelar / cerrar",
+        "showHint": "Mostrar atajos"
+      }
+    }
   },
   "filters": {
     "searchPlaceholder": "Buscar tareas…",
@@ -80,7 +111,8 @@
   "issueCard": {
     "moveToTitle": "Mover a…",
     "overdueLabel": "VENCIDO",
-    "dueSoonLabel": "PRÓXIMO"
+    "dueSoonLabel": "PRÓXIMO",
+    "pickedUpLabel": "Tomada"
   },
   "issueDrawer": {
     "descriptionLabel": "Descripción",
@@ -153,7 +185,19 @@
       "themeSystem": "Igual que el navegador",
       "languageLabel": "Idioma",
       "languageHint": "Elige el idioma en el que se muestra Workhorse.",
-      "nonEnglishDisclaimer": "Esto solo traduce la interfaz de la aplicación — mantén los títulos de las tareas, descripciones, comentarios, etiquetas y demás contenido en inglés para que todo el equipo pueda leerlo."
+      "nonEnglishDisclaimer": "Esto solo traduce la interfaz de la aplicación — mantén los títulos de las tareas, descripciones, comentarios, etiquetas y demás contenido en inglés para que todo el equipo pueda leerlo.",
+      "keyboardNavLabel": "Navegación por teclado",
+      "keyboardNavHint": "Mueve y suelta tarjetas en el tablero usando el teclado, sin ratón. Desactivado de forma predeterminada.",
+      "keybinds": {
+        "label": "Atajos de teclado",
+        "hint": "Personaliza las teclas de la navegación por teclado del tablero. Haz clic en una tecla para cambiarla.",
+        "changeAria": "Cambiar el atajo de {action}",
+        "pressKey": "Pulsa una tecla…",
+        "reset": "Restablecer valores predeterminados",
+        "conflict": "{key} ya se usa para \"{action}\"",
+        "protected": "No se puede reasignar {key}: debe seguir libre para salir del tablero",
+        "goBackHint": "Mantén pulsado Mayús y luego pulsa"
+      }
     },
     "labelNamePlaceholder": "Nombre de la etiqueta",
     "addLabelButton": "Añadir etiqueta",
@@ -344,6 +388,12 @@
       "future": "futuro",
       "active": "activo",
       "closed": "cerrado"
+    },
+    "keyboardNav": {
+      "hintShort": "La navegación por teclado está activada. Pulsa {key} para ver los atajos.",
+      "pickedUp": "Tarjeta tomada: {title}. Elige un sprint y pulsa {dropKey} para soltarla, o {cancelKey} para cancelar.",
+      "dropped": "{title} se movió a {section}.",
+      "cancelled": "Movimiento cancelado."
     }
   },
   "agentForm": {
