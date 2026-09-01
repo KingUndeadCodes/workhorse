@@ -10,17 +10,28 @@
     status: WorkflowStatus;
     deletable: boolean;
     onEdit: () => void;
+    /** True while this status is picked up as a transition source by the keyboard-navigation
+     *  mode in WorkflowDiagram.svelte — purely visual. */
+    held?: boolean;
   }
 
   let { data }: { data: StatusNodeData } = $props();
 </script>
 
-<div class="status-node" style={data.status.color ? `border-color:${data.status.color}` : ''}>
+<div
+  id="workflow-node-{data.status.id}"
+  class="status-node"
+  class:held={data.held}
+  role="button"
+  tabindex="0"
+  style={data.status.color ? `border-color:${data.status.color}` : ''}
+>
   <Handle type="target" position={Position.Left} />
   {#if !data.deletable}
     <span class="lock" title={$t('statusNode.lockedTitle')}><Icon name="lock" size={10} /></span>
   {/if}
   <span class="name">{data.status.name}</span>
+  {#if data.held}<span class="held-badge">{$t('statusNode.heldLabel')}</span>{/if}
   <button
     class="edit-btn"
     title={$t('statusNode.editTitle')}
@@ -41,6 +52,15 @@
     display: flex; align-items: center; gap: 6px; padding: 10px 12px; min-width: 140px;
     background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px;
     font-size: 12.5px; font-weight: 600; color: var(--text); box-shadow: var(--shadow);
+    cursor: pointer;
+  }
+  .status-node:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+  /* WorkflowDiagram.svelte's keyboard navigation — this status is currently picked up as a
+     transition source, and Space now chooses where it connects to instead of just moving focus. */
+  .status-node.held { border-style: dashed; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .held-badge {
+    font-size: 9px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-soft); padding: 1px 5px; border-radius: 99px; flex: 0 0 auto;
   }
   .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .lock { display: flex; align-items: center; color: var(--text-3); flex: 0 0 auto; }

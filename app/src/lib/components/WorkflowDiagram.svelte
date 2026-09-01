@@ -9,11 +9,12 @@
   // a session but resets to the computed column layout on reload — the domain model has no
   // x/y field to persist to), and conditions/validators/post-functions/screens — no
   // equivalent of those exists elsewhere in this app either.
-  import { untrack } from 'svelte';
+  import { tick, untrack } from 'svelte';
   import { SvelteFlow, Background, Controls, MarkerType, type Node, type Edge, type Connection, type OnBeforeDelete, type OnDelete } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
   import Icon from './Icon.svelte';
   import StatusNode from './StatusNode.svelte';
+  import KeyboardNavHint from './KeyboardNavHint.svelte';
   import * as api from '../api';
   import { statusCategories, workflow } from '../stores/workspace';
   import { resolvedTheme } from '../stores/theme';
@@ -157,6 +158,162 @@
     workflow.update((w) => (w ? { ...w, transitions: [...w.transitions, transition] } : w));
   }
 
+  // ---- Keyboard navigation: always on, same pattern as Board.svelte/Backlog.svelte ----
+  // Arrow keys move focus around this view's status grid (categories = columns, statuses =
+  // rows — the same shape the layout effect below already uses), Space starts/confirms drawing a
+  // transition (the same metaphor as picking up a card), Enter opens the existing rename/recolor
+  // panel. One deliberate exception to the "just arrows + Space + Enter + Escape" rule: [ / ]
+  // cycle the focused status's outgoing transitions so the browser's native Delete/Backspace —
+  // already wired by Svelte Flow to the veto-checked onbeforedelete/ondelete pipeline below — can
+  // remove whichever one is focused. There's no simpler standard-keyboard equivalent for
+  // targeting an *edge* in a node graph without a larger rebuild of how Svelte Flow renders them.
+  let navColIndex = $state(0);
+  let navRowIndex = $state(0);
+  /** Id of the status currently picked up as a transition source, if any. */
+  let heldStatusId = $state<string | null>(null);
+  /** Id of the transition currently cycled to via [ / ], if any — lets native Delete target it. */
+  let focusedEdgeId = $state<string | null>(null);
+  let announcement = $state('');
+
+  function announceMsg(message: string) {
+    announcement = '';
+    tick().then(() => (announcement = message));
+  }
+
+  let navColumns = $derived(categories.map((cat) => statuses.filter((s) => s.categoryId === cat.id)));
+
+  function currentStatus(): WorkflowStatus | null {
+    return navColumns[navColIndex]?.[navRowIndex] ?? null;
+  }
+
+  function findNavPosition(statusId: string): [number, number] | null {
+    for (let ci = 0; ci < navColumns.length; ci++) {
+      const ri = navColumns[ci].findIndex((s) => s.id === statusId);
+      if (ri !== -1) return [ci, ri];
+    }
+    return null;
+  }
+
+  function focusNavPosition(ci: number, ri: number) {
+    navColIndex = ci;
+    navRowIndex = ri;
+    focusedEdgeId = null;
+    tick().then(() => {
+      const status = navColumns[ci]?.[ri];
+      if (status) document.getElementById(`workflow-node-${status.id}`)?.focus();
+    });
+  }
+
+  function moveVertical(delta: number) {
+    const col = navColumns[navColIndex];
+    if (!col || col.length === 0) return;
+    focusNavPosition(navColIndex, Math.min(Math.max(navRowIndex + delta, 0), col.length - 1));
+  }
+  function moveHorizontal(delta: number) {
+    if (navColumns.length === 0) return;
+    const nextCi = Math.min(Math.max(navColIndex + delta, 0), navColumns.length - 1);
+    const nextRi = Math.min(navRowIndex, Math.max(0, navColumns[nextCi].length - 1));
+    focusNavPosition(nextCi, nextRi);
+  }
+
+  /** Space: starts a connection from the focused status, or (pressed again on a different
+   *  status) completes it via the exact same `handleConnect` a mouse drag calls. Pressed again
+   *  on the *same* status cancels, matching a toggle. `heldStatusId` stays set until the connect
+   *  attempt actually finishes, and any failure is announced rather than swallowed — dropping a
+   *  connection used to clear the held state and say nothing at all if the API call failed. */
+  async function toggleConnect() {
+    const status = currentStatus();
+    if (!status) return;
+    if (heldStatusId) {
+      if (heldStatusId === status.id) {
+        heldStatusId = null;
+        announceMsg($t('workflowDiagram.keyboardNav.cancelled'));
+        return;
+      }
+      const sourceId = heldStatusId;
+      const sourceName = statusName(sourceId);
+      try {
+        await handleConnect({ source: sourceId, target: status.id, sourceHandle: null, targetHandle: null });
+        heldStatusId = null;
+        announceMsg($t('workflowDiagram.keyboardNav.connected', { from: sourceName, to: status.name }));
+      } catch (err) {
+        heldStatusId = null;
+        announceMsg(err instanceof Error ? err.message : $t('workflowDiagram.failedCreateTransition'));
+      }
+    } else {
+      heldStatusId = status.id;
+      announceMsg($t('workflowDiagram.keyboardNav.pickedUp', { title: status.name }));
+    }
+  }
+
+  function outgoingEdgesForCurrent(): WorkflowTransition[] {
+    const status = currentStatus();
+    if (!status) return [];
+    return transitions.filter((t) => t.fromStatusId === status.id);
+  }
+  /** [ / ]: cycles which of the focused status's outgoing transitions is "selected" (see the
+   *  selection-sync effect below), so native Delete/Backspace can remove it. */
+  function cycleEdge(delta: number) {
+    const outgoing = outgoingEdgesForCurrent();
+    if (outgoing.length === 0) {
+      focusedEdgeId = null;
+      return;
+    }
+    if (!focusedEdgeId) {
+      focusedEdgeId = delta > 0 ? outgoing[0].id : outgoing[outgoing.length - 1].id;
+      return;
+    }
+    const idx = outgoing.findIndex((t) => t.id === focusedEdgeId);
+    focusedEdgeId = outgoing[(idx + delta + outgoing.length) % outgoing.length].id;
+  }
+
+  // Keeps Svelte Flow's own `selected` field (which its native Delete/Backspace already acts on,
+  // through the veto-checked onbeforedelete/ondelete pipeline below — nothing new to reimplement)
+  // in sync with keyboard focus, and mirrors `held` into node data for StatusNode's visual state.
+  $effect(() => {
+    const edgeId = focusedEdgeId;
+    // While an edge is cycled into focus, the node itself must NOT stay selected too — Delete/
+    // Backspace acts on everything selected at once, and a status that's also selected would
+    // get swept into the same delete attempt (harmless if vetoed by the path-reachability
+    // check below, but a real, unintended status deletion if it isn't).
+    const currentId = edgeId ? null : (currentStatus()?.id ?? null);
+    const heldId = heldStatusId;
+    const currentNodes = untrack(() => nodes);
+    nodes = currentNodes.map((n) => ({ ...n, selected: n.id === currentId, data: { ...n.data, held: n.id === heldId } }));
+    const currentEdges = untrack(() => edges);
+    edges = currentEdges.map((e) => ({ ...e, selected: e.id === edgeId }));
+  });
+
+  function handleWorkflowKeydown(e: KeyboardEvent) {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+    // A status node reached via a plain Tab (not our own arrow-key movement) still has real DOM
+    // focus, but our nav state wouldn't know about it — resync before acting on anything.
+    if (target.id?.startsWith('workflow-node-')) {
+      const pos = findNavPosition(target.id.replace('workflow-node-', ''));
+      if (pos) [navColIndex, navRowIndex] = pos;
+    }
+    switch (e.key) {
+      case 'ArrowUp': e.preventDefault(); moveVertical(-1); break;
+      case 'ArrowDown': e.preventDefault(); moveVertical(1); break;
+      case 'ArrowLeft': e.preventDefault(); moveHorizontal(-1); break;
+      case 'ArrowRight': e.preventDefault(); moveHorizontal(1); break;
+      case ' ': e.preventDefault(); toggleConnect(); break;
+      case 'Enter': {
+        const status = currentStatus();
+        if (status) { e.preventDefault(); startEdit(status); }
+        break;
+      }
+      case 'Escape':
+        if (heldStatusId) { e.preventDefault(); heldStatusId = null; announceMsg($t('workflowDiagram.keyboardNav.cancelled')); }
+        else if (focusedEdgeId) { e.preventDefault(); focusedEdgeId = null; }
+        else if (editingId) { e.preventDefault(); cancelEdit(); }
+        break;
+      case '[': e.preventDefault(); cycleEdge(-1); break;
+      case ']': e.preventDefault(); cycleEdge(1); break;
+    }
+  }
+
   // ---- Deletion ----
   // Every veto has to happen here, before Svelte Flow removes anything from the bound
   // nodes/edges arrays — `ondelete` fires after that removal already happened, too late to
@@ -258,6 +415,8 @@
   }
 </script>
 
+<svelte:window onkeydown={handleWorkflowKeydown} />
+
 <div class="toolbar">
   <form class="inline-form" onsubmit={(e) => (e.preventDefault(), addStatus())}>
     <input class="inline-input" type="text" placeholder={$t('workflowDiagram.newStatusPlaceholder')} bind:value={newStatusName} />
@@ -268,6 +427,7 @@
   </form>
   <div class="hint">{$t('workflowDiagram.dragHint')}</div>
 </div>
+<KeyboardNavHint message={$t('workflowDiagram.keyboardNav.hint')} {announcement} />
 {#if deleteError}<p class="delete-error">{deleteError}</p>{/if}
 
 <div class="flow-wrap">

@@ -67,33 +67,10 @@
     "noEpic": "无史诗任务",
     "noIssues": "没有事项",
     "keyboardNav": {
-      "pickedUp": "已拾取\"{title}\"。选择一列后按 {dropKey} 放下，或按 {cancelKey} 取消。",
+      "pickedUp": "已拾取 {title}。选择一列并按空格键放下,或按 Esc 取消。",
       "dropped": "已将\"{title}\"移至\"{column}\"。",
       "cancelled": "已取消移动。",
-      "infoColumn": "列",
-      "infoAssignees": "负责人",
-      "infoDueDate": "截止日期",
-      "infoNone": "—",
-      "hintDismiss": "关闭提示",
-      "hintShort": "键盘导航已开启。按 {key} 查看快捷键。",
-      "hideShortcuts": "隐藏快捷键",
-      "showShortcuts": "显示快捷键",
-      "actions": {
-        "moveUp": "上移",
-        "moveDown": "下移",
-        "moveLeft": "左移",
-        "moveRight": "右移",
-        "pickUpDrop": "拾取/放下",
-        "goBack": "返回",
-        "openDetails": "打开完整详情",
-        "info": "快速信息",
-        "prevSwimlane": "上一组",
-        "nextSwimlane": "下一组",
-        "firstColumn": "跳到开头",
-        "lastColumn": "跳到末尾",
-        "cancel": "取消/关闭",
-        "showHint": "显示快捷键"
-      }
+      "hint": "方向键移动焦点,空格键拾取或放下卡片,回车键打开卡片。"
     }
   },
   "filters": {
@@ -174,7 +151,8 @@
       "workflow": "工作流",
       "automations": "自动化",
       "agents": "代理",
-      "webhooks": "Webhook"
+      "webhooks": "Webhook",
+      "accessibility": "辅助功能"
     },
     "appearance": {
       "themeLabel": "主题",
@@ -184,19 +162,7 @@
       "themeSystem": "跟随浏览器",
       "languageLabel": "语言",
       "languageHint": "选择 Workhorse 显示所用的语言。",
-      "nonEnglishDisclaimer": "这只会翻译应用本身的界面 — 请将事项标题、描述、评论、标签及其他内容保留为英文，以便整个团队都能阅读。",
-      "keyboardNavLabel": "键盘导航",
-      "keyboardNavHint": "无需鼠标，使用键盘在看板上移动和放置卡片。默认关闭。",
-      "keybinds": {
-        "label": "键盘快捷键",
-        "hint": "自定义看板键盘导航使用的按键。点击某个按键即可更改。",
-        "changeAria": "更改\"{action}\"的快捷键",
-        "pressKey": "请按一个键…",
-        "reset": "恢复默认设置",
-        "conflict": "{key} 已被\"{action}\"占用",
-        "protected": "{key} 无法重新分配 —— 必须保留它以便离开看板",
-        "goBackHint": "按住 Shift，然后按"
-      }
+      "nonEnglishDisclaimer": "这只会翻译应用本身的界面 — 请将事项标题、描述、评论、标签及其他内容保留为英文，以便整个团队都能阅读。"
     },
     "labelNamePlaceholder": "标签名称",
     "addLabelButton": "添加标签",
@@ -232,7 +198,11 @@
     "enabledLabel": "已启用",
     "webhookUrlPlaceholder": "https://your-service.example/webhook",
     "addWebhookButton": "添加 Webhook",
-    "failedDeleteCategory": "删除类别失败"
+    "failedDeleteCategory": "删除类别失败",
+    "accessibility": {
+      "keyboardNavLabel": "键盘导航",
+      "keyboardNavHint": "每个看板、待办列表和工作流编辑器都可以不用鼠标操作:方向键移动焦点,空格键拾取和放下项目,回车键打开它,Esc 键取消操作。此功能始终处于开启状态。"
+    }
   },
   "projectSettings": {
     "tabs": {
@@ -384,10 +354,10 @@
       "closed": "已结束"
     },
     "keyboardNav": {
-      "hintShort": "键盘导航已开启。按 {key} 查看快捷键。",
-      "pickedUp": "已拾取\"{title}\"。选择一个冲刺后按 {dropKey} 放下，或按 {cancelKey} 取消。",
+      "pickedUp": "已拾取 {title}。选择一个冲刺并按空格键放下,或按 Esc 取消。",
       "dropped": "已将\"{title}\"移至\"{section}\"。",
-      "cancelled": "已取消移动。"
+      "cancelled": "已取消移动。",
+      "hint": "方向键移动焦点,空格键拾取或放下卡片,回车键打开卡片。"
     }
   },
   "agentForm": {
@@ -471,11 +441,19 @@
     "pathErrorTransition": "删除此转换将导致从「待办」到「已完成」没有任何路径",
     "pathErrorStatus": "删除此状态将导致从「待办」到「已完成」没有任何路径",
     "failedDeleteTransition": "删除转换失败",
-    "failedDeleteStatus": "删除状态失败"
+    "failedDeleteStatus": "删除状态失败",
+    "keyboardNav": {
+      "pickedUp": "已拾取 {title}。选择目标状态并按空格键连接,或按 Esc 取消。",
+      "connected": "已创建从\"{from}\"到\"{to}\"的转换。",
+      "cancelled": "已取消。",
+      "hint": "方向键在状态之间移动,空格键绘制转换,回车键重命名状态。按 [ 或 ] 选择某状态的一个转换,然后按 Delete 删除它。"
+    },
+    "failedCreateTransition": "创建转换失败"
   },
   "statusNode": {
     "lockedTitle": "「待办」和「已完成」状态无法删除",
-    "editTitle": "编辑状态"
+    "editTitle": "编辑状态",
+    "heldLabel": "已拾取"
   },
   "relativeDate": {
     "today": "今天",

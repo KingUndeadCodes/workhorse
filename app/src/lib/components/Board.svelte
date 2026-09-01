@@ -1,44 +1,32 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import type { Issue } from '$domain';
-  import Icon from './Icon.svelte';
   import IssueCard from './IssueCard.svelte';
   import SearchFilterBar from './SearchFilterBar.svelte';
-  import { board, issueTypes, issuesStore, moveIssueToStatus, selectedIssueId, statusCategories, users, workflow } from '../stores/workspace';
+  import KeyboardNavHint from './KeyboardNavHint.svelte';
+  import { board, issueTypes, issuesStore, moveIssueToStatus, selectedIssueId, statusCategories, workflow } from '../stores/workspace';
   import { issueFiltersStore, issueMatchesFilters } from '../stores/issueFilters';
-  import { keyboardNavEnabled } from '../stores/keyboardNav';
-  import { ACTION_LABEL_KEYS, ACTION_ORDER, keybinds } from '../stores/keybinds';
-  import { displayName, formatKeyLabel } from '../util';
   import { t } from '../i18n';
 
   /** Cell key currently under the drag cursor, for the drop-target highlight. */
   let dragOverCell: string | null = null;
 
-  // ---- WASD keyboard navigation (Settings → Appearance, off by default) ----
-  // A tap/click + keyboard alternative to the drag-and-drop above — every key below is
-  // user-configurable (Settings → Appearance → Keyboard Shortcuts); the defaults are W/A/S/D to
-  // move, Shift to pick a card up or drop it, F for a detail popover, Enter for full details,
-  // [ / ] to switch swimlanes. Plain, unmodified Tab is deliberately never assignable to
-  // anything — it must keep escaping the board for standard keyboard/screen-reader navigation
-  // (see keybinds.ts's PROTECTED_KEY) — `goBack`'s key is the one exception, and only because it
-  // always requires Shift held down first, same as today's Shift+Tab.
+  // ---- Keyboard navigation: always on, not an opt-in mode ----
+  // This is the standard accessible drag-and-drop pattern (the same one Trello and the WAI-ARIA
+  // Authoring Practices use), not a custom scheme: focus a card, Space picks it up, arrow keys
+  // move it, Space drops it, Escape cancels. Arrow keys because that's how every other widget on
+  // the OS already navigates (comboboxes, radio groups) — no new mental model to learn. Enter
+  // opens the card's full details, exactly like a click.
   interface NavCell { statusIds: string[]; issues: Issue[] }
   interface NavSwimlane { cells: NavCell[] }
 
   let navSwimlaneIndex = 0;
   let navColumnIndex = 0;
   let navCardIndex = 0;
-  /** Id of the card currently "picked up" — a second Enter drops it into the focused column. */
+  /** Id of the card currently picked up — Space again drops it into the focused column. */
   let heldIssueId: string | null = null;
-  /** Issue whose detail popover (F/Space) is open, if any. */
-  let infoIssue: Issue | null = null;
   /** Announced via aria-live so screen-reader users hear pick-up/drop/cancel outcomes. */
   let announcement = '';
-  /** The hint banner can be dismissed and brought back with `?`, rather than always taking up space. */
-  let hintDismissed = false;
-  /** Full shortcuts legend, expanded from the hint banner — reflects whatever's actually bound
-   *  right now, since every key here is user-configurable (Settings → Appearance). */
-  let legendOpen = false;
 
   function announce(message: string) {
     announcement = '';
@@ -61,9 +49,6 @@
     navSwimlaneIndex = si;
     navColumnIndex = ci;
     navCardIndex = ii;
-    // The info popover (F/Space) is anchored to whatever card was focused when it opened — any
-    // further move invalidates that, so close it rather than leaving it pointing at a stale spot.
-    infoIssue = null;
     tick().then(() => {
       const issue = navSwimlanes[si]?.cells[ci]?.issues[ii];
       const el = document.getElementById(issue ? `issue-card-${issue.id}` : `nav-cell-${si}-${ci}`);
@@ -71,49 +56,31 @@
     });
   }
 
-  /** Position before the last WASD/[/] move — Shift+Tab swaps back to it, one step at a time. */
-  let previousNavPosition: [number, number, number] | null = null;
-
-  function recordHistory() {
-    previousNavPosition = [navSwimlaneIndex, navColumnIndex, navCardIndex];
-  }
-
+  /** Up/Down within a column — rolls over into the next/previous swimlane's *same* column the
+   *  moment it runs out of cards in the current one, instead of needing a separate "switch
+   *  swimlane" key. An empty cell still counts as one stop (its placeholder), so a held card can
+   *  always be walked into a column with nothing in it yet. */
   function moveVertical(delta: number) {
-    const cell = navSwimlanes[navSwimlaneIndex]?.cells[navColumnIndex];
-    if (!cell || cell.issues.length === 0) return;
-    recordHistory();
-    focusNavCell(navSwimlaneIndex, navColumnIndex, Math.min(Math.max(navCardIndex + delta, 0), cell.issues.length - 1));
+    const ci = navColumnIndex;
+    const ri = navCardIndex + delta;
+    const slots = Math.max(navSwimlanes[navSwimlaneIndex]?.cells[ci]?.issues.length ?? 0, 1);
+    if (ri >= 0 && ri < slots) {
+      focusNavCell(navSwimlaneIndex, ci, ri);
+      return;
+    }
+    const nextSi = navSwimlaneIndex + (delta > 0 ? 1 : -1);
+    if (nextSi < 0 || nextSi >= navSwimlanes.length) return; // already at the first/last swimlane
+    const nextSlots = Math.max(navSwimlanes[nextSi]?.cells[ci]?.issues.length ?? 0, 1);
+    focusNavCell(nextSi, ci, delta > 0 ? 0 : nextSlots - 1);
   }
+  /** Left/Right between the (fixed, small) set of columns — clamped, not rolling; there's nothing
+   *  beyond the first/last column to roll into. */
   function moveHorizontal(delta: number) {
     const swimlane = navSwimlanes[navSwimlaneIndex];
     if (!swimlane) return;
-    recordHistory();
     const nextCol = Math.min(Math.max(navColumnIndex + delta, 0), swimlane.cells.length - 1);
     const nextIssues = swimlane.cells[nextCol]?.issues ?? [];
     focusNavCell(navSwimlaneIndex, nextCol, Math.min(navCardIndex, Math.max(0, nextIssues.length - 1)));
-  }
-  function moveSwimlane(delta: number) {
-    if (navSwimlanes.length === 0) return;
-    recordHistory();
-    const nextSi = (navSwimlaneIndex + delta + navSwimlanes.length) % navSwimlanes.length;
-    const nextIssues = navSwimlanes[nextSi]?.cells[navColumnIndex]?.issues ?? [];
-    focusNavCell(nextSi, navColumnIndex, Math.min(navCardIndex, Math.max(0, nextIssues.length - 1)));
-  }
-  /** Home/End — jump straight to the first/last column instead of stepping through with A/D. */
-  function moveToEdgeColumn(edge: 'first' | 'last') {
-    const swimlane = navSwimlanes[navSwimlaneIndex];
-    if (!swimlane) return;
-    recordHistory();
-    const col = edge === 'first' ? 0 : swimlane.cells.length - 1;
-    const nextIssues = swimlane.cells[col]?.issues ?? [];
-    focusNavCell(navSwimlaneIndex, col, Math.min(navCardIndex, Math.max(0, nextIssues.length - 1)));
-  }
-  /** Shift+Tab — swaps focus with wherever it was before the last move, one step of "back". */
-  function goBack() {
-    if (!previousNavPosition) return;
-    const current: [number, number, number] = [navSwimlaneIndex, navColumnIndex, navCardIndex];
-    focusNavCell(...previousNavPosition);
-    previousNavPosition = current;
   }
 
   function toggleHold() {
@@ -130,13 +97,7 @@
       const issue = navSwimlanes[navSwimlaneIndex]?.cells[navColumnIndex]?.issues[navCardIndex];
       if (!issue) return;
       heldIssueId = issue.id;
-      announce(
-        $t('board.keyboardNav.pickedUp', {
-          title: issue.title,
-          dropKey: formatKeyLabel($keybinds.pickUpDrop),
-          cancelKey: formatKeyLabel($keybinds.cancel),
-        }),
-      );
+      announce($t('board.keyboardNav.pickedUp', { title: issue.title }));
     }
   }
   function cancelHold() {
@@ -144,29 +105,17 @@
     announce($t('board.keyboardNav.cancelled'));
   }
 
-  function toggleInfo() {
-    const issue = navSwimlanes[navSwimlaneIndex]?.cells[navColumnIndex]?.issues[navCardIndex];
-    infoIssue = issue && infoIssue?.id !== issue.id ? issue : null;
-  }
-
-  /** The "info" action on a card, wired via IssueCard's `onSecondary` prop: this fires during
-   *  the DOM target phase, before the ancestor keydown handler's own resync below has a chance
-   *  to run, so it has to sync nav position itself first (same reasoning as `resyncNavPosition`). */
-  function handleCardSecondary(issueId: string) {
+  /** Space on a card, wired via IssueCard's `onGrab` prop: this fires during the DOM target
+   *  phase, before the ancestor keydown handler below even runs, so it has to sync nav position
+   *  itself first (it may have gotten focus via a plain Tab, not our own arrow-key movement). */
+  function handleCardGrab(issueId: string) {
     const pos = findNavPosition(issueId);
     if (pos) [navSwimlaneIndex, navColumnIndex, navCardIndex] = pos;
-    toggleInfo();
+    toggleHold();
   }
 
-  /** True while the configured pick-up/drop key is held and no other key has been pressed yet —
-   *  distinguishes a bare tap (pick up/drop) from the first half of the go-back chord, but only
-   *  matters at all when that key is literally Shift (the only key that's also a modifier, and
-   *  so the only one that can be ambiguous with a chord). Resolved on keyup: a bare tap commits
-   *  pick-up/drop then; a chord already cleared the flag by then. */
-  let modifierKeyIsBareTap = false;
-
   /** Syncs nav position from whichever board element actually has focus — it may have gotten
-   *  there via a plain Tab or a mouse click rather than our own WASD movement. Returns false
+   *  there via a plain Tab or a mouse click rather than our own arrow-key movement. Returns false
    *  (and does nothing else) when focus isn't on a card or empty-cell placeholder at all. */
   function resyncNavPosition(target: HTMLElement): boolean {
     const isCard = target.classList?.contains('card');
@@ -186,90 +135,29 @@
 
   /** Single keydown listener on the board — only acts when focus is actually on a card or an
    *  empty-cell placeholder, so typing elsewhere on the page (search box, sidebar) is untouched.
-   *  Every action below is driven by `$keybinds` rather than a hardcoded character. */
+   *  Listens on the window, not just this view's own wrapper: nothing is focused by default when
+   *  the page loads (or after a plain click on empty space), and a listener scoped to the board
+   *  would never see a keydown that fires on some ancestor like <main> instead — arrow keys would
+   *  silently do nothing until the user happened to Tab all the way to a card first. Resyncing
+   *  from whatever's actually focused (if it's a card/cell) still works the same as before; when
+   *  nothing relevant is focused, movement just starts from wherever nav position already was
+   *  (the first cell, initially), so arrows always do *something* the first time they're pressed. */
   function handleBoardKeydown(e: KeyboardEvent) {
-    if (!$keyboardNavEnabled) return;
-    if (!resyncNavPosition(e.target as HTMLElement)) return;
-    const key = e.key.toLowerCase();
-    const kb = $keybinds;
-
-    // Only the pick-up/drop key needs the deferred-to-keyup treatment, and only when it's
-    // literally bound to Shift — any other key has no chord ambiguity to resolve, so it can fire
-    // immediately below like every other action.
-    if (kb.pickUpDrop === 'shift') {
-      if (key === 'shift') {
-        modifierKeyIsBareTap = true;
-        return;
-      }
-      if (e.shiftKey) modifierKeyIsBareTap = false;
-    }
-
-    // goBack always requires holding Shift first — see the doc comment above this whole block.
-    if (e.shiftKey && key === kb.goBack) {
-      e.preventDefault();
-      goBack();
-      return;
-    }
-
-    if (key === kb.pickUpDrop && kb.pickUpDrop !== 'shift') {
-      e.preventDefault();
-      toggleHold();
-      return;
-    }
-    if (key === kb.moveUp) { e.preventDefault(); moveVertical(-1); return; }
-    if (key === kb.moveDown) { e.preventDefault(); moveVertical(1); return; }
-    if (key === kb.moveLeft) { e.preventDefault(); moveHorizontal(-1); return; }
-    if (key === kb.moveRight) { e.preventDefault(); moveHorizontal(1); return; }
-    if (key === kb.prevSwimlane) { e.preventDefault(); moveSwimlane(-1); return; }
-    if (key === kb.nextSwimlane) { e.preventDefault(); moveSwimlane(1); return; }
-    if (key === kb.firstColumn) { e.preventDefault(); moveToEdgeColumn('first'); return; }
-    if (key === kb.lastColumn) { e.preventDefault(); moveToEdgeColumn('last'); return; }
-    // showHint is handled globally (see handleGlobalKeydown below), not here — it needs to work
-    // even before any card has ever been focused, which this handler can't see at all (it only
-    // fires when the keydown bubbles up through a focused card or empty-cell placeholder).
-    if (key === kb.cancel) {
-      if (infoIssue) { e.preventDefault(); infoIssue = null; }
-      if (heldIssueId) { e.preventDefault(); cancelHold(); }
-      return;
-    }
-    // openDetails and info are left alone here on a card — they fall through to IssueCard's own
-    // handler (wired via its `openKey`/`secondaryKey` props below) so there's exactly one place
-    // deciding which of the two a given key means; only the empty-cell placeholder needs info
-    // handled here, since it has no card-level handler at all.
-    if (key === kb.info && !(e.target as HTMLElement).classList.contains('card')) {
-      e.preventDefault();
-      toggleInfo();
-    }
-  }
-
-  /** Commits the pick-up/drop toggle — only on keyup, and only for a bare tap (see
-   *  `modifierKeyIsBareTap`), so holding Shift as part of the go-back chord doesn't also toggle
-   *  it. Only relevant when the pick-up/drop key is Shift; any other key just fires on keydown
-   *  above and this listener has nothing to do. */
-  function handleBoardKeyup(e: KeyboardEvent) {
-    if (!$keyboardNavEnabled || $keybinds.pickUpDrop !== 'shift' || e.key !== 'Shift') return;
-    const wasBareTap = modifierKeyIsBareTap;
-    modifierKeyIsBareTap = false;
-    if (!wasBareTap || !resyncNavPosition(e.target as HTMLElement)) return;
-    e.preventDefault();
-    toggleHold();
-  }
-
-  /** Window-level, unlike everything else above: showHint has to work the moment keyboard nav
-   *  is turned on, even before the user has ever clicked or tabbed to a card — which the
-   *  board-scoped handlers above can never see, since a keydown fired while nothing inside the
-   *  board has focus never bubbles through it at all. Skips text inputs so it doesn't hijack
-   *  typing a literal "?" (or whatever it's rebound to) into the search box or elsewhere. */
-  function handleGlobalKeydown(e: KeyboardEvent) {
-    if (!$keyboardNavEnabled || e.key.toLowerCase() !== $keybinds.showHint) return;
     const target = e.target as HTMLElement;
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
-    e.preventDefault();
-    if (legendOpen) {
-      legendOpen = false;
-    } else {
-      hintDismissed = false;
-      legendOpen = true;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable) return;
+    resyncNavPosition(target);
+    switch (e.key) {
+      case 'ArrowUp': e.preventDefault(); moveVertical(-1); break;
+      case 'ArrowDown': e.preventDefault(); moveVertical(1); break;
+      case 'ArrowLeft': e.preventDefault(); moveHorizontal(-1); break;
+      case 'ArrowRight': e.preventDefault(); moveHorizontal(1); break;
+      case 'Escape': if (heldIssueId) { e.preventDefault(); cancelHold(); } break;
+      // Cards handle Space themselves via the `onGrab` prop below (so IssueCard's own handler
+      // and this one don't both fire for the same press); only the empty-cell placeholder needs
+      // it handled here, since it has no card-level handler at all.
+      case ' ':
+        if (!(e.target as HTMLElement).classList.contains('card')) { e.preventDefault(); toggleHold(); }
+        break;
     }
   }
 
@@ -333,8 +221,8 @@
       .filter((s) => $statusCategories.find((c) => c.id === s.categoryId)?.type === 'done')
       .map((s) => s.id),
   );
-  // Same swimlane order/gating as the markup below — one source of truth so the WASD nav grid
-  // never drifts from what's actually rendered.
+  // Same swimlane order/gating as the markup below — one source of truth so the nav grid never
+  // drifts from what's actually rendered.
   $: navSwimlanes = [
     ...(ungroupedIssues.length > 0 || epics.length === 0
       ? [{ cells: columns.map((col) => ({ statusIds: col.statusIds, issues: issuesInColumn(ungroupedIssues, col.statusIds) })) }]
@@ -344,39 +232,13 @@
     })),
   ] satisfies NavSwimlane[];
   $: noEpicLaneOffset = ungroupedIssues.length > 0 || epics.length === 0 ? 1 : 0;
-  $: infoRect = infoIssue ? (document.getElementById(`issue-card-${infoIssue.id}`)?.getBoundingClientRect() ?? null) : null;
-  $: infoAssignees = infoIssue
-    ? infoIssue.assigneeIds.map((id) => $users.find((u) => u.id === id)).filter((u): u is NonNullable<typeof u> => !!u).map(displayName)
-    : [];
 </script>
 
-<svelte:window on:keydown={handleGlobalKeydown} />
+<svelte:window on:keydown={handleBoardKeydown} />
+
 <SearchFilterBar />
-{#if $keyboardNavEnabled && !hintDismissed}
-  <div class="keyboard-nav-hint">
-    <div class="hint-row">
-      <p>{$t('board.keyboardNav.hintShort', { key: formatKeyLabel($keybinds.showHint) })}</p>
-      <button type="button" class="hint-toggle" on:click={() => (legendOpen = !legendOpen)}>
-        {legendOpen ? $t('board.keyboardNav.hideShortcuts') : $t('board.keyboardNav.showShortcuts')}
-      </button>
-      <button type="button" class="hint-dismiss" aria-label={$t('board.keyboardNav.hintDismiss')} on:click={() => (hintDismissed = true)}>
-        <Icon name="x" size={11} />
-      </button>
-    </div>
-    {#if legendOpen}
-      <dl class="legend">
-        {#each ACTION_ORDER as action (action)}
-          <div class="legend-row">
-            <dt>{$t(ACTION_LABEL_KEYS[action])}</dt>
-            <dd class="key-badge">{action === 'goBack' ? `Shift + ${formatKeyLabel($keybinds[action])}` : formatKeyLabel($keybinds[action])}</dd>
-          </div>
-        {/each}
-      </dl>
-    {/if}
-  </div>
-{/if}
-<div class="visually-hidden" aria-live="polite">{announcement}</div>
-<div class="board-wrap" on:keydown={handleBoardKeydown} on:keyup={handleBoardKeyup}>
+<div class="board-wrap">
+  <KeyboardNavHint message={$t('board.keyboardNav.hint')} {announcement} />
   <div class="board-inner">
     <div class="board-head">
       {#each columns as col, i}
@@ -410,8 +272,8 @@
               id="nav-cell-0-{ci}"
               class="cell"
               class:drag-over={dragOverCell === key}
-              class:nav-cell={$keyboardNavEnabled && cellIssues.length === 0}
-              tabindex={$keyboardNavEnabled && cellIssues.length === 0 ? -1 : undefined}
+              class:nav-cell={cellIssues.length === 0}
+              tabindex={cellIssues.length === 0 ? -1 : undefined}
               on:dragover={(e) => { e.preventDefault(); dragOverCell = key; }}
               on:dragleave={() => (dragOverCell = null)}
               on:drop={(e) => handleDrop(e, col.statusIds)}
@@ -431,9 +293,7 @@
                         {columns}
                         onMove={(issueId, statusIds) => statusIds[0] && moveIssueToStatus(issueId, statusIds[0])}
                         held={heldIssueId === issue.id}
-                        openKey={$keyboardNavEnabled ? $keybinds.openDetails : 'enter'}
-                        secondaryKey={$keyboardNavEnabled ? $keybinds.info : undefined}
-                        onSecondary={$keyboardNavEnabled ? () => handleCardSecondary(issue.id) : undefined}
+                        onGrab={() => handleCardGrab(issue.id)}
                       />
                     </div>
                   {/each}
@@ -466,8 +326,8 @@
               id="nav-cell-{si}-{ci}"
               class="cell"
               class:drag-over={dragOverCell === key}
-              class:nav-cell={$keyboardNavEnabled && cellIssues.length === 0}
-              tabindex={$keyboardNavEnabled && cellIssues.length === 0 ? -1 : undefined}
+              class:nav-cell={cellIssues.length === 0}
+              tabindex={cellIssues.length === 0 ? -1 : undefined}
               on:dragover={(e) => { e.preventDefault(); dragOverCell = key; }}
               on:dragleave={() => (dragOverCell = null)}
               on:drop={(e) => handleDrop(e, col.statusIds)}
@@ -487,9 +347,7 @@
                         {columns}
                         onMove={(issueId, statusIds) => statusIds[0] && moveIssueToStatus(issueId, statusIds[0])}
                         held={heldIssueId === issue.id}
-                        openKey={$keyboardNavEnabled ? $keybinds.openDetails : 'enter'}
-                        secondaryKey={$keyboardNavEnabled ? $keybinds.info : undefined}
-                        onSecondary={$keyboardNavEnabled ? () => handleCardSecondary(issue.id) : undefined}
+                        onGrab={() => handleCardGrab(issue.id)}
                       />
                     </div>
                   {/each}
@@ -503,53 +361,7 @@
   </div>
 </div>
 
-{#if infoIssue && infoRect}
-  <div class="info-popover" role="dialog" aria-label={infoIssue.title} style="top:{infoRect.bottom + 6}px; left:{infoRect.left}px">
-    <div class="info-popover-title">{infoIssue.title}</div>
-    <div class="info-popover-row">
-      <span class="info-popover-label">{$t('board.keyboardNav.infoColumn')}</span>
-      <span>{columns.find((c) => c.statusIds.includes((infoIssue as Issue).statusId))?.name ?? ''}</span>
-    </div>
-    {#if infoIssue.dueDate}
-      <div class="info-popover-row">
-        <span class="info-popover-label">{$t('board.keyboardNav.infoDueDate')}</span>
-        <span>{infoIssue.dueDate}</span>
-      </div>
-    {/if}
-    <div class="info-popover-row">
-      <span class="info-popover-label">{$t('board.keyboardNav.infoAssignees')}</span>
-      <span>{infoAssignees.length ? infoAssignees.join(', ') : $t('board.keyboardNav.infoNone')}</span>
-    </div>
-    <button type="button" class="info-popover-close" on:click={() => (infoIssue = null)}>{$t('common.close')}</button>
-  </div>
-{/if}
-
 <style>
-  .visually-hidden {
-    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
-    clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
-  }
-  .keyboard-nav-hint {
-    margin: 12px 20px 16px; padding: 9px 12px; font-size: 11.5px; color: var(--text-2);
-    background: var(--accent-soft); border-radius: 8px;
-  }
-  .hint-row { display: flex; align-items: flex-start; gap: 10px; }
-  .hint-row p { margin: 0; flex: 1; }
-  .hint-toggle { color: var(--accent); font-weight: 600; flex: 0 0 auto; white-space: nowrap; }
-  .hint-toggle:hover { color: var(--accent-strong); }
-  .hint-dismiss { color: var(--text-2); padding: 2px; border-radius: 4px; flex: 0 0 auto; }
-  .hint-dismiss:hover { color: var(--text); background: var(--surface-2); }
-  .legend { margin: 10px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 20px; }
-  .legend-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 3px 0; }
-  .legend-row dt { color: var(--text-2); }
-  .legend-row dd { margin: 0; }
-  .key-badge {
-    font-family: 'Mono', ui-monospace, monospace; font-size: 10.5px; font-weight: 700; color: var(--accent-strong);
-    background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; white-space: nowrap;
-  }
-  @media (max-width: 640px) {
-    .legend { grid-template-columns: 1fr; }
-  }
   .board-wrap { flex: 1; overflow: auto; padding: 16px 20px 28px; min-width: 0; }
   .board-inner { min-width: 880px; }
   .board-head {
@@ -581,19 +393,11 @@
   }
   .cell-list { display: flex; flex-direction: column; gap: 8px; }
   .cell.drag-over { background: var(--accent-soft); outline: 2px dashed var(--accent); outline-offset: -2px; }
-  /* Empty cells only become focusable (tabindex="-1", see the markup above) once keyboard
-     navigation is on, so WASD can still land a held card on a column with nothing in it yet. */
+  /* Empty cells are always focusable (tabindex="-1") so a held card can be walked into a column
+     with nothing in it yet. */
   .cell.nav-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--accent-soft); }
   .cell-empty { display: flex; align-items: center; justify-content: center; color: var(--text-3); font-size: 11.5px; min-height: 40px; border: 1px dashed var(--border); border-radius: 8px; }
   .cell-label { display: none; }
-  .info-popover {
-    position: fixed; z-index: 20; width: 240px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; box-shadow: var(--shadow-lg); padding: 12px; display: flex; flex-direction: column; gap: 8px;
-  }
-  .info-popover-title { font-size: 13px; font-weight: 700; color: var(--text); }
-  .info-popover-row { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; }
-  .info-popover-label { color: var(--text-3); }
-  .info-popover-close { align-self: flex-end; font-size: 12px; color: var(--accent); padding: 2px 4px; }
 
   /* Below this width, four side-by-side 200px-min columns simply can't fit — a horizontal-
      scrolling kanban left you looking at slivers of two columns at once with the header

@@ -104,11 +104,26 @@ async function json<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/**
+ * `JSON.stringify` silently drops any key whose value is `undefined` instead of serializing it —
+ * so `{ storyPoints: value ? Number(value) : undefined }`, the natural way to write "clear this
+ * field," never actually reaches the server: the key just vanishes from the request body, and
+ * every PATCH route here treats a missing key as "leave it alone" (`'field' in body`), not
+ * "clear it." Every server route already treats an explicit `null` as the clear signal instead,
+ * so converting `undefined` to `null` here — once, at the transport layer — makes "set this to
+ * undefined to clear it" work everywhere, present and future, without every call site having to
+ * remember the `null` convention on its own (this exact bug was independently hit and fixed for
+ * storyPoints, sprintId, and dueDate before landing here).
+ */
+function undefinedToNull(_key: string, value: unknown): unknown {
+  return value === undefined ? null : value;
+}
+
 function post<T>(path: string, body: unknown): Promise<T> {
-  return fetch(`${BASE}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', ...authHeaders() }, body: JSON.stringify(body) }).then((r) => json<T>(r));
+  return fetch(`${BASE}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', ...authHeaders() }, body: JSON.stringify(body, undefinedToNull) }).then((r) => json<T>(r));
 }
 function patch<T>(path: string, body: unknown): Promise<T> {
-  return fetch(`${BASE}${path}`, { method: 'PATCH', headers: { 'content-type': 'application/json', ...authHeaders() }, body: JSON.stringify(body) }).then((r) => json<T>(r));
+  return fetch(`${BASE}${path}`, { method: 'PATCH', headers: { 'content-type': 'application/json', ...authHeaders() }, body: JSON.stringify(body, undefinedToNull) }).then((r) => json<T>(r));
 }
 function del<T>(path: string): Promise<T> {
   return fetch(`${BASE}${path}`, { method: 'DELETE', headers: { ...authHeaders() } }).then((r) => json<T>(r));

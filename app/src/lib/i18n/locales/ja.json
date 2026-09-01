@@ -67,33 +67,10 @@
     "noEpic": "エピックなし",
     "noIssues": "課題はありません",
     "keyboardNav": {
-      "pickedUp": "「{title}」を持ち上げました。列を選んで {dropKey} で置くか、{cancelKey} でキャンセルしてください。",
+      "pickedUp": "{title} を持ち上げました。列を選んでスペースキーで置く、または Esc でキャンセルします。",
       "dropped": "「{title}」を「{column}」に移動しました。",
       "cancelled": "移動をキャンセルしました。",
-      "infoColumn": "列",
-      "infoAssignees": "担当者",
-      "infoDueDate": "期限",
-      "infoNone": "—",
-      "hintDismiss": "ヒントを閉じる",
-      "hintShort": "キーボード操作がオンです。{key} を押すとショートカットを表示します。",
-      "hideShortcuts": "ショートカットを隠す",
-      "showShortcuts": "ショートカットを表示",
-      "actions": {
-        "moveUp": "上へ移動",
-        "moveDown": "下へ移動",
-        "moveLeft": "左へ移動",
-        "moveRight": "右へ移動",
-        "pickUpDrop": "持ち上げる/置く",
-        "goBack": "戻る",
-        "openDetails": "詳細をすべて開く",
-        "info": "簡易情報",
-        "prevSwimlane": "前のグループ",
-        "nextSwimlane": "次のグループ",
-        "firstColumn": "先頭へ移動",
-        "lastColumn": "末尾へ移動",
-        "cancel": "キャンセル/閉じる",
-        "showHint": "ショートカットを表示"
-      }
+      "hint": "矢印キーでフォーカスを移動し、スペースキーでカードを持ち上げたり置いたりします。Enter キーで開きます。"
     }
   },
   "filters": {
@@ -174,7 +151,8 @@
       "workflow": "ワークフロー",
       "automations": "自動化",
       "agents": "エージェント",
-      "webhooks": "Webhook"
+      "webhooks": "Webhook",
+      "accessibility": "アクセシビリティ"
     },
     "appearance": {
       "themeLabel": "テーマ",
@@ -184,19 +162,7 @@
       "themeSystem": "ブラウザに合わせる",
       "languageLabel": "言語",
       "languageHint": "Workhorseの表示言語を選択してください。",
-      "nonEnglishDisclaimer": "これはアプリ自体のインターフェースのみを翻訳します — チーム全員が読めるように、課題のタイトル、説明、コメント、ラベルなどのコンテンツは英語のままにしてください。",
-      "keyboardNavLabel": "キーボード操作",
-      "keyboardNavHint": "マウスなしでキーボードだけでボード上のカードを移動できます。既定ではオフです。",
-      "keybinds": {
-        "label": "キーボードショートカット",
-        "hint": "ボードのキーボード操作で使うキーをカスタマイズします。キーをクリックすると変更できます。",
-        "changeAria": "{action} のショートカットを変更",
-        "pressKey": "キーを押してください…",
-        "reset": "既定値に戻す",
-        "conflict": "{key} はすでに「{action}」に使われています",
-        "protected": "{key} は割り当てを変更できません —— ボードから抜けるために空けておく必要があります",
-        "goBackHint": "Shift を押しながら"
-      }
+      "nonEnglishDisclaimer": "これはアプリ自体のインターフェースのみを翻訳します — チーム全員が読めるように、課題のタイトル、説明、コメント、ラベルなどのコンテンツは英語のままにしてください。"
     },
     "labelNamePlaceholder": "ラベル名",
     "addLabelButton": "ラベルを追加",
@@ -232,7 +198,11 @@
     "enabledLabel": "有効",
     "webhookUrlPlaceholder": "https://your-service.example/webhook",
     "addWebhookButton": "Webhookを追加",
-    "failedDeleteCategory": "カテゴリの削除に失敗しました"
+    "failedDeleteCategory": "カテゴリの削除に失敗しました",
+    "accessibility": {
+      "keyboardNavLabel": "キーボードナビゲーション",
+      "keyboardNavHint": "ボード、バックログ、ワークフローエディタはすべてマウスなしで操作できます。矢印キーでフォーカスを移動し、スペースキーで項目を持ち上げたり置いたりし、Enter キーで開き、Esc キーでキャンセルします。これは常に有効です。"
+    }
   },
   "projectSettings": {
     "tabs": {
@@ -384,10 +354,10 @@
       "closed": "終了"
     },
     "keyboardNav": {
-      "hintShort": "キーボード操作がオンです。{key} を押すとショートカットを表示します。",
-      "pickedUp": "「{title}」を持ち上げました。スプリントを選んで {dropKey} で置くか、{cancelKey} でキャンセルしてください。",
+      "pickedUp": "{title} を持ち上げました。スプリントを選んでスペースキーで置く、または Esc でキャンセルします。",
       "dropped": "「{title}」を「{section}」に移動しました。",
-      "cancelled": "移動をキャンセルしました。"
+      "cancelled": "移動をキャンセルしました。",
+      "hint": "矢印キーでフォーカスを移動し、スペースキーでカードを持ち上げたり置いたりします。Enter キーで開きます。"
     }
   },
   "agentForm": {
@@ -471,11 +441,19 @@
     "pathErrorTransition": "この遷移を削除すると、To DoからDoneへの唯一の経路がなくなります",
     "pathErrorStatus": "このステータスを削除すると、To DoからDoneへの唯一の経路がなくなります",
     "failedDeleteTransition": "遷移の削除に失敗しました",
-    "failedDeleteStatus": "ステータスの削除に失敗しました"
+    "failedDeleteStatus": "ステータスの削除に失敗しました",
+    "keyboardNav": {
+      "pickedUp": "{title} を持ち上げました。移動先のステータスを選んでスペースキーで接続する、または Esc でキャンセルします。",
+      "connected": "「{from}」から「{to}」への遷移を作成しました。",
+      "cancelled": "キャンセルしました。",
+      "hint": "矢印キーでステータス間を移動し、スペースキーで遷移を描画し、Enter キーでステータス名を変更します。[ または ] キーでステータスの遷移を選び、Delete キーで削除します。"
+    },
+    "failedCreateTransition": "遷移の作成に失敗しました"
   },
   "statusNode": {
     "lockedTitle": "「To Do」と「Done」のステータスは削除できません",
-    "editTitle": "ステータスを編集"
+    "editTitle": "ステータスを編集",
+    "heldLabel": "持ち上げ中"
   },
   "relativeDate": {
     "today": "今日",

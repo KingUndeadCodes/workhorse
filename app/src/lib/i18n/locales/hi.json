@@ -68,33 +68,10 @@
     "noEpic": "कोई एपिक नहीं",
     "noIssues": "कोई इश्यू नहीं",
     "keyboardNav": {
-      "pickedUp": "\"{title}\" उठाया गया। एक कॉलम चुनें और छोड़ने के लिए {dropKey}, या रद्द करने के लिए {cancelKey} दबाएँ।",
+      "pickedUp": "{title} उठाया गया। कॉलम चुनें और छोड़ने के लिए Space दबाएँ, या रद्द करने के लिए Escape दबाएँ।",
       "dropped": "\"{title}\" को \"{column}\" में ले जाया गया।",
       "cancelled": "स्थानांतरण रद्द किया गया।",
-      "infoColumn": "कॉलम",
-      "infoAssignees": "असाइनी",
-      "infoDueDate": "नियत तारीख",
-      "infoNone": "—",
-      "hintDismiss": "संकेत छिपाएँ",
-      "hintShort": "कीबोर्ड नेविगेशन चालू है। शॉर्टकट देखने के लिए {key} दबाएँ।",
-      "hideShortcuts": "शॉर्टकट छिपाएँ",
-      "showShortcuts": "शॉर्टकट दिखाएँ",
-      "actions": {
-        "moveUp": "ऊपर जाएँ",
-        "moveDown": "नीचे जाएँ",
-        "moveLeft": "बाएँ जाएँ",
-        "moveRight": "दाएँ जाएँ",
-        "pickUpDrop": "उठाएँ / छोड़ें",
-        "goBack": "पीछे जाएँ",
-        "openDetails": "पूरा विवरण खोलें",
-        "info": "त्वरित विवरण",
-        "prevSwimlane": "पिछला समूह",
-        "nextSwimlane": "अगला समूह",
-        "firstColumn": "शुरुआत पर जाएँ",
-        "lastColumn": "अंत पर जाएँ",
-        "cancel": "रद्द करें / बंद करें",
-        "showHint": "शॉर्टकट दिखाएँ"
-      }
+      "hint": "एरो कीज़ फोकस बदलती हैं, Space कार्ड उठाती या छोड़ती है, Enter उसे खोलता है।"
     }
   },
   "filters": {
@@ -175,7 +152,8 @@
       "workflow": "वर्कफ़्लो",
       "automations": "ऑटोमेशन",
       "agents": "एजेंट",
-      "webhooks": "वेबहुक"
+      "webhooks": "वेबहुक",
+      "accessibility": "सुगम्यता"
     },
     "appearance": {
       "themeLabel": "थीम",
@@ -185,19 +163,7 @@
       "themeSystem": "ब्राउज़र से मिलाएँ",
       "languageLabel": "भाषा",
       "languageHint": "चुनें कि Workhorse किस भाषा में दिखे।",
-      "nonEnglishDisclaimer": "यह केवल ऐप के अपने इंटरफ़ेस का अनुवाद करता है — कृपया इश्यू के शीर्षक, विवरण, टिप्पणियाँ, लेबल और अन्य सामग्री अंग्रेज़ी में ही रखें ताकि पूरी टीम उन्हें पढ़ सके।",
-      "keyboardNavLabel": "कीबोर्ड नेविगेशन",
-      "keyboardNavHint": "बिना माउस के, कीबोर्ड से बोर्ड पर कार्ड ले जाएँ और छोड़ें। डिफ़ॉल्ट रूप से बंद।",
-      "keybinds": {
-        "label": "कीबोर्ड शॉर्टकट",
-        "hint": "बोर्ड कीबोर्ड नेविगेशन की कुंजियाँ अनुकूलित करें। बदलने के लिए किसी कुंजी पर क्लिक करें।",
-        "changeAria": "{action} के लिए शॉर्टकट बदलें",
-        "pressKey": "एक कुंजी दबाएँ…",
-        "reset": "डिफ़ॉल्ट पर रीसेट करें",
-        "conflict": "{key} पहले से \"{action}\" के लिए उपयोग हो रहा है",
-        "protected": "{key} को फिर से नहीं सौंपा जा सकता — बोर्ड छोड़ने के लिए इसे उपलब्ध रहना चाहिए",
-        "goBackHint": "Shift दबाए रखें, फिर दबाएँ"
-      }
+      "nonEnglishDisclaimer": "यह केवल ऐप के अपने इंटरफ़ेस का अनुवाद करता है — कृपया इश्यू के शीर्षक, विवरण, टिप्पणियाँ, लेबल और अन्य सामग्री अंग्रेज़ी में ही रखें ताकि पूरी टीम उन्हें पढ़ सके।"
     },
     "labelNamePlaceholder": "लेबल का नाम",
     "addLabelButton": "लेबल जोड़ें",
@@ -233,7 +199,11 @@
     "enabledLabel": "सक्षम",
     "webhookUrlPlaceholder": "https://your-service.example/webhook",
     "addWebhookButton": "वेबहुक जोड़ें",
-    "failedDeleteCategory": "श्रेणी हटाने में विफल"
+    "failedDeleteCategory": "श्रेणी हटाने में विफल",
+    "accessibility": {
+      "keyboardNavLabel": "कीबोर्ड नेविगेशन",
+      "keyboardNavHint": "हर बोर्ड, बैकलॉग, और वर्कफ़्लो एडिटर को बिना माउस के इस्तेमाल किया जा सकता है: एरो कीज़ फोकस बदलती हैं, Space किसी आइटम को उठाती और छोड़ती है, Enter उसे खोलता है, और Escape रद्द करता है। यह हमेशा चालू रहता है।"
+    }
   },
   "projectSettings": {
     "tabs": {
@@ -390,10 +360,10 @@
       "closed": "बंद"
     },
     "keyboardNav": {
-      "hintShort": "कीबोर्ड नेविगेशन चालू है। शॉर्टकट देखने के लिए {key} दबाएँ।",
-      "pickedUp": "\"{title}\" उठाया गया। एक स्प्रिंट चुनें और छोड़ने के लिए {dropKey}, या रद्द करने के लिए {cancelKey} दबाएँ।",
+      "pickedUp": "{title} उठाया गया। स्प्रिंट चुनें और छोड़ने के लिए Space दबाएँ, या रद्द करने के लिए Escape दबाएँ।",
       "dropped": "\"{title}\" को \"{section}\" में ले जाया गया।",
-      "cancelled": "स्थानांतरण रद्द किया गया।"
+      "cancelled": "स्थानांतरण रद्द किया गया।",
+      "hint": "एरो कीज़ फोकस बदलती हैं, Space कार्ड उठाती या छोड़ती है, Enter उसे खोलता है।"
     }
   },
   "agentForm": {
@@ -477,11 +447,19 @@
     "pathErrorTransition": "इस ट्रांज़िशन को हटाने से To Do से Done तक का एकमात्र रास्ता खत्म हो जाएगा",
     "pathErrorStatus": "इस स्थिति को हटाने से To Do से Done तक का एकमात्र रास्ता खत्म हो जाएगा",
     "failedDeleteTransition": "ट्रांज़िशन हटाने में विफल",
-    "failedDeleteStatus": "स्थिति हटाने में विफल"
+    "failedDeleteStatus": "स्थिति हटाने में विफल",
+    "keyboardNav": {
+      "pickedUp": "{title} उठाया गया। लक्ष्य स्थिति चुनें और जोड़ने के लिए Space दबाएँ, या रद्द करने के लिए Escape दबाएँ।",
+      "connected": "{from} से {to} तक एक ट्रांज़िशन बनाया गया।",
+      "cancelled": "रद्द किया गया।",
+      "hint": "एरो कीज़ स्थितियों के बीच घूमती हैं, Space एक ट्रांज़िशन खींचता है, Enter किसी स्थिति का नाम बदलता है। किसी स्थिति के ट्रांज़िशन को चुनने के लिए [ या ] दबाएँ, फिर उसे हटाने के लिए Delete दबाएँ।"
+    },
+    "failedCreateTransition": "ट्रांज़िशन बनाने में विफल"
   },
   "statusNode": {
     "lockedTitle": "\"To Do\" और \"Done\" स्थितियाँ हटाई नहीं जा सकतीं",
-    "editTitle": "स्थिति संपादित करें"
+    "editTitle": "स्थिति संपादित करें",
+    "heldLabel": "उठाया गया"
   },
   "relativeDate": {
     "today": "आज",

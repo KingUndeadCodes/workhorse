@@ -68,33 +68,10 @@
     "noEpic": "No Epic",
     "noIssues": "No issues",
     "keyboardNav": {
-      "pickedUp": "Picked up {title}. Choose a column and press {dropKey} to drop, or {cancelKey} to cancel.",
+      "pickedUp": "Picked up {title}. Choose a column and press Space to drop, or Escape to cancel.",
       "dropped": "Moved {title} to {column}.",
       "cancelled": "Move cancelled.",
-      "infoColumn": "Column",
-      "infoAssignees": "Assignees",
-      "infoDueDate": "Due",
-      "infoNone": "—",
-      "hintDismiss": "Dismiss hint",
-      "hintShort": "Keyboard navigation is on. Press {key} for shortcuts.",
-      "hideShortcuts": "Hide shortcuts",
-      "showShortcuts": "Show shortcuts",
-      "actions": {
-        "moveUp": "Move up",
-        "moveDown": "Move down",
-        "moveLeft": "Move left",
-        "moveRight": "Move right",
-        "pickUpDrop": "Pick up / drop",
-        "goBack": "Go back",
-        "openDetails": "Open full details",
-        "info": "Quick info",
-        "prevSwimlane": "Previous group",
-        "nextSwimlane": "Next group",
-        "firstColumn": "Jump to start",
-        "lastColumn": "Jump to end",
-        "cancel": "Cancel / close",
-        "showHint": "Show shortcuts"
-      }
+      "hint": "Arrow keys move focus, Space picks up or drops a card, Enter opens it."
     }
   },
   "filters": {
@@ -175,7 +152,8 @@
       "workflow": "Workflow",
       "automations": "Automations",
       "agents": "Agents",
-      "webhooks": "Webhooks"
+      "webhooks": "Webhooks",
+      "accessibility": "Accessibility"
     },
     "appearance": {
       "themeLabel": "Theme",
@@ -185,19 +163,7 @@
       "themeSystem": "Match Browser",
       "languageLabel": "Language",
       "languageHint": "Choose which language Workhorse displays in.",
-      "nonEnglishDisclaimer": "This only translates the app's own interface — please keep issue titles, descriptions, comments, labels, and other content in English so the whole team can read it.",
-      "keyboardNavLabel": "Keyboard board navigation",
-      "keyboardNavHint": "Move and drop issue cards on the Board using the keyboard, without a mouse. Off by default.",
-      "keybinds": {
-        "label": "Keyboard Shortcuts",
-        "hint": "Customize the keys used by Board keyboard navigation above. Click a key to change it.",
-        "changeAria": "Change shortcut for {action}",
-        "pressKey": "Press a key…",
-        "reset": "Reset to defaults",
-        "conflict": "{key} is already used for \"{action}\"",
-        "protected": "{key} can’t be reassigned — it must stay free to leave the board",
-        "goBackHint": "Hold Shift, then press"
-      }
+      "nonEnglishDisclaimer": "This only translates the app's own interface — please keep issue titles, descriptions, comments, labels, and other content in English so the whole team can read it."
     },
     "labelNamePlaceholder": "Label name",
     "addLabelButton": "Add label",
@@ -233,7 +199,11 @@
     "enabledLabel": "enabled",
     "webhookUrlPlaceholder": "https://your-service.example/webhook",
     "addWebhookButton": "Add webhook",
-    "failedDeleteCategory": "Failed to delete category"
+    "failedDeleteCategory": "Failed to delete category",
+    "accessibility": {
+      "keyboardNavLabel": "Keyboard navigation",
+      "keyboardNavHint": "Every board, backlog, and the workflow editor can be used without a mouse: arrow keys move focus, Space picks up and drops an item, Enter opens it, and Escape cancels. This is always on."
+    }
   },
   "projectSettings": {
     "tabs": {
@@ -390,10 +360,10 @@
       "closed": "closed"
     },
     "keyboardNav": {
-      "hintShort": "Keyboard navigation is on. Press {key} for shortcuts.",
-      "pickedUp": "Picked up {title}. Choose a sprint and press {dropKey} to drop, or {cancelKey} to cancel.",
+      "pickedUp": "Picked up {title}. Choose a sprint and press Space to drop, or Escape to cancel.",
       "dropped": "Moved {title} to {section}.",
-      "cancelled": "Move cancelled."
+      "cancelled": "Move cancelled.",
+      "hint": "Arrow keys move focus, Space picks up or drops a card, Enter opens it."
     }
   },
   "agentForm": {
@@ -477,11 +447,19 @@
     "pathErrorTransition": "Deleting this transition would remove the only path from To Do to Done",
     "pathErrorStatus": "Deleting this status would remove the only path from To Do to Done",
     "failedDeleteTransition": "Failed to delete transition",
-    "failedDeleteStatus": "Failed to delete status"
+    "failedDeleteStatus": "Failed to delete status",
+    "keyboardNav": {
+      "pickedUp": "Picked up {title}. Choose a target status and press Space to connect, or Escape to cancel.",
+      "connected": "Created a transition from {from} to {to}.",
+      "cancelled": "Cancelled.",
+      "hint": "Arrow keys move between statuses, Space draws a transition, Enter renames a status. Press [ or ] to select one of a status's transitions, then Delete to remove it."
+    },
+    "failedCreateTransition": "Failed to create transition"
   },
   "statusNode": {
     "lockedTitle": "To Do and Done statuses can't be deleted",
-    "editTitle": "Edit status"
+    "editTitle": "Edit status",
+    "heldLabel": "Picked up"
   },
   "relativeDate": {
     "today": "today",
