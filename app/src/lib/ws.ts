@@ -1,7 +1,9 @@
 import { get } from 'svelte/store';
 import type { EventEnvelope, FieldValue } from '$domain';
+import type { NotificationWithContext } from './api';
 import { authToken } from './stores/auth';
 import { attachments, comments, currentProjectId, initWorkspace, issueLinks, issuesStore, sprints, worklogs } from './stores/workspace';
+import { initNotifications, receiveLiveNotification } from './stores/notifications';
 import { removeCommentSubtree } from './util';
 
 /**
@@ -34,12 +36,24 @@ export function connectWebSocket(): void {
     // connect — whatever happened while disconnected was never received, so catch up with a
     // full refetch rather than silently resuming with stale state. Same fallback this file
     // already uses per-event for rare/complex payloads, just triggered by the reconnect itself.
-    if (reconnectAttempt > 0) initWorkspace();
+    if (reconnectAttempt > 0) {
+      initWorkspace();
+      initNotifications();
+    }
     reconnectAttempt = 0;
   });
   socket.addEventListener('message', (e) => {
     try {
-      applyRemoteEvent(JSON.parse(e.data as string) as EventEnvelope);
+      const data = JSON.parse(e.data as string) as { kind: 'event'; event: EventEnvelope } | { kind: 'notification'; notification: NotificationWithContext };
+      // Both message shapes always carry an explicit `kind` tag (see server/src/ws.ts's
+      // broadcastEvent/broadcastToUser) — switching on it, rather than checking which fields
+      // happen to be present, keeps the two shapes unambiguous even if EventEnvelope ever grows
+      // a field of its own.
+      if (data.kind === 'notification') {
+        receiveLiveNotification(data.notification);
+      } else {
+        applyRemoteEvent(data.event);
+      }
     } catch (err) {
       console.error('Failed to apply live update:', err);
     }

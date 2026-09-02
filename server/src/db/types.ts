@@ -273,6 +273,17 @@ export interface DB {
     created_at: string | null;
     created_by: string | null;
   };
+  notifications: {
+    id: string;
+    workspace_id: string | null;
+    recipient_user_id: string | null;
+    event_id: string | null;
+    issue_id: string | null;
+    kind: string | null;
+    read: number | null;
+    read_at: string | null;
+    created_at: string | null;
+  };
 }
 
 export interface EventsDB {

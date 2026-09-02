@@ -547,5 +547,22 @@
       "readRepoFile": "leer {path}",
       "writeRepoFile": "escribir {path} → rama «{branch}»"
     }
+  },
+  "notifications": {
+    "bellTitle": "Notificaciones",
+    "bellTitleUnread": "Notificaciones ({count} sin leer)",
+    "markAllRead": "Marcar todas como leídas",
+    "empty": "Aún no hay notificaciones",
+    "loading": "Cargando…",
+    "loadMore": "Cargar más",
+    "unknownActor": "Alguien",
+    "deletedIssue": "una incidencia eliminada",
+    "kinds": {
+      "assigned": "{actor} te asignó a {issue}",
+      "statusChanged": "{actor} movió {issue} a {status}",
+      "resolved": "{actor} resolvió {issue}",
+      "commented": "{actor} comentó en {issue}",
+      "mentioned": "{actor} te mencionó en {issue}"
+    }
   }
 }

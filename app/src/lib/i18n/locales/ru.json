@@ -563,5 +563,22 @@
       "readRepoFile": "прочитать {path}",
       "writeRepoFile": "записать {path} → ветка «{branch}»"
     }
+  },
+  "notifications": {
+    "bellTitle": "Уведомления",
+    "bellTitleUnread": "Уведомления (непрочитанных: {count})",
+    "markAllRead": "Отметить все как прочитанные",
+    "empty": "Пока нет уведомлений",
+    "loading": "Загрузка…",
+    "loadMore": "Загрузить ещё",
+    "unknownActor": "Кто-то",
+    "deletedIssue": "удалённую задачу",
+    "kinds": {
+      "assigned": "{actor} назначил(а) вас на {issue}",
+      "statusChanged": "{actor} перевёл(а) {issue} в статус «{status}»",
+      "resolved": "{actor} решил(а) {issue}",
+      "commented": "{actor} прокомментировал(а) {issue}",
+      "mentioned": "{actor} упомянул(а) вас в {issue}"
+    }
   }
 }

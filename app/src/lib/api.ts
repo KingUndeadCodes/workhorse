@@ -22,6 +22,7 @@ import type {
   IssueLinkType,
   IssueType,
   Label,
+  Notification,
   Project,
   ProjectVersion,
   SavedView,
@@ -353,6 +354,40 @@ export function updateWebhook(id: string, changes: Partial<Pick<WebhookSubscript
 }
 export function deleteWebhook(id: string): Promise<{ ok: true }> {
   return del(`/webhooks/${id}`);
+}
+
+// ---- Notifications ------------------------------------------------------------
+
+/**
+ * A stored {@link Notification} plus everything GET /api/notifications resolves fresh at read
+ * time so the bell panel can render and link to the right issue without a follow-up request —
+ * mirrors the server route's response shape, the same "defined here from domain types, not
+ * imported from the server package" convention {@link Bootstrap} above already follows.
+ * `issueKey`/`issueTitle`/`projectId` are `undefined` if the issue has since been deleted.
+ */
+export interface NotificationWithContext extends Notification {
+  issueKey?: string;
+  issueTitle?: string;
+  projectId?: string;
+  /** Display name of whoever caused the triggering event — `undefined` for an automation/system actor. */
+  actorName?: string;
+  /** Only set for `kind === 'statusChanged' | 'resolved'` — the status the issue moved to. */
+  statusName?: string;
+  /** Only set for `kind === 'commented' | 'mentioned'` — a short excerpt of the comment body. */
+  commentPreview?: string;
+}
+
+export function fetchNotifications(limit = 20, offset = 0): Promise<{ notifications: NotificationWithContext[]; hasMore: boolean }> {
+  return get(`/notifications?limit=${limit}&offset=${offset}`);
+}
+export function fetchUnreadNotificationCount(): Promise<{ count: number }> {
+  return get('/notifications/unread-count');
+}
+export function markNotificationRead(id: string): Promise<NotificationWithContext> {
+  return post(`/notifications/${id}/read`, {});
+}
+export function markAllNotificationsRead(): Promise<{ ok: true }> {
+  return post('/notifications/read-all', {});
 }
 
 // ---- Projects -----------------------------------------------------------------

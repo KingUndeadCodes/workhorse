@@ -12,7 +12,7 @@
 import type { Server as HttpServer, IncomingMessage } from 'node:http';
 import type { ServerType } from '@hono/node-server';
 import { WebSocketServer, type WebSocket } from 'ws';
-import { verifyToken } from './auth/jwt';
+import { verifyToken, type AuthClaims } from './auth/jwt';
 import { workspaceRepo } from './container';
 import type { EventEnvelope } from './domain';
 
@@ -22,6 +22,10 @@ const HEARTBEAT_INTERVAL_MS = 30_000;
 interface Client {
   ws: WebSocket;
   workspaceId: string;
+  /** The authenticated user this socket belongs to — lets {@link broadcastToUser} target one
+   *  recipient (e.g. a new notification) the same infrastructure {@link broadcastEvent} uses
+   *  to reach everyone in a workspace. */
+  userId: string;
   alive: boolean;
 }
 
@@ -45,8 +49,9 @@ export function initWebSocketServer(httpServer: ServerType): void {
     const token = new URL(req.url ?? '', 'http://localhost').searchParams.get('token');
     if (!token) return ws.close(4001, 'Missing token');
 
+    let claims: AuthClaims;
     try {
-      await verifyToken(token);
+      claims = await verifyToken(token);
     } catch {
       return ws.close(4001, 'Invalid token');
     }
@@ -56,7 +61,7 @@ export function initWebSocketServer(httpServer: ServerType): void {
     // this codebase enforces that boundary either.
     const workspaceId = (await workspaceRepo.getWorkspace()).id;
 
-    const client: Client = { ws, workspaceId, alive: true };
+    const client: Client = { ws, workspaceId, userId: claims.sub, alive: true };
     clients.add(client);
     ws.on('pong', () => (client.alive = true));
     ws.on('close', () => clients.delete(client));
@@ -79,11 +84,30 @@ export function initWebSocketServer(httpServer: ServerType): void {
   wss.on('close', () => clearInterval(heartbeat));
 }
 
-/** Sends `event` to every connected client in `event.workspaceId`. Called once per event, right after it's appended — see EventEngine.writeEvent. */
+/** Sends `event` to every connected client in `event.workspaceId`. Called once per event, right after it's appended — see EventEngine.writeEvent. Wrapped with a top-level `kind: 'event'` tag — see {@link broadcastToUser}'s doc comment for why both message shapes need an explicit, always-present discriminant rather than distinguishing them by field presence. */
 export function broadcastEvent(event: EventEnvelope): void {
-  const payload = JSON.stringify(event);
+  const payload = JSON.stringify({ kind: 'event', event });
   for (const client of clients) {
     if (client.workspaceId === event.workspaceId && client.ws.readyState === client.ws.OPEN) {
+      client.ws.send(payload);
+    }
+  }
+}
+
+/**
+ * Sends `message` to every connected socket belonging to `userId` (a user can have more than
+ * one tab open) — the one-recipient counterpart to {@link broadcastEvent}'s whole-workspace
+ * fan-out. Used by `EventEngine.notifyRecipients` to push a freshly created notification live,
+ * the same "no polling" guarantee every other live update already gets. The message is
+ * wrapped with a top-level `kind: 'notification'` discriminator — {@link broadcastEvent}'s
+ * messages carry `kind: 'event'` the same way, so the frontend's single message handler always
+ * has an explicit tag to switch on instead of inferring the shape from which fields happen to
+ * be present.
+ */
+export function broadcastToUser(userId: string, message: unknown): void {
+  const payload = JSON.stringify(message);
+  for (const client of clients) {
+    if (client.userId === userId && client.ws.readyState === client.ws.OPEN) {
       client.ws.send(payload);
     }
   }

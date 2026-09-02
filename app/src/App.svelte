@@ -17,6 +17,7 @@
   import AccessibilityStatement from './lib/components/AccessibilityStatement.svelte';
   import { currentUser } from './lib/stores/auth';
   import { currentView, initWorkspace, loaded, loadError, selectedIssueId } from './lib/stores/workspace';
+  import { initNotifications, resetNotifications } from './lib/stores/notifications';
   import { connectWebSocket, disconnectWebSocket } from './lib/ws';
   import { isMobile } from './lib/stores/viewport';
   import { t } from './lib/i18n';
@@ -34,10 +35,12 @@
     initializedForUserId = $currentUser.id;
     loadError.set(null);
     initWorkspace();
+    initNotifications();
     connectWebSocket();
   } else if (!$currentUser && initializedForUserId) {
     initializedForUserId = null;
     disconnectWebSocket();
+    resetNotifications();
   }
 </script>
 

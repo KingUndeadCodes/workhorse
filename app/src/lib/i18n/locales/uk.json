@@ -563,5 +563,22 @@
       "readRepoFile": "прочитати {path}",
       "writeRepoFile": "записати {path} → гілка «{branch}»"
     }
+  },
+  "notifications": {
+    "bellTitle": "Сповіщення",
+    "bellTitleUnread": "Сповіщення (непрочитаних: {count})",
+    "markAllRead": "Позначити всі як прочитані",
+    "empty": "Поки що немає сповіщень",
+    "loading": "Завантаження…",
+    "loadMore": "Завантажити ще",
+    "unknownActor": "Хтось",
+    "deletedIssue": "видалене завдання",
+    "kinds": {
+      "assigned": "{actor} призначив(-ла) вас на {issue}",
+      "statusChanged": "{actor} перемістив(-ла) {issue} у статус «{status}»",
+      "resolved": "{actor} вирішив(-ла) {issue}",
+      "commented": "{actor} прокоментував(-ла) {issue}",
+      "mentioned": "{actor} згадав(-ла) вас у {issue}"
+    }
   }
 }

@@ -539,5 +539,22 @@
       "readRepoFile": "读取 {path}",
       "writeRepoFile": "写入 {path} → 分支「{branch}」"
     }
+  },
+  "notifications": {
+    "bellTitle": "通知",
+    "bellTitleUnread": "通知(未读 {count} 条)",
+    "markAllRead": "全部标为已读",
+    "empty": "暂无通知",
+    "loading": "加载中…",
+    "loadMore": "加载更多",
+    "unknownActor": "有人",
+    "deletedIssue": "一个已删除的问题",
+    "kinds": {
+      "assigned": "{actor} 将 {issue} 指派给了你",
+      "statusChanged": "{actor} 将 {issue} 移动到了{status}",
+      "resolved": "{actor} 解决了 {issue}",
+      "commented": "{actor} 评论了 {issue}",
+      "mentioned": "{actor} 在 {issue} 中提到了你"
+    }
   }
 }

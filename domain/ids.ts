@@ -29,3 +29,4 @@ export type AgentRunId = string;
 export type WorklogId = string;
 export type GitRepoLinkId = string;
 export type BranchId = string;
+export type NotificationId = string;

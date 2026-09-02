@@ -12,6 +12,8 @@ import type {
   EventType,
   FieldValue,
   Issue,
+  Notification,
+  NotificationKind,
 } from '../domain';
 import { parseMentionedUserIds } from '../domain';
 import { appendEvent as appendEventToLog, getEventById } from '../eventLog';
@@ -21,15 +23,17 @@ import type { AutomationRepository } from '../repositories/AutomationRepository'
 import type { CatalogRepository } from '../repositories/CatalogRepository';
 import type { GitRepoLinkRepository } from '../repositories/GitRepoLinkRepository';
 import type { IssueRepository } from '../repositories/IssueRepository';
+import type { NotificationRepository } from '../repositories/NotificationRepository';
 import type { ProjectRepository } from '../repositories/ProjectRepository';
 import type { UserRepository } from '../repositories/UserRepository';
 import type { WebhookRepository } from '../repositories/WebhookRepository';
 import type { WorkflowRepository } from '../repositories/WorkflowRepository';
 import type { WorkspaceRepository } from '../repositories/WorkspaceRepository';
-import { broadcastEvent } from '../ws';
+import { broadcastEvent, broadcastToUser } from '../ws';
 import type { AgentRuntimeRegistry, AgentRuntimeTool } from './AgentRuntime';
 import type { EventProjector } from './EventProjector';
 import type { GitProviderRegistry } from './GitProvider';
+import { actorForEvent, computeNotificationContext } from './notificationContext';
 
 /** One tool definition per {@link AutomationAction} variant — the agent's entire vocabulary
  * for acting on an issue is this closed set, never an open-ended shell/code tool. Shape is
@@ -109,6 +113,30 @@ export function issueIdFromPayload(payload: EventPayload): string | undefined {
 }
 
 /**
+ * Which {@link NotificationKind} (if any) an event type produces — the one place that mapping
+ * is decided, mirrored by `notifyRecipients` below. Only these five are notification-worthy;
+ * everything else (a label edit, a worklog, an automation's own bookkeeping events) is silently
+ * not one, same as `matchesFilter` silently skips a rule/agent whose `eventFilter` doesn't
+ * include a given type.
+ */
+function notificationKindFor(type: EventType): NotificationKind | undefined {
+  switch (type) {
+    case 'issue.assigneesChanged':
+      return 'assigned';
+    case 'issue.statusChanged':
+      return 'statusChanged';
+    case 'issue.resolved':
+      return 'resolved';
+    case 'comment.created':
+      return 'commented';
+    case 'comment.mentioned':
+      return 'mentioned';
+    default:
+      return undefined;
+  }
+}
+
+/**
  * The root comment id of the thread an event belongs to, or `undefined` if the event wasn't
  * itself a comment (nothing to scope to). Mirrors the same `comment.created` / `comment.mentioned`
  * check `applyAction`'s `addComment` case uses to decide what to reply to — walks `parentCommentId`
@@ -176,6 +204,7 @@ export class EventEngine {
     private readonly agentRuntimes: AgentRuntimeRegistry,
     private readonly gitRepoLinks: GitRepoLinkRepository,
     private readonly gitProviders: GitProviderRegistry,
+    private readonly notifications: NotificationRepository,
   ) {}
 
   /** One chained promise per agent — see {@link withAgentLock}. */
@@ -312,11 +341,97 @@ export class EventEngine {
   private async writeEvent(entry: { actor: ActorRef; subject: EntityRef; payload: EventPayload }): Promise<EventEnvelope> {
     const event = appendEventToLog(entry, `evt_${randomUUID()}`, (await this.workspace.getWorkspace()).id);
     await this.projector.applyEvent(event);
+    // Notification rows are created here — at the same level as the broadcast below, not
+    // inside emitEvent's automations/agents/webhooks stages — precisely so an automation or
+    // agent's own actions (which call writeEvent directly, never emitEvent; see this class's
+    // own doc comment on deliberate non-recursion) still notify the people they're about. A
+    // notification insert can never itself append another event, so there's no amplification
+    // risk the way there would be if this ran through emitEvent's stages instead.
+    // Best-effort: the event itself already committed via applyEvent above, so a failure here
+    // (a transient DB error, a lookup failing) must never stop it from reaching other connected
+    // clients below — it's caught and logged rather than left to propagate out of writeEvent.
+    try {
+      await this.notifyRecipients(event);
+    } catch (err) {
+      console.error(`Failed to notify recipients for event ${event.id}:`, err instanceof Error ? err.message : err);
+    }
     // Every event, whether it came from a route or (like an automation/agent's own actions)
     // from inside this class, goes out to connected browser tabs the same way — this is the
     // one place both paths converge, so live updates can't miss one or the other.
     broadcastEvent(event);
     return event;
+  }
+
+  /**
+   * Resolves who a notification-worthy event is *about* and inserts one row per recipient —
+   * the issue's reporter and assignees for most kinds, the newly added assignee(s) for
+   * `issue.assigneesChanged`, or the specific `@mentioned` user for `comment.mentioned`. Never
+   * notifies the actor who caused their own event. Each inserted row is also pushed live to
+   * that recipient's own connected tabs via {@link broadcastToUser} — the same "no polling"
+   * guarantee every other live update already gets, just targeted at one user instead of the
+   * whole workspace.
+   */
+  private async notifyRecipients(event: EventEnvelope): Promise<void> {
+    const kind = notificationKindFor(event.payload.type);
+    if (!kind) return;
+    const issueId = issueIdFromPayload(event.payload);
+    const issue = issueId ? await this.issues.get(issueId) : undefined;
+    if (!issueId || !issue) return;
+
+    const actorUserId = event.actor.kind === 'user' ? event.actor.userId : undefined;
+
+    const payload = event.payload;
+    let recipientIds: string[];
+    if (payload.type === 'comment.mentioned') {
+      // A mentioned reporter/assignee already gets a 'commented' notification from the
+      // comment.created event this comment.mentioned always accompanies (same commentId) — see
+      // StatsService's `activityCounts` loop, which skips comment.mentioned for the identical
+      // reason. Notifying them again here would be a duplicate for the same comment.
+      recipientIds = payload.mentionedUserId === issue.reporterId || issue.assigneeIds.includes(payload.mentionedUserId) ? [] : [payload.mentionedUserId];
+    } else if (payload.type === 'issue.assigneesChanged') {
+      const { fromUserIds, toUserIds } = payload;
+      recipientIds = toUserIds.filter((id) => !fromUserIds.includes(id));
+    } else if (payload.type === 'issue.statusChanged' && (await this.classifyStatusTransition(payload.fromStatusId, payload.toStatusId))) {
+      // This same transition also emits issue.resolved/issue.reopened right after (see
+      // routes/issues.ts and applyAction's transitionStatus case) — that event notifies the
+      // same reporter+assignees, so the plain statusChanged notification here would duplicate it.
+      recipientIds = [];
+    } else {
+      recipientIds = [issue.reporterId, ...issue.assigneeIds];
+    }
+
+    const candidateIds = [...new Set(recipientIds)].filter((id) => id !== actorUserId);
+    if (candidateIds.length === 0) return;
+    // An agent can be @-mentioned (see domain/mentions.ts) but has no UI session to view an
+    // in-app notification in — filtering to human recipients here keeps that a no-op instead
+    // of a notification row nothing will ever display.
+    const candidateUsers = await Promise.all(candidateIds.map((id) => this.users.getById(id)));
+    const recipients = candidateIds.filter((_, i) => candidateUsers[i]?.kind === 'human');
+    if (recipients.length === 0) return;
+
+    // Resolved once and shared across every recipient's push below — the same context
+    // routes/notifications.ts computes for a REST read, via the one shared function, so the
+    // live-pushed version of a row and its later REST-read version can never show different
+    // text for the same notification. See computeNotificationContext's own doc comment.
+    const actor = await actorForEvent(event, this.users);
+    const context = await computeNotificationContext(event, issue, actor, this.workflow);
+
+    await Promise.all(
+      recipients.map(async (recipientUserId) => {
+        const notification: Notification = {
+          id: `ntf_${randomUUID()}`,
+          workspaceId: event.workspaceId,
+          recipientUserId,
+          eventId: event.id,
+          issueId,
+          kind,
+          read: false,
+          createdAt: new Date().toISOString(),
+        };
+        await this.notifications.create(notification);
+        broadcastToUser(recipientUserId, { kind: 'notification', notification: { ...notification, ...context } });
+      }),
+    );
   }
 
   /**

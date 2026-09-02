@@ -547,5 +547,22 @@
       "readRepoFile": "read {path}",
       "writeRepoFile": "write {path} → branch \"{branch}\""
     }
+  },
+  "notifications": {
+    "bellTitle": "Notifications",
+    "bellTitleUnread": "Notifications ({count} unread)",
+    "markAllRead": "Mark all as read",
+    "empty": "No notifications yet",
+    "loading": "Loading…",
+    "loadMore": "Load more",
+    "unknownActor": "Someone",
+    "deletedIssue": "a deleted issue",
+    "kinds": {
+      "assigned": "{actor} assigned you to {issue}",
+      "statusChanged": "{actor} moved {issue} to {status}",
+      "resolved": "{actor} resolved {issue}",
+      "commented": "{actor} commented on {issue}",
+      "mentioned": "{actor} mentioned you on {issue}"
+    }
   }
 }

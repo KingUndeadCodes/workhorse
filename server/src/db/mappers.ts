@@ -14,6 +14,8 @@ import type {
   IssueLink,
   IssueType,
   Label,
+  Notification,
+  NotificationKind,
   Project,
   ProjectVersion,
   SavedView,
@@ -394,5 +396,19 @@ export function rowToBranch(r: Record<string, unknown>): Branch {
     url: r.url as string,
     createdAt: r.created_at as string,
     createdBy: r.created_by as string,
+  };
+}
+
+export function rowToNotification(r: Record<string, unknown>): Notification {
+  return {
+    id: r.id as string,
+    workspaceId: r.workspace_id as string,
+    recipientUserId: r.recipient_user_id as string,
+    eventId: r.event_id as string,
+    issueId: r.issue_id as string,
+    kind: r.kind as NotificationKind,
+    read: bool(r.read),
+    readAt: (r.read_at as string | null) ?? undefined,
+    createdAt: r.created_at as string,
   };
 }

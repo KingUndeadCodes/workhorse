@@ -539,5 +539,22 @@
       "readRepoFile": "{path} を読み取り",
       "writeRepoFile": "{path} を書き込み → ブランチ「{branch}」"
     }
+  },
+  "notifications": {
+    "bellTitle": "通知",
+    "bellTitleUnread": "通知(未読 {count} 件)",
+    "markAllRead": "すべて既読にする",
+    "empty": "通知はまだありません",
+    "loading": "読み込み中…",
+    "loadMore": "もっと読み込む",
+    "unknownActor": "誰か",
+    "deletedIssue": "削除されたissue",
+    "kinds": {
+      "assigned": "{actor} さんが {issue} にあなたを担当者として割り当てました",
+      "statusChanged": "{actor} さんが {issue} を{status}に変更しました",
+      "resolved": "{actor} さんが {issue} を解決しました",
+      "commented": "{actor} さんが {issue} にコメントしました",
+      "mentioned": "{actor} さんが {issue} であなたにメンションしました"
+    }
   }
 }

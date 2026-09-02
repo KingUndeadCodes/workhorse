@@ -147,6 +147,16 @@ export function migrateStateDb(): void {
   // read and each insert a row, leaving `getBranchFor`'s unordered `executeTakeFirst()` to
   // arbitrarily pick between them.
   run(stateDb, `CREATE UNIQUE INDEX IF NOT EXISTS idx_branches_issue ON branches(issue_id)`);
+  run(
+    stateDb,
+    `CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY, workspace_id TEXT, recipient_user_id TEXT, event_id TEXT, issue_id TEXT,
+      kind TEXT, read INTEGER, read_at TEXT, created_at TEXT
+    )`,
+  );
+  // Every list/count read is scoped to one recipient and ordered newest-first — this is the
+  // one index that query actually needs.
+  run(stateDb, `CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_user_id, created_at)`);
 }
 
 /**

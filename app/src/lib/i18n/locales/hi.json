@@ -547,5 +547,22 @@
       "readRepoFile": "{path} पढ़ें",
       "writeRepoFile": "{path} लिखें → ब्रांच \"{branch}\""
     }
+  },
+  "notifications": {
+    "bellTitle": "सूचनाएं",
+    "bellTitleUnread": "सूचनाएं ({count} अपठित)",
+    "markAllRead": "सभी को पढ़ा हुआ चिह्नित करें",
+    "empty": "अभी तक कोई सूचना नहीं",
+    "loading": "लोड हो रहा है…",
+    "loadMore": "और लोड करें",
+    "unknownActor": "किसी ने",
+    "deletedIssue": "एक हटाई गई इश्यू",
+    "kinds": {
+      "assigned": "{actor} ने आपको {issue} पर असाइन किया",
+      "statusChanged": "{actor} ने {issue} को {status} में ले जाया",
+      "resolved": "{actor} ने {issue} हल किया",
+      "commented": "{actor} ने {issue} पर टिप्पणी की",
+      "mentioned": "{actor} ने आपको {issue} में मेंशन किया"
+    }
   }
 }

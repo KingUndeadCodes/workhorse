@@ -1,5 +1,5 @@
 import type { EventSubscription } from './subscription';
-import type { UserId, WebhookId, WorkspaceId } from './ids';
+import type { EventId, IssueId, NotificationId, UserId, WebhookId, WorkspaceId } from './ids';
 
 /**
  * The single external-listener primitive — everything that reacts to the log from outside
@@ -27,3 +27,37 @@ export interface WebhookSubscription extends EventSubscription {
 
 /** What every route except creation must return — `secret` is a write-once credential, not something every workspace member should be able to read back out. */
 export type WebhookSubscriptionPublic = Omit<WebhookSubscription, 'secret'>;
+
+/**
+ * Discriminates a {@link Notification} by which triggering `EventType` produced it — see
+ * `EventEngine`'s `notificationKindFor`, the one place the mapping from event type to kind is
+ * decided. Kept as its own small closed set rather than reusing `EventType` directly: only a
+ * handful of event types are ever notification-worthy, and a UI row needs one short word to
+ * pick an icon/phrasing by, not the full event vocabulary.
+ */
+export type NotificationKind = 'assigned' | 'statusChanged' | 'resolved' | 'commented' | 'mentioned';
+
+/**
+ * One in-app, per-recipient notification — this is the one concrete "notification medium"
+ * this domain actually implements as a first-class stored entity, unlike the deliberately
+ * unopinionated {@link WebhookSubscription} above. It needs to be a stored row rather than a
+ * fire-and-forget delivery precisely because it carries read/unread state per recipient,
+ * something a webhook (which has no notion of "seen") never needs.
+ *
+ * Populated the same way automations/agents are: a step alongside them that resolves who a
+ * qualifying event is *about* (an issue's reporter, its assignees, an @-mentioned user) and
+ * inserts one row per recipient — never the actor who caused their own event. See
+ * `EventEngine`'s `notifyRecipients`.
+ */
+export interface Notification {
+  id: NotificationId;
+  workspaceId: WorkspaceId;
+  recipientUserId: UserId;
+  /** The event that caused this notification — kept for traceability (and so a route can enrich a row with who/what at read time without duplicating that data into every row). */
+  eventId: EventId;
+  issueId: IssueId;
+  kind: NotificationKind;
+  read: boolean;
+  readAt?: string;
+  createdAt: string;
+}
