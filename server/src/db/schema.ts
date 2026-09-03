@@ -157,6 +157,16 @@ export function migrateStateDb(): void {
   // Every list/count read is scoped to one recipient and ordered newest-first — this is the
   // one index that query actually needs.
   run(stateDb, `CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_user_id, created_at)`);
+  run(
+    stateDb,
+    `CREATE TABLE IF NOT EXISTS webhook_deliveries (
+      id TEXT PRIMARY KEY, webhook_id TEXT, event_id TEXT, event_type TEXT,
+      status TEXT, status_code INTEGER, error TEXT, created_at TEXT
+    )`,
+  );
+  // Same rationale as idx_notifications_recipient above — always read as "most recent
+  // attempts for one webhook, newest first."
+  run(stateDb, `CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_webhook ON webhook_deliveries(webhook_id, created_at)`);
 }
 
 /**

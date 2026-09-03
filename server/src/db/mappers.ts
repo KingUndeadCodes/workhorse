@@ -7,6 +7,7 @@ import type {
   Branch,
   Comment,
   Component,
+  EventType,
   FieldDefinition,
   GitRepoLink,
   GitRepoLinkPublic,
@@ -22,6 +23,8 @@ import type {
   Sprint,
   StatusCategory,
   User,
+  WebhookDelivery,
+  WebhookDeliveryStatus,
   WebhookSubscription,
   WebhookSubscriptionPublic,
   Workflow,
@@ -409,6 +412,19 @@ export function rowToNotification(r: Record<string, unknown>): Notification {
     kind: r.kind as NotificationKind,
     read: bool(r.read),
     readAt: (r.read_at as string | null) ?? undefined,
+    createdAt: r.created_at as string,
+  };
+}
+
+export function rowToWebhookDelivery(r: Record<string, unknown>): WebhookDelivery {
+  return {
+    id: r.id as string,
+    webhookId: r.webhook_id as string,
+    eventId: r.event_id as string,
+    eventType: r.event_type as EventType,
+    status: r.status as WebhookDeliveryStatus,
+    statusCode: (r.status_code as number | null) ?? undefined,
+    error: (r.error as string | null) ?? undefined,
     createdAt: r.created_at as string,
   };
 }

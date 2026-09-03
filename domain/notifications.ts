@@ -1,5 +1,6 @@
+import type { EventType } from './events';
 import type { EventSubscription } from './subscription';
-import type { EventId, IssueId, NotificationId, UserId, WebhookId, WorkspaceId } from './ids';
+import type { EventId, IssueId, NotificationId, UserId, WebhookDeliveryId, WebhookId, WorkspaceId } from './ids';
 
 /**
  * The single external-listener primitive — everything that reacts to the log from outside
@@ -27,6 +28,30 @@ export interface WebhookSubscription extends EventSubscription {
 
 /** What every route except creation must return — `secret` is a write-once credential, not something every workspace member should be able to read back out. */
 export type WebhookSubscriptionPublic = Omit<WebhookSubscription, 'secret'>;
+
+export type WebhookDeliveryStatus = 'success' | 'failure';
+
+/**
+ * One outbound delivery attempt for a {@link WebhookSubscription} — write-once, created right
+ * after the attempt resolves (see `EventEngine.deliverToWebhook`). Unlike a `Notification`,
+ * nothing about a delivery ever changes after it's recorded, so there's no read/unread-style
+ * mutable state here. `status` drives the same `.status-{status}` UI pattern the Agent run
+ * history already uses.
+ */
+export interface WebhookDelivery {
+  id: WebhookDeliveryId;
+  webhookId: WebhookId;
+  eventId: EventId;
+  /** Denormalized from the triggering event at write time — stable once written, so reading
+   *  a delivery list doesn't need to re-fetch the event log entry per row. */
+  eventType: EventType;
+  status: WebhookDeliveryStatus;
+  /** The HTTP response status code, when a response was received at all — absent for a
+   *  network error or timeout, where `error` carries the reason instead. */
+  statusCode?: number;
+  error?: string;
+  createdAt: string;
+}
 
 /**
  * Discriminates a {@link Notification} by which triggering `EventType` produced it — see

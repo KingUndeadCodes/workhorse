@@ -29,6 +29,7 @@ import type {
   Sprint,
   StatusCategory,
   User,
+  WebhookDelivery,
   WebhookSubscription,
   WebhookSubscriptionPublic,
   Workflow,
@@ -354,6 +355,9 @@ export function updateWebhook(id: string, changes: Partial<Pick<WebhookSubscript
 }
 export function deleteWebhook(id: string): Promise<{ ok: true }> {
   return del(`/webhooks/${id}`);
+}
+export function fetchWebhookDeliveries(webhookId: string, limit = 20, offset = 0): Promise<{ deliveries: WebhookDelivery[]; hasMore: boolean }> {
+  return get(`/webhooks/${webhookId}/deliveries?limit=${limit}&offset=${offset}`);
 }
 
 // ---- Notifications ------------------------------------------------------------

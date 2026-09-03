@@ -201,6 +201,12 @@
     "enabledLabel": "включено",
     "webhookUrlPlaceholder": "https://your-service.example/webhook",
     "addWebhookButton": "Добавить вебхук",
+    "webhookHistoryButton": "История доставки для {url}",
+    "webhookDeliveriesEmpty": "Пока нет доставок",
+    "webhookDeliveriesLoading": "Загрузка…",
+    "webhookDeliveriesLoadMore": "Загрузить ещё",
+    "webhookStatusSuccess": "Успешно",
+    "webhookStatusFailure": "Ошибка",
     "failedDeleteCategory": "Не удалось удалить категорию",
     "accessibility": {
       "keyboardNavLabel": "Навигация с клавиатуры",

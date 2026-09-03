@@ -17,6 +17,7 @@ import { NotificationRepository } from './repositories/NotificationRepository';
 import { PlanningRepository } from './repositories/PlanningRepository';
 import { ProjectRepository } from './repositories/ProjectRepository';
 import { UserRepository } from './repositories/UserRepository';
+import { WebhookDeliveryRepository } from './repositories/WebhookDeliveryRepository';
 import { WebhookRepository } from './repositories/WebhookRepository';
 import { WorkflowRepository } from './repositories/WorkflowRepository';
 import { WorkspaceRepository } from './repositories/WorkspaceRepository';
@@ -39,6 +40,7 @@ export let automationRepo: AutomationRepository;
 export let webhookRepo: WebhookRepository;
 export let issueRepo: IssueRepository;
 export let notificationRepo: NotificationRepository;
+export let webhookDeliveryRepo: WebhookDeliveryRepository;
 export let gitRepoLinkRepo: GitRepoLinkRepository;
 export let projectRepo: ProjectRepository;
 
@@ -78,6 +80,7 @@ export function initContainer(): void {
   webhookRepo = new WebhookRepository(db);
   issueRepo = new IssueRepository(db);
   notificationRepo = new NotificationRepository(db);
+  webhookDeliveryRepo = new WebhookDeliveryRepository(db);
   gitRepoLinkRepo = new GitRepoLinkRepository(db);
   projectRepo = new ProjectRepository(db);
 
@@ -88,7 +91,7 @@ export function initContainer(): void {
   projector = new EventProjector(issueRepo, agentRunRepo, planningRepo);
   engine = new EventEngine(
     workspaceRepo, issueRepo, agentRepo, agentRunRepo, automationRepo, webhookRepo, catalogRepo, workflowRepo, userRepo,
-    projector, projectRepo, agentRuntimes, gitRepoLinkRepo, gitProviders, notificationRepo,
+    projector, projectRepo, agentRuntimes, gitRepoLinkRepo, gitProviders, notificationRepo, webhookDeliveryRepo,
   );
   auditService = new AuditService(workspaceRepo, issueRepo);
   statsService = new StatsService(workspaceRepo, issueRepo);

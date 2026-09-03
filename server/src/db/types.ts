@@ -284,6 +284,16 @@ export interface DB {
     read_at: string | null;
     created_at: string | null;
   };
+  webhook_deliveries: {
+    id: string;
+    webhook_id: string | null;
+    event_id: string | null;
+    event_type: string | null;
+    status: string | null;
+    status_code: number | null;
+    error: string | null;
+    created_at: string | null;
+  };
 }
 
 export interface EventsDB {

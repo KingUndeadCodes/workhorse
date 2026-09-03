@@ -2,13 +2,24 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import type { EventType, WebhookSubscription } from '../domain';
 import { requireNonGuest, type AuthVariables } from '../auth/middleware';
-import { webhookRepo, workspaceRepo } from '../container';
+import { webhookDeliveryRepo, webhookRepo, workspaceRepo } from '../container';
 import { toWebhookPublic } from '../db/mappers';
+
+const DEFAULT_DELIVERIES_LIMIT = 20;
+const MAX_DELIVERIES_LIMIT = 100;
 
 /** CRUD for outbound webhook subscription definitions. Delivery itself lives in {@link EventEngine}. */
 export const webhooksRouter = new Hono<{ Variables: AuthVariables }>();
 
 webhooksRouter.get('/webhooks', async (c) => c.json((await webhookRepo.list()).map(toWebhookPublic)));
+
+/** GET /api/webhooks/:id/deliveries?limit=&offset= — this hook's delivery attempts, most recent first. Unguarded, same as GET /webhooks. */
+webhooksRouter.get('/webhooks/:id/deliveries', async (c) => {
+  const limit = Math.min(Math.max(Number(c.req.query('limit') ?? DEFAULT_DELIVERIES_LIMIT), 1), MAX_DELIVERIES_LIMIT);
+  const offset = Math.max(Number(c.req.query('offset') ?? 0), 0);
+  const { deliveries, hasMore } = await webhookDeliveryRepo.listForWebhook(c.req.param('id'), limit, offset);
+  return c.json({ deliveries, hasMore });
+});
 
 webhooksRouter.post('/webhooks', async (c) => {
   const forbidden = await requireNonGuest(c, 'manage webhooks');
@@ -41,6 +52,8 @@ webhooksRouter.patch('/webhooks/:id', async (c) => {
 webhooksRouter.delete('/webhooks/:id', async (c) => {
   const forbidden = await requireNonGuest(c, 'manage webhooks');
   if (forbidden) return c.json({ error: forbidden }, 403);
-  await webhookRepo.delete(c.req.param('id'));
+  const id = c.req.param('id');
+  await webhookRepo.delete(id);
+  await webhookDeliveryRepo.deleteForWebhook(id);
   return c.json({ ok: true });
 });

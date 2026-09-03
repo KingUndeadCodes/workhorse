@@ -199,6 +199,12 @@
     "enabledLabel": "enabled",
     "webhookUrlPlaceholder": "https://your-service.example/webhook",
     "addWebhookButton": "Add webhook",
+    "webhookHistoryButton": "Delivery history for {url}",
+    "webhookDeliveriesEmpty": "No deliveries yet",
+    "webhookDeliveriesLoading": "Loading…",
+    "webhookDeliveriesLoadMore": "Load more",
+    "webhookStatusSuccess": "Success",
+    "webhookStatusFailure": "Failed",
     "failedDeleteCategory": "Failed to delete category",
     "accessibility": {
       "keyboardNavLabel": "Keyboard navigation",

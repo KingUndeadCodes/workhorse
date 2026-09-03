@@ -201,6 +201,12 @@
     "enabledLabel": "увімкнено",
     "webhookUrlPlaceholder": "https://your-service.example/webhook",
     "addWebhookButton": "Додати вебхук",
+    "webhookHistoryButton": "Історія доставки для {url}",
+    "webhookDeliveriesEmpty": "Поки що немає доставок",
+    "webhookDeliveriesLoading": "Завантаження…",
+    "webhookDeliveriesLoadMore": "Завантажити ще",
+    "webhookStatusSuccess": "Успішно",
+    "webhookStatusFailure": "Помилка",
     "failedDeleteCategory": "Не вдалося видалити категорію",
     "accessibility": {
       "keyboardNavLabel": "Навігація з клавіатури",

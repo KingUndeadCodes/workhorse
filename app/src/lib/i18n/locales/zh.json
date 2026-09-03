@@ -198,6 +198,12 @@
     "enabledLabel": "已启用",
     "webhookUrlPlaceholder": "https://your-service.example/webhook",
     "addWebhookButton": "添加 Webhook",
+    "webhookHistoryButton": "{url} 的投递记录",
+    "webhookDeliveriesEmpty": "暂无投递记录",
+    "webhookDeliveriesLoading": "加载中…",
+    "webhookDeliveriesLoadMore": "加载更多",
+    "webhookStatusSuccess": "成功",
+    "webhookStatusFailure": "失败",
     "failedDeleteCategory": "删除类别失败",
     "accessibility": {
       "keyboardNavLabel": "键盘导航",

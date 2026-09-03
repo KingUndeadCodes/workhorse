@@ -14,6 +14,7 @@ import type {
   Issue,
   Notification,
   NotificationKind,
+  WebhookSubscription,
 } from '../domain';
 import { parseMentionedUserIds } from '../domain';
 import { appendEvent as appendEventToLog, getEventById } from '../eventLog';
@@ -26,6 +27,7 @@ import type { IssueRepository } from '../repositories/IssueRepository';
 import type { NotificationRepository } from '../repositories/NotificationRepository';
 import type { ProjectRepository } from '../repositories/ProjectRepository';
 import type { UserRepository } from '../repositories/UserRepository';
+import type { WebhookDeliveryRepository } from '../repositories/WebhookDeliveryRepository';
 import type { WebhookRepository } from '../repositories/WebhookRepository';
 import type { WorkflowRepository } from '../repositories/WorkflowRepository';
 import type { WorkspaceRepository } from '../repositories/WorkspaceRepository';
@@ -205,6 +207,7 @@ export class EventEngine {
     private readonly gitRepoLinks: GitRepoLinkRepository,
     private readonly gitProviders: GitProviderRegistry,
     private readonly notifications: NotificationRepository,
+    private readonly webhookDeliveries: WebhookDeliveryRepository,
   ) {}
 
   /** One chained promise per agent — see {@link withAgentLock}. */
@@ -851,20 +854,45 @@ export class EventEngine {
     }
   }
 
-  /** Fire-and-forget delivery to every enabled, matching webhook — failures are logged, never thrown. */
+  /** Fire-and-forget delivery to every enabled, matching webhook — see {@link deliverToWebhook}. */
   private async dispatchWebhooks(event: EventEnvelope): Promise<void> {
     for (const hook of await this.webhooks.list()) {
       if (!hook.enabled) continue;
       if (!matchesFilter(hook.eventFilter, event.payload.type)) continue;
-      const payload = JSON.stringify(event);
-      const signature = createHmac('sha256', hook.secret).update(payload).digest('hex');
-      fetch(hook.targetUrl, {
+      void this.deliverToWebhook(hook, event);
+    }
+  }
+
+  /**
+   * One delivery attempt end-to-end: sends the request, then always records the outcome
+   * (success, non-2xx, network error, or timeout) as a {@link WebhookDelivery} row. Never
+   * awaited by `dispatchWebhooks` — a slow or unreachable target must not add latency to the
+   * request that triggered the event, the same fire-and-forget guarantee this had before
+   * delivery history existed. A 10s timeout bounds how long a single attempt can hang, since
+   * nothing here blocks on it anymore.
+   */
+  private async deliverToWebhook(hook: WebhookSubscription, event: EventEnvelope): Promise<void> {
+    const payload = JSON.stringify(event);
+    const signature = createHmac('sha256', hook.secret).update(payload).digest('hex');
+    const base = {
+      id: `whd_${randomUUID()}`,
+      webhookId: hook.id,
+      eventId: event.id,
+      eventType: event.payload.type,
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      const res = await fetch(hook.targetUrl, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-anvil-signature': signature },
         body: payload,
-      }).catch((err) => {
-        console.error(`Webhook delivery to ${hook.targetUrl} failed:`, err instanceof Error ? err.message : err);
+        signal: AbortSignal.timeout(10_000),
       });
+      await this.webhookDeliveries.create({ ...base, status: res.ok ? 'success' : 'failure', statusCode: res.status });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`Webhook delivery to ${hook.targetUrl} failed:`, message);
+      await this.webhookDeliveries.create({ ...base, status: 'failure', error: message });
     }
   }
 }

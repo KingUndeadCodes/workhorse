@@ -30,3 +30,4 @@ export type WorklogId = string;
 export type GitRepoLinkId = string;
 export type BranchId = string;
 export type NotificationId = string;
+export type WebhookDeliveryId = string;

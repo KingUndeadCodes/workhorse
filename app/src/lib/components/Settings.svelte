@@ -22,8 +22,8 @@
     { id: 'system', labelKey: 'settings.appearance.themeSystem' },
   ];
   import * as api from '../api';
-  import { describeAutomationAction, splitHumansAndAgents } from '../util';
-  import type { AutomationAction, AutomationCondition, EventType, FilterOp } from '$domain';
+  import { describeAutomationAction, formatRelativeDate, splitHumansAndAgents } from '../util';
+  import type { AutomationAction, AutomationCondition, EventType, FilterOp, WebhookDelivery } from '$domain';
 
   const tabs = ['Appearance', 'Accessibility', 'Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Webhooks'] as const;
   const TAB_LABEL_KEYS: Record<(typeof tabs)[number], string> = {
@@ -222,6 +222,36 @@
   async function removeWebhook(id: string) {
     await api.deleteWebhook(id);
     webhookSubscriptions.update((l) => l.filter((x) => x.id !== id));
+    if (expandedWebhookId === id) expandedWebhookId = null;
+    const { [id]: _removed, ...rest } = deliveriesByWebhook;
+    deliveriesByWebhook = rest;
+  }
+
+  // Deliveries are unbounded over time (unlike webhookSubscriptions, they're not part of
+  // bootstrap) — fetched lazily on first expand and cached per webhook, same reasoning as
+  // NotificationBell's own lazy panel fetch.
+  let expandedWebhookId: string | null = null;
+  let deliveriesByWebhook: Record<string, { deliveries: WebhookDelivery[]; hasMore: boolean }> = {};
+  let deliveriesLoading: Record<string, boolean> = {};
+  async function toggleDeliveries(id: string) {
+    if (expandedWebhookId === id) {
+      expandedWebhookId = null;
+      return;
+    }
+    expandedWebhookId = id;
+    if (deliveriesByWebhook[id]) return;
+    deliveriesLoading = { ...deliveriesLoading, [id]: true };
+    deliveriesByWebhook = { ...deliveriesByWebhook, [id]: await api.fetchWebhookDeliveries(id) };
+    deliveriesLoading = { ...deliveriesLoading, [id]: false };
+  }
+  async function loadMoreDeliveries(id: string) {
+    const current = deliveriesByWebhook[id];
+    if (!current) return;
+    const more = await api.fetchWebhookDeliveries(id, 20, current.deliveries.length);
+    deliveriesByWebhook = { ...deliveriesByWebhook, [id]: { deliveries: [...current.deliveries, ...more.deliveries], hasMore: more.hasMore } };
+  }
+  function deliveryStatusLabel(status: WebhookDelivery['status']): string {
+    return status === 'success' ? $t('settings.webhookStatusSuccess') : $t('settings.webhookStatusFailure');
   }
 </script>
 
@@ -440,10 +470,43 @@
     {:else if activeTab === 'Webhooks'}
       <div class="list">
         {#each $webhookSubscriptions as hook (hook.id)}
-          <div class="row">
-            <span class="row-name">{hook.targetUrl}</span>
-            <label class="toggle"><input type="checkbox" checked={hook.enabled} on:change={(e) => toggleWebhook(hook.id, (e.target as HTMLInputElement).checked)} />{$t('settings.enabledLabel')}</label>
-            <button class="icon-btn" aria-label={$t('common.deleteNamed', { name: hook.targetUrl })} on:click={() => removeWebhook(hook.id)}><Icon name="trash" size={13} /></button>
+          <div class="webhook-item">
+            <div class="row">
+              <span class="row-name">{hook.targetUrl}</span>
+              <label class="toggle"><input type="checkbox" checked={hook.enabled} on:change={(e) => toggleWebhook(hook.id, (e.target as HTMLInputElement).checked)} />{$t('settings.enabledLabel')}</label>
+              <div class="row-actions">
+                <button
+                  class="icon-btn history-btn"
+                  class:active={expandedWebhookId === hook.id}
+                  aria-label={$t('settings.webhookHistoryButton', { url: hook.targetUrl })}
+                  aria-expanded={expandedWebhookId === hook.id}
+                  on:click={() => toggleDeliveries(hook.id)}
+                ><Icon name="clock" size={13} /></button>
+                <button class="icon-btn" aria-label={$t('common.deleteNamed', { name: hook.targetUrl })} on:click={() => removeWebhook(hook.id)}><Icon name="trash" size={13} /></button>
+              </div>
+            </div>
+            {#if expandedWebhookId === hook.id}
+              <div class="deliveries">
+                {#if deliveriesLoading[hook.id]}
+                  <p class="no-activity">{$t('settings.webhookDeliveriesLoading')}</p>
+                {:else if !deliveriesByWebhook[hook.id]?.deliveries.length}
+                  <p class="no-activity">{$t('settings.webhookDeliveriesEmpty')}</p>
+                {:else}
+                  <div class="run-list">
+                    {#each deliveriesByWebhook[hook.id].deliveries as delivery (delivery.id)}
+                      <div class="run-row">
+                        <span class="run-status status-{delivery.status}">{deliveryStatusLabel(delivery.status)}</span>
+                        <span class="run-summary">{delivery.eventType}{delivery.statusCode !== undefined ? ` · ${delivery.statusCode}` : ''}{delivery.error ? ` · ${delivery.error}` : ''}</span>
+                        <span class="run-time">{formatRelativeDate(delivery.createdAt, $t, $tn, $locale)}</span>
+                      </div>
+                    {/each}
+                  </div>
+                  {#if deliveriesByWebhook[hook.id].hasMore}
+                    <button type="button" class="load-more-btn" on:click={() => loadMoreDeliveries(hook.id)}>{$t('settings.webhookDeliveriesLoadMore')}</button>
+                  {/if}
+                {/if}
+              </div>
+            {/if}
           </div>
         {/each}
       </div>
@@ -567,6 +630,25 @@
   }
   .icon-btn { color: var(--text-3); padding: 4px; border-radius: 6px; margin-left: auto; }
   .icon-btn:hover { background: var(--surface); color: var(--critical); }
+  .row-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; }
+  .row-actions .icon-btn { margin-left: 0; }
+  .history-btn:hover { background: var(--surface); color: var(--text); }
+  .history-btn.active { background: var(--surface); color: var(--accent-strong); }
+  .webhook-item { display: flex; flex-direction: column; }
+  .deliveries { padding: 2px 10px 10px; }
+  .run-list { display: flex; flex-direction: column; gap: 4px; }
+  .run-row { display: flex; align-items: center; gap: 10px; font-size: 12px; padding: 5px 0; }
+  .run-status {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+    border-radius: 5px; padding: 2px 7px; flex: 0 0 auto;
+  }
+  .run-status.status-success { color: var(--success); background: var(--success-soft); }
+  .run-status.status-failure { color: var(--critical); background: var(--critical-soft); }
+  .run-summary { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .run-time { font-size: 11px; color: var(--text-3); white-space: nowrap; flex: 0 0 auto; }
+  .no-activity { font-size: 12px; color: var(--text-3); padding: 6px 10px; margin: 0; }
+  .load-more-btn { font-size: 11.5px; font-weight: 600; color: var(--accent-strong); padding: 6px 10px; border-radius: 6px; }
+  .load-more-btn:hover { background: var(--surface); }
   .text-btn { font-size: 12px; font-weight: 600; color: var(--accent-strong); }
   .error { color: var(--critical); font-size: 12px; margin: 0 0 8px; }
   .rule-detail { font-size: 12px; color: var(--text-2); margin: 0; }

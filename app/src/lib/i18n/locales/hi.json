@@ -199,6 +199,12 @@
     "enabledLabel": "सक्षम",
     "webhookUrlPlaceholder": "https://your-service.example/webhook",
     "addWebhookButton": "वेबहुक जोड़ें",
+    "webhookHistoryButton": "{url} के लिए डिलीवरी इतिहास",
+    "webhookDeliveriesEmpty": "अभी तक कोई डिलीवरी नहीं",
+    "webhookDeliveriesLoading": "लोड हो रहा है…",
+    "webhookDeliveriesLoadMore": "और लोड करें",
+    "webhookStatusSuccess": "सफल",
+    "webhookStatusFailure": "विफल",
     "failedDeleteCategory": "श्रेणी हटाने में विफल",
     "accessibility": {
       "keyboardNavLabel": "कीबोर्ड नेविगेशन",
