@@ -15,7 +15,7 @@ Single workspace, event-driven, auditable. No third-party service integrations.
 
 Data is stored as two separate append-only-friendly SQLite files: `state.db` (the read model /
 source of truth for entities) and `events.db` (a durable, monotonically-sequenced event log other
-subsystems — automations, agents, webhooks — react to). See
+subsystems — automations, agents, webhooks, in-app notifications — react to). See
 [`docs/backend-architecture.md`](docs/backend-architecture.md) for the full architecture writeup.
 
 ## Getting started
