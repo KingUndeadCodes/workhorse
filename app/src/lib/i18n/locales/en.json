@@ -47,11 +47,17 @@
     "logOut": "Log out"
   },
   "sidebar": {
+    "myIssuesLabel": "My Issues",
     "newProjectPlaceholder": "Project name",
     "newProjectKeyPlaceholder": "Key (e.g. MOB)",
     "newProjectButton": "New Project",
     "projectsLabel": "Projects",
     "failedCreateProject": "Failed to create project"
+  },
+  "myIssues": {
+    "title": "My Issues",
+    "loading": "Loading…",
+    "empty": "No open issues assigned to you"
   },
   "mobileNav": {
     "newTab": "New",

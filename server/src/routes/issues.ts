@@ -25,6 +25,20 @@ function isValidStoryPoints(value: unknown): boolean {
   return value === undefined || value === null || (STORY_POINT_VALUES as readonly number[]).includes(value as number);
 }
 
+/** GET /api/issues/assigned-to-me — every open (non-done-category) issue assigned to the caller, across every project. */
+issuesRouter.get('/issues/assigned-to-me', async (c) => {
+  const userId = c.get('user').id;
+  const [allIssues, workflow, categories] = await Promise.all([
+    issueRepo.listAll(), workflowRepo.getWorkflow(), workflowRepo.listStatusCategories(),
+  ]);
+  const doneCategoryIds = new Set(categories.filter((cat) => cat.type === 'done').map((cat) => cat.id));
+  const doneStatusIds = new Set(workflow.statuses.filter((s) => doneCategoryIds.has(s.categoryId)).map((s) => s.id));
+  const mine = allIssues
+    .filter((issue) => issue.assigneeIds.includes(userId) && !doneStatusIds.has(issue.statusId))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return c.json(mine);
+});
+
 /**
  * POST /api/issues — creates an issue.
  * Body: `{ title, issueTypeId, ...any other Issue field }`. The actor/reporter is the

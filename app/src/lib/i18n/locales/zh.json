@@ -46,6 +46,7 @@
     "logOut": "退出登录"
   },
   "sidebar": {
+    "myIssuesLabel": "我的问题",
     "newProjectPlaceholder": "项目名称",
     "newProjectKeyPlaceholder": "标识（例如 MOB）",
     "newProjectButton": "新建项目",
@@ -562,5 +563,10 @@
       "commented": "{actor} 评论了 {issue}",
       "mentioned": "{actor} 在 {issue} 中提到了你"
     }
+  },
+  "myIssues": {
+    "title": "我的问题",
+    "loading": "加载中…",
+    "empty": "没有分配给你的未完成问题"
   }
 }

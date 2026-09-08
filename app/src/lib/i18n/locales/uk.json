@@ -49,6 +49,7 @@
     "logOut": "Вийти"
   },
   "sidebar": {
+    "myIssuesLabel": "Мої задачі",
     "newProjectPlaceholder": "Назва проєкту",
     "newProjectKeyPlaceholder": "Ключ (наприклад, MOB)",
     "newProjectButton": "Новий проєкт",
@@ -586,5 +587,10 @@
       "commented": "{actor} прокоментував(-ла) {issue}",
       "mentioned": "{actor} згадав(-ла) вас у {issue}"
     }
+  },
+  "myIssues": {
+    "title": "Мої задачі",
+    "loading": "Завантаження…",
+    "empty": "У вас немає відкритих призначених задач"
   }
 }

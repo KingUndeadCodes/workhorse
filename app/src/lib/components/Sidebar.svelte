@@ -63,6 +63,9 @@
   </button>
 
   <nav class="nav">
+    <button type="button" class="nav-item" class:active={$currentView === 'myIssues'} on:click={() => { $currentView = 'myIssues'; $selectedIssueId = null; }}>
+      <Icon name="task" />{$t('sidebar.myIssuesLabel')}
+    </button>
     {#each navItems as item}
       <button class="nav-item" class:active={item.view === $currentView} on:click={() => goToView(item.view)}>
         <Icon name={item.icon} />{$t(item.labelKey)}

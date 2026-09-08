@@ -46,6 +46,7 @@
     "logOut": "ログアウト"
   },
   "sidebar": {
+    "myIssuesLabel": "自分の課題",
     "newProjectPlaceholder": "プロジェクト名",
     "newProjectKeyPlaceholder": "キー（例: MOB）",
     "newProjectButton": "新規プロジェクト",
@@ -562,5 +563,10 @@
       "commented": "{actor} さんが {issue} にコメントしました",
       "mentioned": "{actor} さんが {issue} であなたにメンションしました"
     }
+  },
+  "myIssues": {
+    "title": "自分の課題",
+    "loading": "読み込み中…",
+    "empty": "割り当てられた未解決の課題はありません"
   }
 }

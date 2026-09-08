@@ -69,7 +69,7 @@ export const loaded = writable(false);
 export const loadError = writable<string | null>(null);
 
 /** Which top-level screen is showing: the board, sprint planning, admin settings, or the workspace view. */
-export const currentView = writable<'board' | 'backlog' | 'settings' | 'projectSettings' | 'workspace' | 'stats'>('board');
+export const currentView = writable<'board' | 'backlog' | 'settings' | 'projectSettings' | 'workspace' | 'stats' | 'myIssues'>('board');
 
 /**
  * Settings tab to land on next time Settings mounts — set by the TopBar "New…" menu (e.g.

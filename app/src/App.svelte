@@ -8,6 +8,7 @@
   import Settings from './lib/components/Settings.svelte';
   import ProjectSettings from './lib/components/ProjectSettings.svelte';
   import WorkspaceView from './lib/components/WorkspaceView.svelte';
+  import MyIssuesView from './lib/components/MyIssuesView.svelte';
   import Stats from './lib/components/Stats.svelte';
   import IssueDrawer from './lib/components/IssueDrawer.svelte';
   import Login from './lib/components/Login.svelte';
@@ -89,6 +90,8 @@
         <Backlog />
       {:else if $currentView === 'workspace'}
         <WorkspaceView />
+      {:else if $currentView === 'myIssues'}
+        <MyIssuesView />
       {:else if $currentView === 'projectSettings'}
         <ProjectSettings />
       {:else if $currentView === 'stats'}

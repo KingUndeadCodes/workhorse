@@ -93,7 +93,7 @@
     }
   }
 
-  function goTo(view: 'settings' | 'projectSettings' | 'workspace' | 'stats') {
+  function goTo(view: 'settings' | 'projectSettings' | 'workspace' | 'stats' | 'myIssues') {
     showMore = false;
     $currentView = view;
     $selectedIssueId = null;
@@ -131,7 +131,7 @@
   <button
     type="button"
     class="nav-btn"
-    class:active={showMore || $currentView === 'settings' || $currentView === 'projectSettings' || $currentView === 'workspace' || $currentView === 'stats'}
+    class:active={showMore || $currentView === 'settings' || $currentView === 'projectSettings' || $currentView === 'workspace' || $currentView === 'stats' || $currentView === 'myIssues'}
     on:click={() => (showMore = true)}
   >
     <Icon name="gear" size={19} />
@@ -209,6 +209,10 @@
     </div>
   {/if}
   <div class="sheet-list">
+    <button type="button" class="sheet-row" on:click={() => goTo('myIssues')}>
+      <Icon name="task" size={15} />
+      <span class="sheet-row-label">{$t('sidebar.myIssuesLabel')}</span>
+    </button>
     <button type="button" class="sheet-row" on:click={() => goTo('workspace')}>
       <Icon name="bars" size={15} />
       <span class="sheet-row-label">{$workspace?.name ?? ''} · {$tn('common.members', memberCount)}</span>

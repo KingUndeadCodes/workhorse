@@ -172,6 +172,11 @@ export function fetchStats(): Promise<WorkspaceStats> {
   return get<WorkspaceStats>('/stats');
 }
 
+/** Every open issue assigned to the caller, across every project — powers the "My Issues" view. */
+export function fetchAssignedToMe(): Promise<Issue[]> {
+  return get<Issue[]>('/issues/assigned-to-me');
+}
+
 // ---- Issues -----------------------------------------------------------------
 
 export function createIssue(fields: Partial<Issue> & { title: string; issueTypeId: string }): Promise<{ issue: Issue; event: EventEnvelope }> {

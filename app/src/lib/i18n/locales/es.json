@@ -47,6 +47,7 @@
     "logOut": "Cerrar sesión"
   },
   "sidebar": {
+    "myIssuesLabel": "Mis incidencias",
     "newProjectPlaceholder": "Nombre del proyecto",
     "newProjectKeyPlaceholder": "Clave (p. ej., MOB)",
     "newProjectButton": "Nuevo proyecto",
@@ -570,5 +571,10 @@
       "commented": "{actor} comentó en {issue}",
       "mentioned": "{actor} te mencionó en {issue}"
     }
+  },
+  "myIssues": {
+    "title": "Mis incidencias",
+    "loading": "Cargando…",
+    "empty": "No tienes incidencias abiertas asignadas"
   }
 }

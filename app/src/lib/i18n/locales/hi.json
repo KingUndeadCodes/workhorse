@@ -47,6 +47,7 @@
     "logOut": "लॉग आउट"
   },
   "sidebar": {
+    "myIssuesLabel": "मेरे इश्यू",
     "newProjectPlaceholder": "प्रोजेक्ट का नाम",
     "newProjectKeyPlaceholder": "की (जैसे, MOB)",
     "newProjectButton": "नया प्रोजेक्ट",
@@ -570,5 +571,10 @@
       "commented": "{actor} ने {issue} पर टिप्पणी की",
       "mentioned": "{actor} ने आपको {issue} में मेंशन किया"
     }
+  },
+  "myIssues": {
+    "title": "मेरे इश्यू",
+    "loading": "लोड हो रहा है…",
+    "empty": "आपको कोई खुला इश्यू नहीं सौंपा गया है"
   }
 }
