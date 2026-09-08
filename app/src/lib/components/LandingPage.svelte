@@ -76,6 +76,10 @@
       <span class="footer-sep" aria-hidden="true">·</span>
       <button type="button" class="footer-link" on:click={onAccessibility}>Accessibility Statement</button>
     </div>
+    <a class="footer-link github-link" href="https://github.com/KingUndeadCodes/workhorse" target="_blank" rel="noopener noreferrer">
+      <img class="github-icon" src="/github.svg" alt="" width="22" height="22" />
+      GitHub
+    </a>
   </footer>
 </div>
 
@@ -223,9 +227,18 @@
   .copyright { font-size: 12px; color: var(--lp-text-3); margin: 0; }
   .footer-links { display: flex; align-items: center; gap: 8px; }
   .footer-link {
-    background: none; border: none; color: var(--lp-text-3); font-size: 12px; cursor: pointer; padding: 4px;
+    display: inline-flex; align-items: center; gap: 5px; background: none; border: none;
+    color: var(--lp-text-3); font-size: 12px; text-decoration: none; cursor: pointer; padding: 4px;
   }
   .footer-link:hover { color: var(--lp-accent); }
+  .github-link { gap: 7px; font-size: 15px; font-weight: 600; color: var(--lp-text-2); }
+  /* github.svg is a fixed black fill, not currentColor — invisible-ish against the dark-mode
+     footer otherwise, so it's inverted the same way this page already branches every other
+     color on prefers-color-scheme (see the :root-level custom properties above). */
+  .github-icon { display: block; }
+  @media (prefers-color-scheme: dark) {
+    .github-icon { filter: invert(1); }
+  }
   .footer-sep { color: var(--lp-text-3); font-size: 12px; }
 
   @media (max-width: 700px) {
