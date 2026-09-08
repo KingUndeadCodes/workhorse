@@ -217,8 +217,8 @@
        live in Backlog/Settings/Project settings, all reachable from MobileNav's More sheet, so
        nothing is lost by dropping the second, redundant "+" button here. */
     .new-menu-wrap { display: none; }
-    .avatar-btn { padding: 8px; margin: -8px; }
-    .dropdown { min-width: 200px; padding: 8px; }
-    .dropdown-item { font-size: 14px; padding: 11px 12px; }
+    /* MobileNav's own "More" sheet already has Account settings and Log out rows — without
+       this, there were two ways to do both: this dropdown, and that sheet. */
+    .user-menu-wrap { display: none; }
   }
 </style>
