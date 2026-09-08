@@ -124,8 +124,12 @@
 </div>
 
 <style>
-  .mobile-board { flex: 1; overflow-y: auto; padding: 12px 12px 24px; display: flex; flex-direction: column; gap: 4px; }
+  /* Same reason as Board.svelte's .board-wrap: padding-top here would leave an unclipped strip
+     above every stuck .status-head for cards to paint into. The 12px moves to the first section,
+     where it scrolls away instead of sitting permanently above the sticky heads. */
+  .mobile-board { flex: 1; overflow-y: auto; padding: 0 12px 24px; display: flex; flex-direction: column; gap: 4px; }
   .status-section { margin-bottom: 10px; }
+  .status-section:first-child { margin-top: 12px; }
   .status-head {
     display: flex; align-items: center; gap: 8px; padding: 8px 4px;
     position: sticky; top: 0; background: var(--bg); z-index: 5;

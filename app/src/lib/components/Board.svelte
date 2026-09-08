@@ -362,11 +362,20 @@
 </div>
 
 <style>
-  .board-wrap { flex: 1; overflow: auto; padding: 16px 20px 28px; min-width: 0; }
+  /* No top padding here on purpose: a sticky child sticks to the scroller's *content* box, so
+     any padding-top leaves an unclipped strip above .board-head that scrolled cards paint into
+     — you'd see a sliver of a card's key row floating above the column headers. The 16px lives
+     on .board-head instead, so the header's own opaque background covers that strip. (The
+     mobile rule below re-adds wrap padding, which is fine there: .board-head is hidden.) */
+  .board-wrap { flex: 1; overflow: auto; padding: 0 20px 28px; min-width: 0; }
+  /* Carries the top spacing the wrap no longer has (still scrolls away with the hint, as before).
+     Its 12px bottom margin moves into .board-head's padding instead, so that gap survives when
+     the header is stuck rather than collapsing against whatever scrolls beneath it. */
+  .board-wrap > :global(.keyboard-nav-hint) { margin: 16px 0 0; }
   .board-inner { min-width: 880px; }
   .board-head {
     display: grid; grid-template-columns: repeat(4, minmax(200px, 1fr)); gap: 14px;
-    position: sticky; top: 0; background: var(--bg); z-index: 5; padding-bottom: 10px;
+    position: sticky; top: 0; background: var(--bg); z-index: 5; padding: 12px 0 10px;
   }
   .col-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 6px; }
   .col-head-title { display: flex; align-items: center; gap: 7px; }
