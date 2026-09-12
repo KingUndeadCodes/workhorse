@@ -8,6 +8,17 @@ export const workspaceRouter = new Hono<{ Variables: AuthVariables }>();
 
 const ROLES: WorkspaceRole[] = ['owner', 'admin', 'member', 'guest'];
 
+// Serializes the "read current owners, then write a role change" below — same chained-promise
+// approach as IssueRepository.withIssueLock/EventEngine.withAgentLock — so two concurrent
+// demotions of different owners can't both pass the "at least one owner left" check before
+// either write commits. Single workspace, so one lock (no per-id keying) is enough.
+let memberRoleLock: Promise<unknown> = Promise.resolve();
+function withMemberRoleLock<T>(fn: () => Promise<T>): Promise<T> {
+  const next = memberRoleLock.then(fn, fn);
+  memberRoleLock = next.catch(() => undefined);
+  return next;
+}
+
 workspaceRouter.get('/workspace-members', async (c) => c.json(await workspaceRepo.listMembers()));
 
 /** PATCH /api/workspace-members/:userId — change a member's role. Only owners/admins may do this. */
@@ -28,13 +39,15 @@ workspaceRouter.patch('/workspace-members/:userId', async (c) => {
   if (body.role === 'owner' && caller.role !== 'owner') {
     return c.json({ error: 'Only an owner can grant ownership' }, 403);
   }
-  // Never let the workspace end up with zero owners — there'd be no path back, since signup
-  // only grants 'owner' when the workspace has no members yet.
-  if (target.role === 'owner' && body.role !== 'owner') {
-    const owners = (await workspaceRepo.listMembers()).filter((m) => m.role === 'owner');
-    if (owners.length <= 1) return c.json({ error: "Can't remove the workspace's last owner" }, 400);
-  }
+  return withMemberRoleLock(async () => {
+    // Never let the workspace end up with zero owners — there'd be no path back, since signup
+    // only grants 'owner' when the workspace has no members yet.
+    if (target.role === 'owner' && body.role !== 'owner') {
+      const owners = (await workspaceRepo.listMembers()).filter((m) => m.role === 'owner');
+      if (owners.length <= 1) return c.json({ error: "Can't remove the workspace's last owner" }, 400);
+    }
 
-  const workspace = await workspaceRepo.getWorkspace();
-  return c.json(await workspaceRepo.updateMemberRole(workspace.id, targetId, body.role));
+    const workspace = await workspaceRepo.getWorkspace();
+    return c.json(await workspaceRepo.updateMemberRole(workspace.id, targetId, body.role));
+  });
 });

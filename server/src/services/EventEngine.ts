@@ -279,9 +279,11 @@ export class EventEngine {
   async triggerAgentManually(agentUserId: string, triggeredBy: string, issueId?: string): Promise<{ event: EventEnvelope; run?: AgentRun }> {
     const agent = await this.agents.get(agentUserId);
     if (!agent) throw new Error('Agent not found');
+    if (!agent.enabled) throw new Error('Agent is disabled');
 
     const issue = issueId ? await this.issues.get(issueId) : undefined;
-    if (issueId && issue && !issue.agentAssignments?.includes(agentUserId)) {
+    if (issueId && !issue) throw new Error('Issue not found');
+    if (issue && !issue.agentAssignments?.includes(agentUserId)) {
       throw new Error('Attach this agent to the issue before triggering it');
     }
 
@@ -322,6 +324,9 @@ export class EventEngine {
         // just marking this run failed.
         await this.applyAction(run.proposedActions[i], issue, actor, triggeringEvent);
         run.appliedActionIndexes.push(i);
+        // Re-fetch so the next action sees this one's effect (e.g. a second assignTo builds its
+        // toUserIds off the updated assigneeIds) instead of the stale pre-run snapshot.
+        issue = (await this.issues.get(issue.id)) ?? issue;
       }
     } catch (err) {
       run.status = 'failed';
@@ -585,6 +590,7 @@ export class EventEngine {
     if (!issue) return;
     for (const rule of await this.automations.list()) {
       if (!rule.enabled) continue;
+      if (rule.projectId !== null && rule.projectId !== issue.projectId) continue;
       if (!matchesFilter(rule.eventFilter, event.payload.type)) continue;
       if (!rule.conditions.every((c) => evaluateCondition(c, issue))) continue;
 

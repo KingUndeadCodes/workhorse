@@ -15,8 +15,10 @@ webhooksRouter.get('/webhooks', async (c) => c.json((await webhookRepo.list()).m
 
 /** GET /api/webhooks/:id/deliveries?limit=&offset= — this hook's delivery attempts, most recent first. Unguarded, same as GET /webhooks. */
 webhooksRouter.get('/webhooks/:id/deliveries', async (c) => {
-  const limit = Math.min(Math.max(Number(c.req.query('limit') ?? DEFAULT_DELIVERIES_LIMIT), 1), MAX_DELIVERIES_LIMIT);
-  const offset = Math.max(Number(c.req.query('offset') ?? 0), 0);
+  const parsedLimit = Number(c.req.query('limit'));
+  const limit = Math.min(Math.max(Number.isFinite(parsedLimit) ? parsedLimit : DEFAULT_DELIVERIES_LIMIT, 1), MAX_DELIVERIES_LIMIT);
+  const parsedOffset = Number(c.req.query('offset'));
+  const offset = Math.max(Number.isFinite(parsedOffset) ? parsedOffset : 0, 0);
   const { deliveries, hasMore } = await webhookDeliveryRepo.listForWebhook(c.req.param('id'), limit, offset);
   return c.json({ deliveries, hasMore });
 });

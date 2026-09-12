@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import type { Agent, AgentApprovalPolicy, AgentBudget, AutomationAction, EventType } from '../domain';
-import type { AuthVariables } from '../auth/middleware';
+import { requireNonGuest, type AuthVariables } from '../auth/middleware';
 import { agentRepo, agentRunRepo, agentRuntimes, engine, userRepo, workspaceRepo } from '../container';
 
 /** CRUD for agent definitions, plus manual triggering and run approval — execution lives in {@link EventEngine}. */
@@ -19,6 +19,8 @@ agentsRouter.get('/agent-runtimes', (c) => c.json(agentRuntimes.list().map((r) =
  * direct writes — registering an agent is configuration, not something that happened.
  */
 agentsRouter.post('/agents', async (c) => {
+  const forbidden = await requireNonGuest(c, 'manage agents');
+  if (forbidden) return c.json({ error: forbidden }, 403);
   const body = await c.req.json<{
     name: string;
     description?: string;
@@ -35,7 +37,7 @@ agentsRouter.post('/agents', async (c) => {
   const userId = `u_agent_${randomUUID()}`;
   const slug = body.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const now = new Date().toISOString();
-  await userRepo.createAgentUser(userId, `${slug}@meridian.dev`, body.name.trim(), now);
+  await userRepo.createAgentUser(userId, `${slug}.agent@local`, body.name.trim(), now);
 
   const agent: Agent = {
     userId,
@@ -74,6 +76,8 @@ const AGENT_PATCHABLE_FIELDS = [
 ] as const;
 
 agentsRouter.patch('/agents/:userId', async (c) => {
+  const forbidden = await requireNonGuest(c, 'manage agents');
+  if (forbidden) return c.json({ error: forbidden }, 403);
   const userId = c.req.param('userId');
   const existing = await agentRepo.get(userId);
   if (!existing) return c.json({ error: 'Not found' }, 404);
@@ -109,7 +113,7 @@ agentsRouter.post('/agents/:userId/trigger', async (c) => {
     return c.json(result, 201);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to trigger agent';
-    return c.json({ error: message }, message === 'Agent not found' ? 404 : 400);
+    return c.json({ error: message }, message === 'Agent not found' || message === 'Issue not found' ? 404 : 400);
   }
 });
 

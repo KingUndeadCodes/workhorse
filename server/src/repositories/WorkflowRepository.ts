@@ -9,6 +9,17 @@ import type { StatusCategory, Workflow, WorkflowStatus, WorkflowTransition } fro
 export class WorkflowRepository {
   constructor(private readonly db: Kysely<DB>) {}
 
+  // Serializes deleteStatus's "check no issue uses this status, then delete it" — same
+  // chained-promise approach as IssueRepository.withIssueLock — so two concurrent deletes (or
+  // a delete racing another delete) of the same workflow can't both pass the check before
+  // either write commits. Single workflow, so one lock (no per-id keying) is enough.
+  private statusLock: Promise<unknown> = Promise.resolve();
+  private withStatusLock<T>(fn: () => Promise<T>): Promise<T> {
+    const next = this.statusLock.then(fn, fn);
+    this.statusLock = next.catch(() => undefined);
+    return next;
+  }
+
   async listStatusCategories(): Promise<StatusCategory[]> {
     return (await this.db.selectFrom('status_categories').selectAll().orderBy('sort_order', 'asc').execute()).map(rowToStatusCategory);
   }
@@ -120,30 +131,32 @@ export class WorkflowRepository {
    * that references the status, so the diagram doesn't end up with dangling arrows.
    */
   async deleteStatus(id: string): Promise<{ error?: string }> {
-    const workflow = await this.getWorkflow();
-    const status = workflow.statuses.find((s) => s.id === id);
-    if (!status) return { error: 'Status not found' };
-    const category = (await this.listStatusCategories()).find((c) => c.id === status.categoryId);
-    if (!category || category.type !== 'inProgress') {
-      return { error: `Statuses in the ${category?.type === 'done' ? 'Done' : 'To Do'} category can't be deleted` };
-    }
-    const inUse = await this.db.selectFrom('issues').select('id').where('status_id', '=', id).limit(1).executeTakeFirst();
-    if (inUse) return { error: 'Cannot delete a status that issues are currently using' };
+    return this.withStatusLock(async () => {
+      const workflow = await this.getWorkflow();
+      const status = workflow.statuses.find((s) => s.id === id);
+      if (!status) return { error: 'Status not found' };
+      const category = (await this.listStatusCategories()).find((c) => c.id === status.categoryId);
+      if (!category || category.type !== 'inProgress') {
+        return { error: `Statuses in the ${category?.type === 'done' ? 'Done' : 'To Do'} category can't be deleted` };
+      }
+      const inUse = await this.db.selectFrom('issues').select('id').where('status_id', '=', id).limit(1).executeTakeFirst();
+      if (inUse) return { error: 'Cannot delete a status that issues are currently using' };
 
-    const categoriesById = new Map((await this.listStatusCategories()).map((c) => [c.id, c]));
-    const remainingStatuses = workflow.statuses.filter((s) => s.id !== id);
-    const remainingTransitions = workflow.transitions.filter((t) => t.fromStatusId !== id && t.toStatusId !== id);
-    if (!this.hasPathFromEveryTodoToDone(remainingStatuses, categoriesById, remainingTransitions)) {
-      return { error: 'Deleting this status would remove the only path from To Do to Done' };
-    }
+      const categoriesById = new Map((await this.listStatusCategories()).map((c) => [c.id, c]));
+      const remainingStatuses = workflow.statuses.filter((s) => s.id !== id);
+      const remainingTransitions = workflow.transitions.filter((t) => t.fromStatusId !== id && t.toStatusId !== id);
+      if (!this.hasPathFromEveryTodoToDone(remainingStatuses, categoriesById, remainingTransitions)) {
+        return { error: 'Deleting this status would remove the only path from To Do to Done' };
+      }
 
-    await this.db
-      .deleteFrom('workflow_transitions')
-      .where((eb) => eb.or([eb('from_status_id', '=', id), eb('to_status_id', '=', id)]))
-      .execute();
-    await this.db.deleteFrom('workflow_statuses').where('id', '=', id).execute();
-    persistState();
-    return {};
+      await this.db
+        .deleteFrom('workflow_transitions')
+        .where((eb) => eb.or([eb('from_status_id', '=', id), eb('to_status_id', '=', id)]))
+        .execute();
+      await this.db.deleteFrom('workflow_statuses').where('id', '=', id).execute();
+      persistState();
+      return {};
+    });
   }
 
   async createTransition(name: string, toStatusId: string, fromStatusId?: string): Promise<WorkflowTransition> {

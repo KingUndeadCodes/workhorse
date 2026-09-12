@@ -28,8 +28,10 @@ async function enrichNotification(n: Notification) {
 /** GET /api/notifications?limit=&offset= — the current user's own notifications, most recent first. */
 notificationsRouter.get('/notifications', async (c) => {
   const userId = c.get('user').id;
-  const limit = Math.min(Math.max(Number(c.req.query('limit') ?? DEFAULT_LIMIT), 1), MAX_LIMIT);
-  const offset = Math.max(Number(c.req.query('offset') ?? 0), 0);
+  const parsedLimit = Number(c.req.query('limit'));
+  const limit = Math.min(Math.max(Number.isFinite(parsedLimit) ? parsedLimit : DEFAULT_LIMIT, 1), MAX_LIMIT);
+  const parsedOffset = Number(c.req.query('offset'));
+  const offset = Math.max(Number.isFinite(parsedOffset) ? parsedOffset : 0, 0);
   const { notifications, hasMore } = await notificationRepo.listForUser(userId, limit, offset);
   return c.json({ notifications: await Promise.all(notifications.map(enrichNotification)), hasMore });
 });
