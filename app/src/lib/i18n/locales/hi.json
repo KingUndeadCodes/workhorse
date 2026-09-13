@@ -398,7 +398,34 @@
       }
     },
     "reactsToLabel": "इन पर प्रतिक्रिया देता है",
+    "eventTypes": {
+      "issue": {
+        "created": "इश्यू बनाया गया",
+        "statusChanged": "स्थिति बदली",
+        "resolved": "हल किया गया",
+        "reopened": "फिर से खोला गया",
+        "assigneesChanged": "असाइनीज़ बदले",
+        "priorityChanged": "प्राथमिकता बदली",
+        "labelsChanged": "लेबल बदले",
+        "dueDateChanged": "नियत तारीख बदली",
+        "updated": "कोई भी अपडेट"
+      },
+      "comment": {
+        "created": "नई टिप्पणी",
+        "mentioned": "टिप्पणी में उल्लेख"
+      }
+    },
+    "eventGroupComments": "टिप्पणियाँ",
     "allowedActionsLabel": "अनुमत क्रियाएँ",
+    "actionGroupRepo": "रिपॉज़िटरी",
+    "actionTypes": {
+      "transitionStatus": "स्थिति बदलें",
+      "assignTo": "फिर से असाइन करें",
+      "addComment": "टिप्पणी जोड़ें",
+      "setField": "फ़ील्ड सेट करें",
+      "readRepoFile": "फ़ाइल पढ़ें",
+      "writeRepoFile": "फ़ाइल लिखें"
+    },
     "approvalLabel": "स्वीकृति",
     "autoApplyAll": "सब कुछ अपने आप लागू करें",
     "requireApprovalForAll": "सब कुछ के लिए स्वीकृति चाहिए",
@@ -417,6 +444,8 @@
     "noAgentsYet": "अभी तक कोई एजेंट नहीं है — टिकट के काम को स्वचालित करना शुरू करने के लिए नीचे एक बनाएँ।",
     "approveButton": "स्वीकृत करें",
     "rejectButton": "अस्वीकार करें",
+    "newAgentSectionLabel": "नया एजेंट",
+    "newAgentHint": "एक नया एजेंट कॉन्फ़िगर करें, फिर टिकट के काम को स्वचालित करना शुरू करने के लिए उसे जोड़ें।",
     "addAgentLabel": "एजेंट जोड़ें",
     "addAgentButton": "एजेंट जोड़ें",
     "saveButton": "सहेजें",

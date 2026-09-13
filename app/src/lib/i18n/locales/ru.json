@@ -410,7 +410,34 @@
       }
     },
     "reactsToLabel": "Реагирует на",
+    "eventTypes": {
+      "issue": {
+        "created": "Задача создана",
+        "statusChanged": "Статус изменён",
+        "resolved": "Решена",
+        "reopened": "Переоткрыта",
+        "assigneesChanged": "Исполнители изменены",
+        "priorityChanged": "Приоритет изменён",
+        "labelsChanged": "Метки изменены",
+        "dueDateChanged": "Срок выполнения изменён",
+        "updated": "Любое обновление"
+      },
+      "comment": {
+        "created": "Новый комментарий",
+        "mentioned": "Упоминание в комментарии"
+      }
+    },
+    "eventGroupComments": "Комментарии",
     "allowedActionsLabel": "Разрешённые действия",
+    "actionGroupRepo": "Репозиторий",
+    "actionTypes": {
+      "transitionStatus": "Изменить статус",
+      "assignTo": "Переназначить",
+      "addComment": "Добавить комментарий",
+      "setField": "Установить поле",
+      "readRepoFile": "Прочитать файл",
+      "writeRepoFile": "Записать файл"
+    },
     "approvalLabel": "Подтверждение",
     "autoApplyAll": "Применять всё автоматически",
     "requireApprovalForAll": "Требовать подтверждение для всего",
@@ -429,6 +456,8 @@
     "noAgentsYet": "Пока нет агентов — создайте первого ниже, чтобы начать автоматизировать работу с задачами.",
     "approveButton": "Подтвердить",
     "rejectButton": "Отклонить",
+    "newAgentSectionLabel": "Новый агент",
+    "newAgentHint": "Настройте нового агента и добавьте его, чтобы начать автоматизировать работу с задачами.",
     "addAgentLabel": "Добавить агента",
     "addAgentButton": "Добавить агента",
     "saveButton": "Сохранить",

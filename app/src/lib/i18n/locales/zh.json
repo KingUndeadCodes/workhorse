@@ -392,7 +392,34 @@
       }
     },
     "reactsToLabel": "响应事件",
+    "eventTypes": {
+      "issue": {
+        "created": "事项已创建",
+        "statusChanged": "状态已更改",
+        "resolved": "已解决",
+        "reopened": "已重新打开",
+        "assigneesChanged": "经办人已更改",
+        "priorityChanged": "优先级已更改",
+        "labelsChanged": "标签已更改",
+        "dueDateChanged": "截止日期已更改",
+        "updated": "任何更新"
+      },
+      "comment": {
+        "created": "新评论",
+        "mentioned": "在评论中被提及"
+      }
+    },
+    "eventGroupComments": "评论",
     "allowedActionsLabel": "允许的操作",
+    "actionGroupRepo": "代码仓库",
+    "actionTypes": {
+      "transitionStatus": "更改状态",
+      "assignTo": "重新分配",
+      "addComment": "添加评论",
+      "setField": "设置字段",
+      "readRepoFile": "读取文件",
+      "writeRepoFile": "写入文件"
+    },
     "approvalLabel": "审批",
     "autoApplyAll": "自动应用所有操作",
     "requireApprovalForAll": "所有操作都需要审批",
@@ -411,6 +438,8 @@
     "noAgentsYet": "暂无代理 — 在下方创建一个，开始自动化工单处理。",
     "approveButton": "批准",
     "rejectButton": "拒绝",
+    "newAgentSectionLabel": "新建代理",
+    "newAgentHint": "配置一个新代理，然后添加它以开始自动化工单处理。",
     "addAgentLabel": "添加代理",
     "addAgentButton": "添加代理",
     "saveButton": "保存",

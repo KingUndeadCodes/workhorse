@@ -4,6 +4,7 @@
   // validation, just a different initial value and submit handler.
   import type { Agent, AgentApprovalPolicy, AgentBudget, AutomationAction, EventType } from '$domain';
   import { t } from '../i18n';
+  import Icon from './Icon.svelte';
 
   export let initial: {
     name: string;
@@ -31,11 +32,16 @@
     { value: 'project', key: 'project' },
     { value: 'workspace', key: 'workspace' },
   ];
-  const AGENT_ACTION_TYPES: AutomationAction['type'][] = ['transitionStatus', 'assignTo', 'addComment', 'setField', 'readRepoFile', 'writeRepoFile'];
-  const EVENT_TRIGGER_OPTIONS: EventType[] = [
-    'issue.created', 'issue.statusChanged', 'issue.resolved', 'issue.reopened', 'issue.assigneesChanged',
-    'issue.priorityChanged', 'issue.labelsChanged', 'issue.dueDateChanged', 'comment.created', 'comment.mentioned', 'issue.updated',
+  // Split into subgroups purely for layout — "ticket" vs the higher-stakes repo-write actions,
+  // "issue" vs "comment" events — so the chip grids read as organized categories instead of one
+  // undifferentiated wall of checkboxes.
+  const TICKET_ACTION_TYPES: AutomationAction['type'][] = ['transitionStatus', 'assignTo', 'addComment', 'setField'];
+  const REPO_ACTION_TYPES: AutomationAction['type'][] = ['readRepoFile', 'writeRepoFile'];
+  const ISSUE_EVENT_OPTIONS: EventType[] = [
+    'issue.created', 'issue.statusChanged', 'issue.resolved', 'issue.reopened',
+    'issue.assigneesChanged', 'issue.priorityChanged', 'issue.labelsChanged', 'issue.dueDateChanged', 'issue.updated',
   ];
+  const COMMENT_EVENT_OPTIONS: EventType[] = ['comment.created', 'comment.mentioned'];
 
   let name = initial.name;
   let description = initial.description;
@@ -122,21 +128,43 @@
   </label>
 
   <span class="agent-form-label">{$t('agentForm.reactsToLabel')}</span>
-  <div class="check-grid">
-    {#each EVENT_TRIGGER_OPTIONS as eventType}
-      <label class="check-option">
+  <div class="chip-grid">
+    {#each ISSUE_EVENT_OPTIONS as eventType}
+      <label class="chip-option">
         <input type="checkbox" checked={eventFilter.includes(eventType)} on:change={() => (eventFilter = toggleInArray(eventFilter, eventType))} />
-        {eventType}
+        <Icon name="check" size={11} />
+        <span>{$t(`agentForm.eventTypes.${eventType}`)}</span>
+      </label>
+    {/each}
+  </div>
+  <span class="chip-group-label">{$t('agentForm.eventGroupComments')}</span>
+  <div class="chip-grid">
+    {#each COMMENT_EVENT_OPTIONS as eventType}
+      <label class="chip-option">
+        <input type="checkbox" checked={eventFilter.includes(eventType)} on:change={() => (eventFilter = toggleInArray(eventFilter, eventType))} />
+        <Icon name="check" size={11} />
+        <span>{$t(`agentForm.eventTypes.${eventType}`)}</span>
       </label>
     {/each}
   </div>
 
   <span class="agent-form-label">{$t('agentForm.allowedActionsLabel')}</span>
-  <div class="check-grid">
-    {#each AGENT_ACTION_TYPES as type}
-      <label class="check-option">
+  <div class="chip-grid">
+    {#each TICKET_ACTION_TYPES as type}
+      <label class="chip-option">
         <input type="checkbox" checked={allowedActionTypes.includes(type)} on:change={() => (allowedActionTypes = toggleInArray(allowedActionTypes, type))} />
-        {type}
+        <Icon name="check" size={11} />
+        <span>{$t(`agentForm.actionTypes.${type}`)}</span>
+      </label>
+    {/each}
+  </div>
+  <span class="chip-group-label">{$t('agentForm.actionGroupRepo')}</span>
+  <div class="chip-grid">
+    {#each REPO_ACTION_TYPES as type}
+      <label class="chip-option">
+        <input type="checkbox" checked={allowedActionTypes.includes(type)} on:change={() => (allowedActionTypes = toggleInArray(allowedActionTypes, type))} />
+        <Icon name="check" size={11} />
+        <span>{$t(`agentForm.actionTypes.${type}`)}</span>
       </label>
     {/each}
   </div>
@@ -145,22 +173,26 @@
   <div class="approval-choices">
     <label class="radio-option">
       <input type="radio" name="approval-{initial.name}" value="autoApplyAll" checked={approvalMode === 'autoApplyAll'} on:change={() => (approvalMode = 'autoApplyAll')} />
-      {$t('agentForm.autoApplyAll')}
+      <span class="radio-dot" />
+      <span>{$t('agentForm.autoApplyAll')}</span>
     </label>
     <label class="radio-option">
       <input type="radio" name="approval-{initial.name}" value="requireApprovalForAll" checked={approvalMode === 'requireApprovalForAll'} on:change={() => (approvalMode = 'requireApprovalForAll')} />
-      {$t('agentForm.requireApprovalForAll')}
+      <span class="radio-dot" />
+      <span>{$t('agentForm.requireApprovalForAll')}</span>
     </label>
     <label class="radio-option">
       <input type="radio" name="approval-{initial.name}" value="requireApprovalFor" checked={approvalMode === 'requireApprovalFor'} on:change={() => (approvalMode = 'requireApprovalFor')} />
-      {$t('agentForm.requireApprovalFor')}
+      <span class="radio-dot" />
+      <span>{$t('agentForm.requireApprovalFor')}</span>
     </label>
     {#if approvalMode === 'requireApprovalFor'}
-      <div class="check-grid nested">
+      <div class="chip-grid nested">
         {#each allowedActionTypes as type}
-          <label class="check-option">
+          <label class="chip-option">
             <input type="checkbox" checked={requireApprovalActionTypes.includes(type)} on:change={() => (requireApprovalActionTypes = toggleInArray(requireApprovalActionTypes, type))} />
-            {type}
+            <Icon name="check" size={11} />
+            <span>{$t(`agentForm.actionTypes.${type}`)}</span>
           </label>
         {/each}
       </div>
@@ -175,8 +207,9 @@
     <label class="budget-field">{$t('agentForm.maxSpendPerDay')}<input type="number" min="0" step="0.01" placeholder="∞" bind:value={maxSpendPerDay} /></label>
   </div>
 
-  <label class="check-option ignore-self-toggle">
+  <label class="toggle-option ignore-self-toggle">
     <input type="checkbox" bind:checked={ignoreSelfTriggeredEvents} />
+    <span class="toggle-box"><Icon name="check" size={11} /></span>
     {$t('agentForm.ignoreSelfEvents')}
   </label>
 
@@ -203,17 +236,60 @@
     font: inherit; font-size: 12.5px; text-transform: none; font-weight: 400; color: var(--text);
     background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px;
   }
-  .check-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-  .check-grid.nested { margin: 4px 0 0 22px; }
-  .check-option { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text); }
-  .approval-choices { display: flex; flex-direction: column; gap: 6px; }
-  .radio-option { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); }
+  /* Sub-label between two chip-grids of the same field (e.g. "Reacts to"'s issue events vs
+     comment events) — same visual language as .agent-form-label but smaller/unindented, since
+     it's a subdivision of the field above it rather than a new field of its own. */
+  .chip-group-label { font-size: 10px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--text-3); margin: 2px 0 -2px; }
+
+  .chip-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip-grid.nested { margin: 2px 0 0 4px; }
+  /* The `<input>` is stretched to cover the whole chip (invisible but still focusable/toggleable
+     via keyboard) rather than shown as a native checkbox — the checkmark icon is the only visual
+     "checked" indicator, toggled by the sibling-state :has() below. */
+  .chip-option {
+    position: relative; display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-2); font-size: 12px; line-height: 1.2; cursor: pointer; user-select: none;
+    transition: background .12s, border-color .12s, color .12s;
+  }
+  .chip-option:hover { border-color: var(--border-strong); color: var(--text); }
+  .chip-option input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+  .chip-option:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chip-option:has(input:checked) { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-strong); font-weight: 500; }
+  .chip-option :global(svg) { opacity: 0; transform: scale(.6); transition: opacity .12s, transform .12s; color: var(--accent-strong); margin-left: -2px; }
+  .chip-option:has(input:checked) :global(svg) { opacity: 1; transform: scale(1); margin-left: 0; }
+
+  .approval-choices { display: flex; flex-direction: column; gap: 4px; }
+  .radio-option { position: relative; display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text); padding: 3px 0; cursor: pointer; }
+  .radio-option input[type="radio"] { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+  .radio-dot {
+    flex: 0 0 auto; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--border-strong);
+    background: var(--surface); position: relative; transition: border-color .12s;
+  }
+  .radio-dot::after {
+    content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--accent);
+    transform: scale(0); transition: transform .12s;
+  }
+  .radio-option:has(input:checked) .radio-dot { border-color: var(--accent); }
+  .radio-option:has(input:checked) .radio-dot::after { transform: scale(1); }
+  .radio-option:has(input:focus-visible) .radio-dot { outline: 2px solid var(--accent); outline-offset: 2px; }
   .budget-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .budget-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--text-3); }
   .budget-field input {
     font: inherit; font-size: 12.5px; color: var(--text); background: var(--surface); border: 1px solid var(--border);
     border-radius: 7px; padding: 6px 8px;
   }
+  .toggle-option { position: relative; display: flex; align-items: center; gap: 7px; font-size: 12px; cursor: pointer; }
+  .toggle-option input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+  .toggle-box {
+    flex: 0 0 auto; width: 15px; height: 15px; border-radius: 4px; border: 1px solid var(--border-strong);
+    background: var(--surface); display: flex; align-items: center; justify-content: center; color: var(--accent-on);
+    transition: background .12s, border-color .12s;
+  }
+  .toggle-box :global(svg) { opacity: 0; transform: scale(.6); transition: opacity .12s, transform .12s; }
+  .toggle-option:has(input:checked) .toggle-box { background: var(--accent); border-color: var(--accent); }
+  .toggle-option:has(input:checked) .toggle-box :global(svg) { opacity: 1; transform: scale(1); }
+  .toggle-option:has(input:focus-visible) .toggle-box { outline: 2px solid var(--accent); outline-offset: 2px; }
   .ignore-self-toggle { margin-top: 2px; color: var(--text-2); }
   .form-actions { display: flex; gap: 8px; margin-top: 6px; }
   .btn { font-size: 12px; font-weight: 600; padding: 7px 14px; border-radius: 7px; }
@@ -225,9 +301,12 @@
     .agent-form { max-width: none; gap: 12px; }
     .agent-form > input { padding: 10px 12px; font-size: 16px; }
     .agent-form-label select, .agent-form-label input { padding: 10px 12px; font-size: 16px; }
-    .check-grid { gap: 12px 16px; }
-    .check-option, .radio-option { font-size: 13.5px; gap: 8px; }
-    .check-option input[type="checkbox"], .radio-option input[type="radio"] { width: 18px; height: 18px; }
+    .chip-grid { gap: 10px; }
+    .chip-option { padding: 7px 13px; font-size: 13.5px; }
+    .radio-option { font-size: 13.5px; gap: 10px; }
+    .radio-dot { width: 17px; height: 17px; }
+    .toggle-option { font-size: 13.5px; gap: 9px; }
+    .toggle-box { width: 18px; height: 18px; }
     /* Two number-input columns were fine at desktop width; a phone-portrait budget field needs
        its full label visible next to the input, which the 1fr/1fr split didn't leave room for. */
     .budget-grid { grid-template-columns: 1fr; gap: 12px; }

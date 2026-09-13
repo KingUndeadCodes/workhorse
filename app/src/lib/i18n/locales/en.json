@@ -403,7 +403,34 @@
       }
     },
     "reactsToLabel": "Reacts to",
+    "eventTypes": {
+      "issue": {
+        "created": "Issue created",
+        "statusChanged": "Status changed",
+        "resolved": "Resolved",
+        "reopened": "Reopened",
+        "assigneesChanged": "Assignees changed",
+        "priorityChanged": "Priority changed",
+        "labelsChanged": "Labels changed",
+        "dueDateChanged": "Due date changed",
+        "updated": "Any update"
+      },
+      "comment": {
+        "created": "New comment",
+        "mentioned": "Mentioned in comment"
+      }
+    },
+    "eventGroupComments": "Comments",
     "allowedActionsLabel": "Allowed actions",
+    "actionGroupRepo": "Repository",
+    "actionTypes": {
+      "transitionStatus": "Change status",
+      "assignTo": "Reassign",
+      "addComment": "Add comment",
+      "setField": "Set field",
+      "readRepoFile": "Read file",
+      "writeRepoFile": "Write file"
+    },
     "approvalLabel": "Approval",
     "autoApplyAll": "Auto-apply everything",
     "requireApprovalForAll": "Require approval for everything",
@@ -422,6 +449,8 @@
     "noAgentsYet": "No agents yet — create one below to start automating ticket work.",
     "approveButton": "Approve",
     "rejectButton": "Reject",
+    "newAgentSectionLabel": "New agent",
+    "newAgentHint": "Configure a new agent, then add it to start automating ticket work.",
     "addAgentLabel": "Add agent",
     "addAgentButton": "Add agent",
     "saveButton": "Save",

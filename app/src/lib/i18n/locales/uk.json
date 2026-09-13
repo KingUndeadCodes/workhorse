@@ -410,7 +410,34 @@
       }
     },
     "reactsToLabel": "Реагує на",
+    "eventTypes": {
+      "issue": {
+        "created": "Задачу створено",
+        "statusChanged": "Статус змінено",
+        "resolved": "Вирішена",
+        "reopened": "Повторно відкрита",
+        "assigneesChanged": "Виконавців змінено",
+        "priorityChanged": "Пріоритет змінено",
+        "labelsChanged": "Мітки змінено",
+        "dueDateChanged": "Термін виконання змінено",
+        "updated": "Будь-яке оновлення"
+      },
+      "comment": {
+        "created": "Новий коментар",
+        "mentioned": "Згадка в коментарі"
+      }
+    },
+    "eventGroupComments": "Коментарі",
     "allowedActionsLabel": "Дозволені дії",
+    "actionGroupRepo": "Репозиторій",
+    "actionTypes": {
+      "transitionStatus": "Змінити статус",
+      "assignTo": "Перепризначити",
+      "addComment": "Додати коментар",
+      "setField": "Встановити поле",
+      "readRepoFile": "Прочитати файл",
+      "writeRepoFile": "Записати файл"
+    },
     "approvalLabel": "Підтвердження",
     "autoApplyAll": "Застосовувати все автоматично",
     "requireApprovalForAll": "Вимагати підтвердження для всього",
@@ -429,6 +456,8 @@
     "noAgentsYet": "Поки немає агентів — створіть першого нижче, щоб почати автоматизувати роботу із задачами.",
     "approveButton": "Підтвердити",
     "rejectButton": "Відхилити",
+    "newAgentSectionLabel": "Новий агент",
+    "newAgentHint": "Налаштуйте нового агента й додайте його, щоб почати автоматизувати роботу із задачами.",
     "addAgentLabel": "Додати агента",
     "addAgentButton": "Додати агента",
     "saveButton": "Зберегти",

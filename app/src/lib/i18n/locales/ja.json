@@ -392,7 +392,34 @@
       }
     },
     "reactsToLabel": "反応するイベント",
+    "eventTypes": {
+      "issue": {
+        "created": "課題が作成された",
+        "statusChanged": "ステータスが変更された",
+        "resolved": "解決済み",
+        "reopened": "再オープン",
+        "assigneesChanged": "担当者が変更された",
+        "priorityChanged": "優先度が変更された",
+        "labelsChanged": "ラベルが変更された",
+        "dueDateChanged": "期限が変更された",
+        "updated": "その他の更新"
+      },
+      "comment": {
+        "created": "新しいコメント",
+        "mentioned": "コメントで言及"
+      }
+    },
+    "eventGroupComments": "コメント",
     "allowedActionsLabel": "許可されたアクション",
+    "actionGroupRepo": "リポジトリ",
+    "actionTypes": {
+      "transitionStatus": "ステータスを変更",
+      "assignTo": "再割り当て",
+      "addComment": "コメントを追加",
+      "setField": "フィールドを設定",
+      "readRepoFile": "ファイルを読み取る",
+      "writeRepoFile": "ファイルを書き込む"
+    },
     "approvalLabel": "承認",
     "autoApplyAll": "すべて自動的に適用",
     "requireApprovalForAll": "すべてに承認が必要",
@@ -411,6 +438,8 @@
     "noAgentsYet": "まだエージェントがありません — 下で作成して、チケット作業の自動化を始めましょう。",
     "approveButton": "承認",
     "rejectButton": "却下",
+    "newAgentSectionLabel": "新しいエージェント",
+    "newAgentHint": "新しいエージェントを設定し、追加してチケット作業の自動化を始めましょう。",
     "addAgentLabel": "エージェントを追加",
     "addAgentButton": "エージェントを追加",
     "saveButton": "保存",

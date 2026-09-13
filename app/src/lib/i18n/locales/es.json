@@ -398,7 +398,34 @@
       }
     },
     "reactsToLabel": "Reacciona a",
+    "eventTypes": {
+      "issue": {
+        "created": "Tarea creada",
+        "statusChanged": "Estado cambiado",
+        "resolved": "Resuelta",
+        "reopened": "Reabierta",
+        "assigneesChanged": "Asignados cambiados",
+        "priorityChanged": "Prioridad cambiada",
+        "labelsChanged": "Etiquetas cambiadas",
+        "dueDateChanged": "Fecha límite cambiada",
+        "updated": "Cualquier actualización"
+      },
+      "comment": {
+        "created": "Nuevo comentario",
+        "mentioned": "Mencionado en un comentario"
+      }
+    },
+    "eventGroupComments": "Comentarios",
     "allowedActionsLabel": "Acciones permitidas",
+    "actionGroupRepo": "Repositorio",
+    "actionTypes": {
+      "transitionStatus": "Cambiar estado",
+      "assignTo": "Reasignar",
+      "addComment": "Añadir comentario",
+      "setField": "Establecer campo",
+      "readRepoFile": "Leer archivo",
+      "writeRepoFile": "Escribir archivo"
+    },
     "approvalLabel": "Aprobación",
     "autoApplyAll": "Aplicar todo automáticamente",
     "requireApprovalForAll": "Requerir aprobación para todo",
@@ -417,6 +444,8 @@
     "noAgentsYet": "Todavía no hay agentes — crea uno abajo para empezar a automatizar el trabajo de las tareas.",
     "approveButton": "Aprobar",
     "rejectButton": "Rechazar",
+    "newAgentSectionLabel": "Nuevo agente",
+    "newAgentHint": "Configura un nuevo agente y añádelo para empezar a automatizar el trabajo de las tareas.",
     "addAgentLabel": "Añadir agente",
     "addAgentButton": "Añadir agente",
     "saveButton": "Guardar",

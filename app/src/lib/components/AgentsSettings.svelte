@@ -18,6 +18,10 @@
     expandedAgentId = expandedAgentId === userId ? null : userId;
   }
 
+  // Collapsed by default — most visits to this tab are to check on or edit an existing agent,
+  // not to create one, so the long create form shouldn't be the first thing taking up space.
+  let showNewAgentForm = false;
+
   async function toggleAgent(userId: string, enabled: boolean) {
     const agent = await api.updateAgent(userId, { enabled });
     agents.update((l) => l.map((a) => (a.userId === userId ? agent : a)));
@@ -29,6 +33,7 @@
     // Without this, the new agent is invisible to assignee pickers and @mention autocomplete
     // (both read `users`, not `agents`) until the next full reload.
     users.update((l) => [...l, user]);
+    showNewAgentForm = false;
   }
 
   async function saveAgent(userId: string, values: Omit<Agent, 'userId' | 'workspaceId' | 'projectId' | 'enabled' | 'createdAt'>) {
@@ -188,8 +193,28 @@
   </div>
 {/if}
 
-<div class="subsection-label">{$t('agentsSettings.addAgentLabel')}</div>
-<AgentForm {availableRuntimes} initial={emptyDraft()} submitLabel={$t('agentsSettings.addAgentButton')} onSubmit={createAgent} />
+<div class="subsection-label">{$t('agentsSettings.newAgentSectionLabel')}</div>
+<div class="new-agent-panel">
+  <div
+    class="new-agent-head"
+    role="button"
+    tabindex="0"
+    on:click={() => (showNewAgentForm = !showNewAgentForm)}
+    on:keydown={(e) => e.key === 'Enter' && (showNewAgentForm = !showNewAgentForm)}
+  >
+    <span class="new-agent-icon"><Icon name="plus" size={14} /></span>
+    <div class="new-agent-info">
+      <div class="new-agent-title">{$t('agentsSettings.addAgentLabel')}</div>
+      <p class="new-agent-hint">{$t('agentsSettings.newAgentHint')}</p>
+    </div>
+    <Icon name={showNewAgentForm ? 'chevup' : 'chevdown'} size={12} />
+  </div>
+  {#if showNewAgentForm}
+    <div class="new-agent-body">
+      <AgentForm {availableRuntimes} initial={emptyDraft()} submitLabel={$t('agentsSettings.addAgentButton')} onSubmit={createAgent} onCancel={() => (showNewAgentForm = false)} />
+    </div>
+  {/if}
+</div>
 
 <style>
   .subsection-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin: 18px 0 8px; }
@@ -208,6 +233,22 @@
   .empty-state p { margin: 0; font-size: 12.5px; max-width: 280px; }
 
   .agent-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+
+  /* Same card language as .agent-card below — reads as "one more of these," just the create
+     form instead of an existing agent — rather than the form floating loose under a label.
+     Collapsed by default (see showNewAgentForm), same click-to-expand head as an agent card. */
+  .new-agent-panel { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .new-agent-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer; }
+  .new-agent-head:hover { background: var(--surface-sunken); }
+  .new-agent-info { flex: 1; min-width: 0; }
+  .new-agent-icon {
+    display: flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 26px; height: 26px;
+    border-radius: 50%; background: var(--accent-soft); color: var(--accent-strong);
+  }
+  .new-agent-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .new-agent-hint { font-size: 11.5px; color: var(--text-3); margin: 2px 0 0; }
+  .new-agent-body { padding: 4px 14px 16px; border-top: 1px solid var(--border); }
+  .new-agent-body :global(.agent-form) { margin-top: 12px; }
   .agent-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
   .agent-card-head { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 10px 12px; cursor: pointer; }
   .agent-card-head:hover { background: var(--surface-sunken); }
