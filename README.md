@@ -11,7 +11,6 @@ Single workspace, event-driven, auditable. No third-party service integrations.
 - **Frontend** (`app/`): Svelte 5 + Vite, TypeScript
 - **Backend** (`server/`): Hono + Kysely over sql.js (SQLite compiled to WASM), WebSocket live updates
 - **Shared** (`domain/`): TypeScript types used by both frontend and backend
-- **Plugins** (`plugins/`): pluggable git/agent-runtime harnesses (see `plugins/README.md`)
 
 Data is stored as two separate append-only-friendly SQLite files: `state.db` (the read model /
 source of truth for entities) and `events.db` (a durable, monotonically-sequenced event log other
@@ -58,7 +57,6 @@ cd app && npm run check
 - [`docs/ui-style-guide.md`](docs/ui-style-guide.md) — UI color/style conventions
 - [`docs/project-plan.md`](docs/project-plan.md) — whole-project roadmap and subsystem status
 - [`AGENTS_PLAN.md`](AGENTS_PLAN.md) — detailed spec for the agent/automation subsystem
-- [`plugins/README.md`](plugins/README.md) — writing a git or agent-runtime plugin
 
 ## License
 

@@ -2,7 +2,9 @@
  * A GitProvider that shells out to the real `git` binary on the server, against repositories
  * that live on the server's own filesystem — no remote host, no network call, no token needed.
  * Useful for a self-hosted deployment where "the repo" is just a bare or working copy sitting
- * next to the server process.
+ * next to the server process. Registered directly in container.ts (see `gitProviders`'s doc
+ * comment there) — a second git host (GitHub, GitLab, ...) would be added the same way: a new
+ * `GitProvider` implementation, registered alongside this one.
  *
  * `GitRepoLink.owner`/`repo`/`token` were shaped for hosted providers (GitHub, GitLab, ...) —
  * this provider reuses that same shape rather than changing the domain model for one provider:
@@ -23,8 +25,7 @@ import { mkdir, mkdtemp, rm, writeFile as fsWriteFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve, sep } from 'node:path';
 import { promisify } from 'node:util';
-import type { WorkhorsePlugin } from '../server/src/plugins/PluginContext';
-import type { GitProvider } from '../server/src/services/GitProvider';
+import type { GitProvider } from './GitProvider';
 
 const execFileAsync = promisify(execFile);
 
@@ -51,7 +52,7 @@ async function git(repoPath: string, args: string[]): Promise<string> {
   }
 }
 
-const localGitProvider: GitProvider = {
+export const localGitProvider: GitProvider = {
   id: 'local',
 
   async verifyAccess({ repo, branch }) {
@@ -107,11 +108,3 @@ const localGitProvider: GitProvider = {
     return { url: `file://${repoPath}#${branch}` };
   },
 };
-
-const plugin: WorkhorsePlugin = {
-  id: 'local',
-  register(ctx) {
-    ctx.registerGitProvider(localGitProvider);
-  },
-};
-export default plugin;

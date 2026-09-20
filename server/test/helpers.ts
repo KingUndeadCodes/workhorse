@@ -22,7 +22,7 @@ import { GitProviderRegistry } from '../src/services/GitProvider';
 import type { Issue, User } from '../src/domain';
 
 /**
- * Wires the same 14 repositories + EventEngine that `container.ts`'s `initContainer()` does,
+ * Wires the same repositories + EventEngine that `container.ts`'s `initContainer()` does,
  * against a test-local `db` (see test/setup.ts's mock of db/core). Hand-rolled rather than
  * calling `initContainer()` itself, so a test doesn't depend on `OllamaAgentRuntime`'s
  * constructor being side-effect-free — nothing here ever registers a real agent runtime or

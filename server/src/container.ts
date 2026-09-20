@@ -26,6 +26,7 @@ import { AuditService } from './services/AuditService';
 import { EventEngine } from './services/EventEngine';
 import { EventProjector } from './services/EventProjector';
 import { GitProviderRegistry } from './services/GitProvider';
+import { localGitProvider } from './services/LocalGitProvider';
 import { OllamaAgentRuntime } from './services/OllamaAgentRuntime';
 import { StatsService } from './services/StatsService';
 
@@ -49,22 +50,20 @@ export let engine: EventEngine;
 export let auditService: AuditService;
 export let statsService: StatsService;
 /**
- * Every supported git host, keyed by `GitRepoLink.provider` — see services/GitProvider.ts. No
- * provider is registered here; this app ships only the harness (the `GitProvider` interface +
- * this registry), not a concrete implementation. Populated two ways: a provider registered
- * directly here in `initContainer()` (none are, today), or — the intended path for a
- * production deployment adding git-host support without forking this repo — a plugin dropped
- * in `plugins/`, loaded by `plugins/loadPlugins.ts` at boot (see index.ts). Either way,
- * routes/projects.ts and routes/issues.ts only ever resolve through this registry.
+ * Every supported git host, keyed by `GitRepoLink.provider` — see services/GitProvider.ts.
+ * `'local'` (services/LocalGitProvider.ts, shells out to the server's own `git` binary) is
+ * registered directly below. A hosted git host (GitHub, GitLab, ...) is added the same way: a
+ * new `GitProvider` implementation, registered here — routes/projects.ts and routes/issues.ts
+ * only ever resolve through this registry, never a concrete provider directly.
  */
 export let gitProviders: GitProviderRegistry;
 /**
  * Every LLM backend an `Agent` can run on, keyed by `Agent.runtime` — see
- * services/AgentRuntime.ts. Unlike `gitProviders`, this one isn't empty: `'ollama'` is
- * registered directly below (a local Ollama server, no hosted-provider dependency) since agents
- * already need to work out of the box. A cloud backend like Anthropic is meant to arrive later
- * the same way a git host would — as a `plugins/` entry, not a change to this file — see
- * `gitProviders`' doc comment above. `EventEngine` never imports any model SDK directly.
+ * services/AgentRuntime.ts. `'ollama'` (a local Ollama server, no hosted-provider dependency)
+ * is registered directly below since agents already need to work out of the box. A cloud
+ * backend like Anthropic is meant to arrive later the same way — a new `AgentRuntime`
+ * implementation registered here, not a change to `EventEngine`, which never imports any model
+ * SDK directly.
  */
 export let agentRuntimes: AgentRuntimeRegistry;
 
@@ -87,6 +86,7 @@ export function initContainer(): void {
   agentRuntimes = new AgentRuntimeRegistry();
   agentRuntimes.register(new OllamaAgentRuntime());
   gitProviders = new GitProviderRegistry();
+  gitProviders.register(localGitProvider);
 
   projector = new EventProjector(issueRepo, agentRunRepo, planningRepo);
   engine = new EventEngine(

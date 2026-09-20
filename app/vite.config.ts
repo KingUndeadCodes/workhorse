@@ -1,7 +1,7 @@
 import { defineConfig, type Plugin } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import path from 'path'
-import { readFileSync } from 'fs'
+import { readdirSync, readFileSync } from 'fs'
 
 /** Per-theme override of one component's colors — currently just `bg`/`fg`, the only two a
  * component has ever needed (see `colorSchemes.*.components` below). */
@@ -123,9 +123,79 @@ function uiConfigHtmlPlugin(): Plugin {
   };
 }
 
+/** A leaf value in a locale JSON file — see `src/lib/i18n/index.ts`'s identical types/logic,
+ * which this deliberately duplicates rather than imports: that module is browser-side Svelte
+ * store code, and this plugin needs to run in Node, once, before the dev server or build even
+ * starts serving anything. */
+const PLURAL_CATEGORIES = ['zero', 'one', 'two', 'few', 'many', 'other'];
+function isPluralForms(value: unknown): value is Record<string, string> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value) &&
+    PLURAL_CATEGORIES.some((c) => typeof (value as Record<string, unknown>)[c] === 'string' && (value as Record<string, unknown>)[c]);
+}
+
+/** Every dotted path in a locale dict that resolves to a translatable leaf (a string, or a
+ * plural-forms group) rather than a namespace to recurse into further. */
+function collectLeafPaths(dict: Record<string, unknown>, prefix: string[] = []): string[][] {
+  const paths: string[][] = [];
+  for (const [key, value] of Object.entries(dict)) {
+    const path = [...prefix, key];
+    if (typeof value === 'string' || isPluralForms(value)) {
+      paths.push(path);
+    } else if (typeof value === 'object' && value !== null) {
+      paths.push(...collectLeafPaths(value as Record<string, unknown>, path));
+    }
+  }
+  return paths;
+}
+
+function getAtPath(dict: Record<string, unknown>, path: string[]): unknown {
+  let node: unknown = dict;
+  for (const segment of path) {
+    if (typeof node !== 'object' || node === null) return undefined;
+    node = (node as Record<string, unknown>)[segment];
+  }
+  return node;
+}
+
+/**
+ * Prints a warning to the terminal running `npm run dev`/`vite build` — not the browser
+ * console — for every locale under `src/lib/i18n/locales/` that's missing (or has left empty)
+ * a key `en.json` defines. Same "not translated yet" condition `t()`/`tn()` use to silently
+ * fall back to English for that string at runtime (see that file). An incomplete language pack
+ * is a perfectly valid, shippable state (see that directory's README) — this is a heads-up for
+ * whoever's actively filling one in, surfaced before the app is even served rather than only
+ * discoverable by clicking through the UI in that language.
+ */
+function localeCompletenessPlugin(): Plugin {
+  return {
+    name: 'locale-completeness-check',
+    buildStart() {
+      const localesDir = new URL('./src/lib/i18n/locales/', import.meta.url);
+      const en = JSON.parse(readFileSync(new URL('en.json', localesDir), 'utf-8'));
+      const enPaths = collectLeafPaths(en);
+      const otherFiles = readdirSync(localesDir).filter((f) => f.endsWith('.json') && f !== 'en.json');
+
+      for (const file of otherFiles) {
+        const locale = JSON.parse(readFileSync(new URL(file, localesDir), 'utf-8'));
+        const missing = enPaths.filter((path) => {
+          const value = getAtPath(locale, path);
+          return !(typeof value === 'string' && value) && !isPluralForms(value);
+        });
+        if (missing.length === 0) continue;
+        const id = file.replace(/\.json$/, '');
+        const preview = missing.slice(0, 10).map((p) => p.join('.'));
+        const rest = missing.length - preview.length;
+        console.warn(
+          `[locale-completeness] "${id}" is missing ${missing.length}/${enPaths.length} translation${enPaths.length === 1 ? '' : 's'} (falls back to English): ${preview.join(', ')}${rest > 0 ? `, +${rest} more` : ''}`,
+        );
+      }
+    },
+  };
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [svelte(), uiConfigHtmlPlugin()],
+  plugins: [svelte(), uiConfigHtmlPlugin(), localeCompletenessPlugin()],
   resolve: {
     alias: {
       $domain: path.resolve(__dirname, '../domain'),
