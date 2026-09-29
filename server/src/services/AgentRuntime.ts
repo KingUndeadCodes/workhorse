@@ -28,6 +28,16 @@ export interface AgentRuntime {
 
   /** One non-streaming decision turn: given a system prompt, the conversation so far, and a closed tool vocabulary, decide what (if anything) to do. */
   decide(opts: { model: string; system: string; userMessage: string; tools: AgentRuntimeTool[] }): Promise<AgentRuntimeDecision>;
+
+  /**
+   * Optional liveness check: is the backend this runtime talks to actually reachable right
+   * now, independent of any agent's specific model or prompt. A runtime that can't
+   * meaningfully answer this (e.g. one with no separate health signal) simply doesn't
+   * implement it — `GET /api/agent-runtimes/:id/health` (routes/agents.ts) treats a missing
+   * implementation as "assumed healthy," not as a failure, so this stays optional rather than
+   * forcing every future runtime to invent a check it has no real signal for.
+   */
+  checkHealth?(): Promise<{ ok: boolean; detail?: string }>;
 }
 
 /**

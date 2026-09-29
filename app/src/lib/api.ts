@@ -37,6 +37,7 @@ import type {
   WorkflowTransition,
   Worklog,
   Workspace,
+  WorkspaceInvite,
   WorkspaceMember,
   WorkspaceRole,
   WorkspaceStats,
@@ -349,6 +350,10 @@ export function rejectAgentRun(runId: string): Promise<{ run: AgentRun }> {
 export function listAgentRuntimes(): Promise<string[]> {
   return get('/agent-runtimes');
 }
+/** Is the backend behind this runtime (e.g. Ollama) actually reachable right now? See server/src/services/AgentRuntime.ts's checkHealth doc comment for what this does and doesn't prove. */
+export function checkAgentRuntimeHealth(id: string): Promise<{ ok: boolean; detail?: string }> {
+  return get(`/agent-runtimes/${id}/health`);
+}
 
 // ---- Webhooks ---------------------------------------------------------------
 
@@ -443,6 +448,18 @@ export function listWorkspaceMembers(): Promise<WorkspaceMember[]> {
 }
 export function updateWorkspaceMemberRole(userId: string, role: WorkspaceRole): Promise<WorkspaceMember> {
   return patch(`/workspace-members/${userId}`, { role });
+}
+export function removeWorkspaceMember(userId: string): Promise<{ ok: true }> {
+  return del(`/workspace-members/${userId}`);
+}
+export function listWorkspaceInvites(): Promise<WorkspaceInvite[]> {
+  return get('/workspace-invites');
+}
+export function createWorkspaceInvite(email: string, role: WorkspaceRole): Promise<WorkspaceInvite> {
+  return post('/workspace-invites', { email, role });
+}
+export function revokeWorkspaceInvite(id: string): Promise<{ ok: true }> {
+  return del(`/workspace-invites/${id}`);
 }
 
 // ---- Account ------------------------------------------------------------------

@@ -18,8 +18,10 @@ import { WorkspaceRepository } from '../src/repositories/WorkspaceRepository';
 import { AgentRuntimeRegistry } from '../src/services/AgentRuntime';
 import { EventEngine } from '../src/services/EventEngine';
 import { EventProjector } from '../src/services/EventProjector';
+import type { AgentRuntime, AgentRuntimeDecision } from '../src/services/AgentRuntime';
 import { GitProviderRegistry } from '../src/services/GitProvider';
-import type { Issue, User } from '../src/domain';
+import type { GitProvider } from '../src/services/GitProvider';
+import type { Agent, AgentApprovalPolicy, AutomationAction, AutomationCondition, AutomationRule, EventType, Issue, User } from '../src/domain';
 
 /**
  * Wires the same repositories + EventEngine that `container.ts`'s `initContainer()` does,
@@ -53,7 +55,10 @@ export function createTestEngine(db: Kysely<DB>) {
     projector, projectRepo, agentRuntimes, gitRepoLinkRepo, gitProviders, notificationRepo, webhookDeliveryRepo,
   );
 
-  return { engine, workspaceRepo, issueRepo, userRepo, workflowRepo, notificationRepo, webhookRepo, webhookDeliveryRepo };
+  return {
+    engine, workspaceRepo, issueRepo, userRepo, workflowRepo, notificationRepo, webhookRepo, webhookDeliveryRepo,
+    agentRepo, agentRunRepo, automationRepo, projectRepo, catalogRepo, gitRepoLinkRepo, agentRuntimes, gitProviders,
+  };
 }
 
 /** Required before anything reaches `EventEngine.writeEvent` — it calls `workspace.getWorkspace()`
@@ -117,6 +122,76 @@ export async function seedWorkflow(db: Kysely<DB>): Promise<void> {
       { id: 'st_done', workflow_id: workflowId, name: 'Done', category_id: doneCategoryId, color: null },
     ])
     .execute();
+}
+
+/** Creates the `kind: 'agent'` User row an `Agent` record hangs off, plus the `Agent` record itself. */
+export async function seedAgent(
+  userRepo: UserRepository,
+  agentRepo: AgentRepository,
+  overrides: Partial<Agent> & { userId?: string } = {},
+): Promise<Agent> {
+  const userId = overrides.userId ?? `u_agent_${randomUUID()}`;
+  await userRepo.createAgentUser(userId, `${userId}@agents.local`, overrides.name ?? 'Test Agent', new Date().toISOString());
+  const agent: Agent = {
+    workspaceId: 'ws_test',
+    projectId: null,
+    name: 'Test Agent',
+    enabled: true,
+    runtime: 'fake',
+    model: 'fake-model',
+    contextScope: 'ticket',
+    eventFilter: '*',
+    allowedActionTypes: ['addComment'],
+    approvalPolicy: { mode: 'autoApplyAll' },
+    budget: {},
+    ignoreSelfTriggeredEvents: true,
+    createdAt: new Date().toISOString(),
+    ...overrides,
+    userId,
+  };
+  await agentRepo.create(agent);
+  return agent;
+}
+
+export async function seedAutomationRule(automationRepo: AutomationRepository, overrides: Partial<AutomationRule> = {}): Promise<AutomationRule> {
+  const rule: AutomationRule = {
+    id: `rule_${randomUUID()}`,
+    projectId: null,
+    name: 'Test Rule',
+    enabled: true,
+    eventFilter: ['issue.created'] as EventType[],
+    conditions: [] as AutomationCondition[],
+    actions: [] as AutomationAction[],
+    ...overrides,
+  };
+  return automationRepo.create(rule);
+}
+
+/** A `GitProvider` whose behavior a test controls directly — no network, no real host. */
+export function fakeGitProvider(overrides: Partial<GitProvider> = {}): GitProvider {
+  return {
+    id: 'fake',
+    verifyAccess: async () => {},
+    createBranch: async ({ newBranchName }) => ({ url: `fake://branch/${newBranchName}` }),
+    readFile: async ({ path }) => ({ content: `contents of ${path}` }),
+    writeFile: async ({ path, branch }) => ({ url: `fake://file/${branch}/${path}` }),
+    ...overrides,
+  };
+}
+
+/** An `AgentRuntime` that returns a fixed decision every call — no LLM, no network. */
+export function fakeAgentRuntime(decide: (opts: { model: string; system: string; userMessage: string }) => AgentRuntimeDecision): AgentRuntime {
+  return { id: 'fake', decide: async (opts) => decide(opts) };
+}
+
+/** Convenience: a fake runtime that always proposes the same fixed tool calls, regardless of what it's asked. */
+export function fixedDecisionRuntime(toolCalls: AgentRuntimeDecision['toolCalls'], text = ''): AgentRuntime {
+  return fakeAgentRuntime(() => ({ toolCalls, text, tokenUsage: 1 }));
+}
+
+export function approvalPolicy(mode: AgentApprovalPolicy['mode'], actionTypes?: AutomationAction['type'][]): AgentApprovalPolicy {
+  if (mode === 'requireApprovalFor') return { mode, actionTypes: actionTypes ?? [] };
+  return { mode };
 }
 
 /**

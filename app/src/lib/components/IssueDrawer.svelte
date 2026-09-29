@@ -67,6 +67,10 @@
     ? (issue.agentAssignments ?? []).map((id) => $users.find((u) => u.id === id)).filter((u): u is (typeof $users)[number] => !!u)
     : [];
   $: unattachedAgents = issue ? agentUsers.filter((a) => !issue!.agentAssignments?.includes(a.id)) : agentUsers;
+  // @-mentioning an agent only ever does anything if it's attached to this issue (EventEngine.runAgents
+  // gates on issue.agentAssignments) — offering every workspace agent here would let someone mention
+  // one that can never react, with no error and no visible reason why. Humans have no such gate.
+  $: mentionableUsers = [...humanUsers, ...attachedAgents];
   $: issueComments = issue ? $comments.filter((c) => c.issueId === issue.id) : [];
   // Threading is one level deep (see domain/collaboration.ts) — top-level comments plus,
   // for each, the replies attached to it, both ordered oldest-first.
@@ -762,7 +766,7 @@
                 disabled={!draftComment.trim()}
                 submitting={submittingComment}
                 onSubmit={submitComment}
-                mentionUsers={$users}
+                mentionUsers={mentionableUsers}
               />
             </div>
           {/if}

@@ -20,7 +20,7 @@ export interface WebhookSubscription extends EventSubscription {
   id: WebhookId;
   workspaceId: WorkspaceId;
   targetUrl: string;
-  /** Used to HMAC-sign each delivery so receivers can verify authenticity. Never returned to the client except once, on creation — see {@link WebhookSubscriptionPublic}. */
+  /** Used to HMAC-sign each delivery so receivers can verify authenticity. Encrypted at rest by `WebhookRepository` (see server/src/crypto/tokenCipher.ts). Never returned to the client except once, on creation — see {@link WebhookSubscriptionPublic}. */
   secret: string;
   enabled: boolean;
   createdBy: UserId;

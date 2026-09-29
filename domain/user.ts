@@ -1,4 +1,4 @@
-import type { UserId, WorkspaceId } from './ids';
+import type { UserId, WorkspaceId, WorkspaceInviteId } from './ids';
 
 /**
  * Distinguishes a human account from an AI agent's.
@@ -31,4 +31,21 @@ export interface WorkspaceMember {
   userId: UserId;
   role: WorkspaceRole;
   joinedAt: string;
+}
+
+/**
+ * A pre-approval for someone who hasn't signed up yet: an owner/admin registers an email and
+ * the role it should get, and `POST /auth/signup` (routes/auth.ts) checks incoming signups
+ * against this table instead of always defaulting to `'member'`. There is no email sent by
+ * this app — the admin shares the signup link themselves; this is purely an allowlist entry,
+ * consumed (deleted) the moment a matching signup succeeds.
+ */
+export interface WorkspaceInvite {
+  id: WorkspaceInviteId;
+  workspaceId: WorkspaceId;
+  /** Normalized lowercase, same convention as `User.email`. */
+  email: string;
+  role: WorkspaceRole;
+  invitedBy: UserId;
+  createdAt: string;
 }

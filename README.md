@@ -56,7 +56,7 @@ cd app && npm run check
 - [`docs/backend-architecture.md`](docs/backend-architecture.md) — backend architecture reference
 - [`docs/ui-style-guide.md`](docs/ui-style-guide.md) — UI color/style conventions
 - [`docs/project-plan.md`](docs/project-plan.md) — whole-project roadmap and subsystem status
-- [`AGENTS_PLAN.md`](AGENTS_PLAN.md) — detailed spec for the agent/automation subsystem
+- [`plans/AGENTS_PLAN.md`](plans/AGENTS_PLAN.md) — detailed spec for the agent/automation subsystem
 
 ## License
 

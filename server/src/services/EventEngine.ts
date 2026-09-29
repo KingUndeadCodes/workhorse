@@ -325,8 +325,13 @@ export class EventEngine {
         await this.applyAction(run.proposedActions[i], issue, actor, triggeringEvent);
         run.appliedActionIndexes.push(i);
         // Re-fetch so the next action sees this one's effect (e.g. a second assignTo builds its
-        // toUserIds off the updated assigneeIds) instead of the stale pre-run snapshot.
-        issue = (await this.issues.get(issue.id)) ?? issue;
+        // toUserIds off the updated assigneeIds) instead of the stale pre-run snapshot. `undefined`
+        // means the issue was deleted mid-run (by a concurrent actor, or as a side effect of an
+        // earlier action) — fail the run here rather than silently continuing to apply further
+        // actions against a snapshot of an issue that no longer exists.
+        const refetched = await this.issues.get(issue.id);
+        if (!refetched) throw new Error('Issue was deleted while this run was in progress.');
+        issue = refetched;
       }
     } catch (err) {
       run.status = 'failed';

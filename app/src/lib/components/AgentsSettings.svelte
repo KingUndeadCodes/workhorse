@@ -11,7 +11,23 @@
   $: pendingRuns = $agentRuns.filter((r) => r.status === 'awaitingApproval');
 
   let availableRuntimes: string[] = [];
-  api.listAgentRuntimes().then((r) => (availableRuntimes = r));
+  api.listAgentRuntimes().then((r) => {
+    availableRuntimes = r;
+    refreshRuntimeHealth();
+  });
+
+  type RuntimeHealth = { ok: boolean; detail?: string } | 'loading';
+  let runtimeHealth: Record<string, RuntimeHealth> = {};
+
+  function refreshRuntimeHealth() {
+    for (const id of availableRuntimes) {
+      runtimeHealth[id] = 'loading';
+      api
+        .checkAgentRuntimeHealth(id)
+        .then((result) => (runtimeHealth = { ...runtimeHealth, [id]: result }))
+        .catch((err) => (runtimeHealth = { ...runtimeHealth, [id]: { ok: false, detail: err instanceof Error ? err.message : String(err) } }));
+    }
+  }
 
   let expandedAgentId: string | null = null;
   function toggleExpanded(userId: string) {
@@ -78,6 +94,31 @@
     ignoreSelfTriggeredEvents: true,
   });
 </script>
+
+{#if availableRuntimes.length}
+  <div class="subsection-label">
+    {$t('agentsSettings.runtimeStatusLabel')}
+    <button type="button" class="refresh-btn" on:click={refreshRuntimeHealth}>{$t('agentsSettings.refreshRuntimeStatus')}</button>
+  </div>
+  <div class="runtime-status-list">
+    {#each availableRuntimes as id}
+      {@const health = runtimeHealth[id]}
+      <div class="runtime-status-row">
+        <span class="status-dot" class:ok={health !== 'loading' && health?.ok} class:bad={health !== 'loading' && health && !health.ok}></span>
+        <span class="runtime-id mono">{id}</span>
+        <span class="runtime-detail">
+          {#if health === 'loading' || health === undefined}
+            {$t('agentsSettings.checkingRuntimeStatus')}
+          {:else if health.ok}
+            {$t('agentsSettings.runtimeHealthy')}
+          {:else}
+            {$t('agentsSettings.runtimeUnreachable', { detail: health.detail ?? '' })}
+          {/if}
+        </span>
+      </div>
+    {/each}
+  </div>
+{/if}
 
 {#if pendingRuns.length}
   <div class="subsection-label">{$t('agentsSettings.awaitingApproval')}</div>
@@ -257,7 +298,15 @@
   .agent-name { display: flex; align-items: center; font-size: 12.5px; font-weight: 600; color: var(--text); }
   .agent-instructions { font-size: 11.5px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); margin-left: 8px; flex: 0 0 auto; }
-  .status-dot.enabled { background: var(--success); }
+  .status-dot.enabled, .status-dot.ok { background: var(--success); }
+  .status-dot.bad { background: var(--critical); }
+  .runtime-status-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
+  .runtime-status-row { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 2px 0; }
+  .runtime-status-row .status-dot { margin-left: 0; }
+  .runtime-id { color: var(--text); font-weight: 600; }
+  .runtime-detail { color: var(--text-3); }
+  .refresh-btn { font-size: 10.5px; font-weight: 600; color: var(--text-3); text-transform: none; letter-spacing: normal; margin-left: 8px; }
+  .refresh-btn:hover { color: var(--text); }
   .model-chip { font-size: 10.5px; color: var(--text-2); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; flex: 0 0 auto; }
   .toggle { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-3); white-space: nowrap; flex: 0 0 auto; }
   .agent-card-body { padding: 4px 14px 16px; border-top: 1px solid var(--border); }

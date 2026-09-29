@@ -9,12 +9,10 @@ export const publicAuthRouter = new Hono();
 
 /**
  * POST /api/auth/signup — open self-signup: anyone with an email can create an account.
- * The very first person to ever sign up owns the workspace; everyone after joins as a
- * plain member. No invite flow yet, so this is the only role decision made automatically.
- *
- * NOTE FOR LATER (do not build now): restrict this to pre-invited emails once the app has
- * real users to invite — add an `invites` table (email, invited_at, invited_by) and check
- * `email` against it here before allowing account creation, returning 403 if absent.
+ * The very first person to ever sign up owns the workspace. Everyone after joins with
+ * whatever role a pending `WorkspaceInvite` (routes/workspace.ts) grants their email, or
+ * a plain member if no invite is pending — invites are a pre-approval allowlist only,
+ * never an access gate: signup itself stays open to anyone.
  */
 publicAuthRouter.post('/auth/signup', async (c) => {
   const body = await c.req.json<{ email?: string; password?: string; displayName?: string }>();
@@ -27,6 +25,7 @@ publicAuthRouter.post('/auth/signup', async (c) => {
   if (await userRepo.findByEmail(email)) return c.json({ error: 'an account with this email already exists' }, 409);
 
   const isFirstMember = !(await workspaceRepo.hasAnyMember());
+  const invite = isFirstMember ? undefined : await workspaceRepo.getInviteByEmail(email);
   let user;
   try {
     // The unique index on users(email) is what actually enforces uniqueness — the findByEmail
@@ -37,7 +36,8 @@ publicAuthRouter.post('/auth/signup', async (c) => {
     if (err instanceof Error && /unique/i.test(err.message)) return c.json({ error: 'an account with this email already exists' }, 409);
     throw err;
   }
-  await workspaceRepo.addMember((await workspaceRepo.getWorkspace()).id, user.id, isFirstMember ? 'owner' : 'member', user.createdAt);
+  await workspaceRepo.addMember((await workspaceRepo.getWorkspace()).id, user.id, isFirstMember ? 'owner' : (invite?.role ?? 'member'), user.createdAt);
+  if (invite) await workspaceRepo.deleteInviteByEmail(email);
 
   const token = await signToken(user);
   return c.json({ user, token }, 201);

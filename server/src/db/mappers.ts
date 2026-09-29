@@ -32,6 +32,7 @@ import type {
   WorkflowTransition,
   Worklog,
   Workspace,
+  WorkspaceInvite,
   WorkspaceMember,
 } from '../domain';
 import { DEFAULT_FEATURE_FLAGS } from '../domain';
@@ -66,6 +67,17 @@ export function rowToWorkspaceMember(r: Record<string, unknown>): WorkspaceMembe
     userId: r.user_id as string,
     role: r.role as WorkspaceMember['role'],
     joinedAt: r.joined_at as string,
+  };
+}
+
+export function rowToWorkspaceInvite(r: Record<string, unknown>): WorkspaceInvite {
+  return {
+    id: r.id as string,
+    workspaceId: r.workspace_id as string,
+    email: r.email as string,
+    role: r.role as WorkspaceInvite['role'],
+    invitedBy: r.invited_by as string,
+    createdAt: r.created_at as string,
   };
 }
 

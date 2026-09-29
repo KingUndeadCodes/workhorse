@@ -30,6 +30,19 @@ import { localGitProvider } from './services/LocalGitProvider';
 import { OllamaAgentRuntime } from './services/OllamaAgentRuntime';
 import { StatsService } from './services/StatsService';
 
+/**
+ * A registration that throws must not take the whole server down with it — mirrors the deleted
+ * plugin loader's "log and skip, don't fail boot" behavior for a single bad extension. `label`
+ * identifies which registration failed in the log line.
+ */
+export function registerSafely(label: string, register: () => void): void {
+  try {
+    register();
+  } catch (err) {
+    console.error(`Failed to register ${label}:`, err instanceof Error ? err.message : err);
+  }
+}
+
 export let workspaceRepo: WorkspaceRepository;
 export let userRepo: UserRepository;
 export let agentRepo: AgentRepository;
@@ -52,9 +65,9 @@ export let statsService: StatsService;
 /**
  * Every supported git host, keyed by `GitRepoLink.provider` — see services/GitProvider.ts.
  * `'local'` (services/LocalGitProvider.ts, shells out to the server's own `git` binary) is
- * registered directly below. A hosted git host (GitHub, GitLab, ...) is added the same way: a
- * new `GitProvider` implementation, registered here — routes/projects.ts and routes/issues.ts
- * only ever resolve through this registry, never a concrete provider directly.
+ * registered directly below. A hosted git host is added the same way: a new `GitProvider`
+ * implementation, registered here — routes/projects.ts and routes/issues.ts only ever resolve
+ * through this registry, never a concrete provider directly.
  */
 export let gitProviders: GitProviderRegistry;
 /**
@@ -84,9 +97,9 @@ export function initContainer(): void {
   projectRepo = new ProjectRepository(db);
 
   agentRuntimes = new AgentRuntimeRegistry();
-  agentRuntimes.register(new OllamaAgentRuntime());
+  registerSafely('agent runtime "ollama"', () => agentRuntimes.register(new OllamaAgentRuntime()));
   gitProviders = new GitProviderRegistry();
-  gitProviders.register(localGitProvider);
+  registerSafely('git provider "local"', () => gitProviders.register(localGitProvider));
 
   projector = new EventProjector(issueRepo, agentRunRepo, planningRepo);
   engine = new EventEngine(

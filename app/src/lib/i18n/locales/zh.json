@@ -251,6 +251,8 @@
     "repoPlaceholder": "仓库",
     "defaultBranchPlaceholder": "默认分支（main）",
     "accessTokenPlaceholder": "访问令牌",
+    "tokenHintGithub": "具有 repo 权限的 GitHub 个人访问令牌 — 加密存储，不会再次显示。",
+    "tokenHintLocal": "本地仓库会忽略此项 — 随便输入。",
     "linkRepoButton": "关联仓库",
     "linkingRepoButton": "关联中…",
     "failedLinkRepo": "关联仓库失败",
@@ -264,7 +266,15 @@
       "admin": "管理员",
       "member": "成员",
       "guest": "访客"
-    }
+    },
+    "removeConfirm": "将 {name} 从此工作区移除？他们将立即失去访问权限。",
+    "invitesLabel": "待处理的邀请",
+    "invitesHint": "预先批准某个邮箱，使其在注册时以特定角色加入。系统不会发送任何邮件——请自行分享注册链接。",
+    "revokeLabel": "撤销对 {email} 的邀请",
+    "inviteEmailPlaceholder": "电子邮件地址",
+    "inviteButton": "邀请",
+    "invitingButton": "邀请中…",
+    "failedInvite": "邀请失败"
   },
   "stats": {
     "title": "统计",
@@ -432,6 +442,11 @@
     "ignoreSelfEvents": "忽略此代理自身触发的事件（推荐 — 防止其重复触发自身）"
   },
   "agentsSettings": {
+    "runtimeStatusLabel": "运行时状态",
+    "refreshRuntimeStatus": "刷新",
+    "checkingRuntimeStatus": "检查中…",
+    "runtimeHealthy": "可访问",
+    "runtimeUnreachable": "无法访问 — {detail}",
     "awaitingApproval": "等待你的审批",
     "agentsLabel": "代理",
     "hint": "代理代表团队成员处理工单 — 将代理添加到事项（在事项的「AI 代理」部分）后，它可以在推进过程中发表评论、更改状态、重新分配或更新字段，操作始终归属于它所代表的人。它的指令决定了每次触发时的决策。",

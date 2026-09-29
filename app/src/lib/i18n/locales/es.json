@@ -252,6 +252,8 @@
     "repoPlaceholder": "Repositorio",
     "defaultBranchPlaceholder": "Rama predeterminada (main)",
     "accessTokenPlaceholder": "Token de acceso",
+    "tokenHintGithub": "Un token de acceso personal de GitHub con permiso repo — se guarda cifrado, no se vuelve a mostrar.",
+    "tokenHintLocal": "Se ignora para un repositorio local — escribe lo que quieras.",
     "linkRepoButton": "Vincular repositorio",
     "linkingRepoButton": "Vinculando…",
     "failedLinkRepo": "No se pudo vincular el repositorio",
@@ -265,7 +267,15 @@
       "admin": "administrador",
       "member": "miembro",
       "guest": "invitado"
-    }
+    },
+    "removeConfirm": "¿Quitar a {name} de este espacio de trabajo? Perderá el acceso de inmediato.",
+    "invitesLabel": "Invitaciones pendientes",
+    "invitesHint": "Aprueba de antemano un correo para que se una con un rol específico al registrarse. No se envía nada por correo — comparte tú mismo el enlace de registro.",
+    "revokeLabel": "Revocar invitación de {email}",
+    "inviteEmailPlaceholder": "Correo electrónico",
+    "inviteButton": "Invitar",
+    "invitingButton": "Invitando…",
+    "failedInvite": "Error al invitar"
   },
   "stats": {
     "title": "Estadísticas",
@@ -438,6 +448,11 @@
     "ignoreSelfEvents": "Ignorar los propios eventos de este agente (recomendado — evita que se reactive a sí mismo)"
   },
   "agentsSettings": {
+    "runtimeStatusLabel": "Estado del runtime",
+    "refreshRuntimeStatus": "Actualizar",
+    "checkingRuntimeStatus": "Comprobando…",
+    "runtimeHealthy": "Accesible",
+    "runtimeUnreachable": "No accesible — {detail}",
     "awaitingApproval": "Esperando tu aprobación",
     "agentsLabel": "Agentes",
     "hint": "Los agentes trabajan en tareas en nombre de un miembro del equipo — conecta uno a una tarea (en la sección «Agentes de IA» de la tarea) y podrá comentar, cambiar el estado, reasignar o actualizar campos a medida que avanza, siempre atribuido a la persona en cuyo nombre actúa. Sus instrucciones son las que realmente guían sus decisiones cada vez que se activa.",

@@ -1,6 +1,6 @@
 # Workhorse — Master Project Plan
 
-Status: **draft for review**. This is the whole-project version of the same idea as `AGENTS_PLAN.md` — a stable target we build against once you sign off. Section numbers are stable references for feedback ("change 4.3", "cut 6"). `AGENTS_PLAN.md` remains the detailed spec for the agent/automation subsystem specifically — §7 here summarizes and links it rather than duplicating it.
+Status: **draft for review**. This is the whole-project version of the same idea as `plans/AGENTS_PLAN.md` — a stable target we build against once you sign off. Section numbers are stable references for feedback ("change 4.3", "cut 6"). `plans/AGENTS_PLAN.md` remains the detailed spec for the agent/automation subsystem specifically — §7 here summarizes and links it rather than duplicating it.
 
 (Formerly called "Anvil" in early planning — the project and its docs now consistently use "Workhorse".)
 
@@ -43,7 +43,7 @@ No new domain types are anticipated in this plan except whatever a real agent cl
 
 This is the part most likely to need your feedback. Proposed order, each independently shippable:
 
-1. **Agent cloud backend** (`AGENTS_PLAN.md`) — the local-Ollama `AgentRuntime` works, but a hosted-model option (Anthropic Messages API tool-use, one tool per `AutomationAction` variant) is the natural next step if you want stronger/faster agent reasoning than a local model gives you.
+1. **Agent cloud backend** (`plans/AGENTS_PLAN.md`) — the local-Ollama `AgentRuntime` works, but a hosted-model option (Anthropic Messages API tool-use, one tool per `AutomationAction` variant) is the natural next step if you want stronger/faster agent reasoning than a local model gives you.
 2. **Notifications** (§5) — a real decision point, not a code gap: decide whether the "webhooks are the only listener, delivery is the receiver's problem" design still matches what you want for in-app use, before writing anything.
 3. **Drafts / private event logs** (§9) — biggest single new feature if you still want it; scoped last because it's genuinely new architecture (visibility scoping, merge semantics), not a gap in something half-built.
 4. **Workspace invite flow** (§11) — membership currently only grows by self-signup; an admin-driven invite-by-email flow would be needed before this feels like a real multi-tenant workspace tool.
@@ -63,7 +63,7 @@ Recommend treating both as **explicit go/no-go decisions from you**, not default
 
 Backend (`domain/automation.ts`, `server/src/routes/automations.ts`, `engine.ts`'s `runAutomations`) fully supports: any `EventType` as trigger, an AND'd list of `AutomationCondition`s, and any combination of the 4 `AutomationAction` types per rule. `Settings.svelte`'s Automations tab now matches: the rule-builder exposes conditions (status/priority/type/assignee/labels rows via `DraftCondition`/`CONDITION_FIELDS`) and lets the action list be any of `transitionStatus`/`assignTo`/`addComment`/`setField`/`readRepoFile`/`writeRepoFile`. This was previously flagged as a frontend gap ("UI can only build a single-trigger, single-comment rule") — that gap is now closed.
 
-## 7. Agents — see `AGENTS_PLAN.md` (summary only)
+## 7. Agents — see `plans/AGENTS_PLAN.md` (summary only)
 
 Full spec lives in that file; not duplicated here. One-paragraph summary for this document's completeness: the run lifecycle (pending → awaitingApproval/applied/rejected/failed), budget rate-limiting, and approval gating are all real and correct. Agent decision-making now runs through `AgentRuntime` (`server/src/services/AgentRuntime.ts`), a provider-neutral interface, with `OllamaAgentRuntime` as a working local-LLM implementation — this replaces what was previously a hardcoded stub in `decideAgentActions()`. The remaining gap is a cloud-model backend (e.g. an Anthropic Messages API tool-use implementation of the same interface, one tool per `AutomationAction` variant, gated by each agent's `allowedActionTypes`) for anyone who wants a hosted model instead of local Ollama. No MCP — the tool surface is your own closed action enum, not something that needs a protocol built for external tool exposure.
 

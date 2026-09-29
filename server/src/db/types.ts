@@ -43,6 +43,14 @@ export interface DB {
     role: string | null;
     joined_at: string | null;
   };
+  workspace_invites: {
+    id: string;
+    workspace_id: string | null;
+    email: string | null;
+    role: string | null;
+    invited_by: string | null;
+    created_at: string | null;
+  };
   agents: {
     user_id: string;
     workspace_id: string | null;

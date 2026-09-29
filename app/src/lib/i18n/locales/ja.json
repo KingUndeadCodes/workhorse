@@ -251,6 +251,8 @@
     "repoPlaceholder": "リポジトリ",
     "defaultBranchPlaceholder": "デフォルトブランチ（main）",
     "accessTokenPlaceholder": "アクセストークン",
+    "tokenHintGithub": "repo スコープを持つ GitHub の個人アクセストークン — 暗号化して保存され、二度と表示されません。",
+    "tokenHintLocal": "ローカルリポジトリでは無視されます — 何でも入力してください。",
     "linkRepoButton": "リポジトリをリンク",
     "linkingRepoButton": "リンク中…",
     "failedLinkRepo": "リポジトリのリンクに失敗しました",
@@ -264,7 +266,15 @@
       "admin": "管理者",
       "member": "メンバー",
       "guest": "ゲスト"
-    }
+    },
+    "removeConfirm": "{name} をこのワークスペースから削除しますか？すぐにアクセスできなくなります。",
+    "invitesLabel": "保留中の招待",
+    "invitesHint": "サインアップ時に特定のロールで参加できるよう、メールアドレスを事前に承認します。メールは送信されません — サインアップリンクは自分で共有してください。",
+    "revokeLabel": "{email} への招待を取り消す",
+    "inviteEmailPlaceholder": "メールアドレス",
+    "inviteButton": "招待",
+    "invitingButton": "招待中…",
+    "failedInvite": "招待に失敗しました"
   },
   "stats": {
     "title": "統計",
@@ -432,6 +442,11 @@
     "ignoreSelfEvents": "このエージェント自身のイベントを無視する（推奨 — 自己再トリガーを防ぎます）"
   },
   "agentsSettings": {
+    "runtimeStatusLabel": "ランタイムの状態",
+    "refreshRuntimeStatus": "更新",
+    "checkingRuntimeStatus": "確認中…",
+    "runtimeHealthy": "到達可能",
+    "runtimeUnreachable": "到達不能 — {detail}",
     "awaitingApproval": "あなたの承認待ち",
     "agentsLabel": "エージェント",
     "hint": "エージェントはチームメンバーに代わってチケットを処理します — 課題にエージェントを割り当てると（課題の「AIエージェント」セクションから）、進行に応じてコメント、ステータス変更、再割り当て、フィールドの更新を行うことができ、常に代理している本人の名前で記録されます。エージェントの指示が、実行のたびにその判断を決定します。",

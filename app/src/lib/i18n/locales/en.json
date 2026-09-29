@@ -257,6 +257,8 @@
     "repoPlaceholder": "Repo",
     "defaultBranchPlaceholder": "Default branch (main)",
     "accessTokenPlaceholder": "Access token",
+    "tokenHintGithub": "A GitHub personal access token with repo scope — stored encrypted, never shown again.",
+    "tokenHintLocal": "Ignored for a local repo — type anything.",
     "linkRepoButton": "Link repository",
     "linkingRepoButton": "Linking…",
     "failedLinkRepo": "Failed to link repository",
@@ -270,7 +272,15 @@
       "admin": "admin",
       "member": "member",
       "guest": "guest"
-    }
+    },
+    "removeConfirm": "Remove {name} from this workspace? They'll lose access immediately.",
+    "invitesLabel": "Pending invites",
+    "invitesHint": "Pre-approve an email so it joins with a specific role on signup. Nothing is emailed — share the signup link yourself.",
+    "revokeLabel": "Revoke invite for {email}",
+    "inviteEmailPlaceholder": "Email address",
+    "inviteButton": "Invite",
+    "invitingButton": "Inviting…",
+    "failedInvite": "Failed to invite"
   },
   "stats": {
     "title": "Stats",
@@ -443,6 +453,11 @@
     "ignoreSelfEvents": "Ignore this agent's own events (recommended — prevents it retriggering itself)"
   },
   "agentsSettings": {
+    "runtimeStatusLabel": "Runtime status",
+    "refreshRuntimeStatus": "Refresh",
+    "checkingRuntimeStatus": "Checking…",
+    "runtimeHealthy": "Reachable",
+    "runtimeUnreachable": "Unreachable — {detail}",
     "awaitingApproval": "Awaiting your approval",
     "agentsLabel": "Agents",
     "hint": "Agents work tickets on a teammate's behalf — attach one to an issue (from the issue's AI Agents section) and it can comment, change status, reassign, or update fields as it makes progress, always attributed back to the human it's acting for. Its Instructions are what actually drive its decisions each time it's triggered.",

@@ -32,6 +32,25 @@ export class OllamaAgentRuntime implements AgentRuntime {
    * unbounded fetch here would wedge that agent's event processing permanently. */
   private readonly requestTimeoutMs = 120_000;
 
+  /** Much shorter than {@link requestTimeoutMs} — this is a liveness ping, not a model call; it should fail fast, not sit in the same 2-minute budget a real inference request needs. */
+  private readonly healthCheckTimeoutMs = 5_000;
+
+  /**
+   * Pings Ollama's own `/api/tags` (lists locally available models) rather than `/api/chat` —
+   * cheap, doesn't run any inference, and answers exactly "is the server up and responding to
+   * requests at all," which is what a health check should isolate from "is a specific model
+   * loaded and reasoning correctly."
+   */
+  async checkHealth(): Promise<{ ok: boolean; detail?: string }> {
+    try {
+      const res = await fetch(`${this.host}/api/tags`, { signal: AbortSignal.timeout(this.healthCheckTimeoutMs) });
+      if (!res.ok) return { ok: false, detail: `Ollama returned ${res.status}` };
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, detail: err instanceof Error ? err.message : String(err) };
+    }
+  }
+
   async decide(opts: { model: string; system: string; userMessage: string; tools: AgentRuntimeTool[] }): Promise<AgentRuntimeDecision> {
     const tools = opts.tools.map((t) => ({
       type: 'function' as const,

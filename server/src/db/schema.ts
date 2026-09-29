@@ -45,6 +45,13 @@ export function migrateStateDb(): void {
     stateDb,
     `CREATE TABLE IF NOT EXISTS workspace_members (workspace_id TEXT, user_id TEXT, role TEXT, joined_at TEXT, PRIMARY KEY (workspace_id, user_id))`,
   );
+  // A pre-approval allowlist for signup — see domain/user.ts's WorkspaceInvite doc comment.
+  // One row per pending invited email; consumed (deleted) once that email signs up.
+  run(
+    stateDb,
+    `CREATE TABLE IF NOT EXISTS workspace_invites (id TEXT PRIMARY KEY, workspace_id TEXT, email TEXT, role TEXT, invited_by TEXT, created_at TEXT)`,
+  );
+  run(stateDb, `CREATE UNIQUE INDEX IF NOT EXISTS idx_workspace_invites_email ON workspace_invites(email)`);
   run(
     stateDb,
     `CREATE TABLE IF NOT EXISTS agents (

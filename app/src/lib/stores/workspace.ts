@@ -26,6 +26,7 @@ import type {
   Workflow,
   Worklog,
   Workspace,
+  WorkspaceInvite,
   WorkspaceMember,
   WorkspaceRole,
 } from '$domain';
@@ -42,15 +43,19 @@ import {
   deleteComment as apiDeleteComment,
   deleteIssue as apiDeleteIssue,
   createProject as apiCreateProject,
+  createWorkspaceInvite as apiCreateWorkspaceInvite,
   fetchBootstrap,
   getGitRepoLink,
   linkGitRepo as apiLinkGitRepo,
+  listWorkspaceInvites as apiListWorkspaceInvites,
   unlinkGitRepo as apiUnlinkGitRepo,
   patchIssueStatus,
   postComment,
   updateComment as apiUpdateComment,
   removeAttachment as apiRemoveAttachment,
   removeIssueLink as apiRemoveIssueLink,
+  removeWorkspaceMember as apiRemoveWorkspaceMember,
+  revokeWorkspaceInvite as apiRevokeWorkspaceInvite,
   setIssueField as apiSetIssueField,
   startSprint as apiStartSprint,
   updateIssue as apiUpdateIssue,
@@ -84,6 +89,8 @@ export const settingsJumpTab = writable<string | null>(null);
 export const workspace = writable<Workspace | null>(null);
 export const users = writable<User[]>([]);
 export const workspaceMembers = writable<WorkspaceMember[]>([]);
+/** Pending signup pre-approvals — not part of bootstrap (owner/admin-only data, fetched on demand when WorkspaceView mounts for one). */
+export const workspaceInvites = writable<WorkspaceInvite[]>([]);
 export const agents = writable<Agent[]>([]);
 export const agentRuns = writable<AgentRun[]>([]);
 export const statusCategories = writable<StatusCategory[]>([]);
@@ -371,4 +378,23 @@ export async function completeSprint(id: string): Promise<void> {
 export async function updateWorkspaceMemberRole(userId: string, role: WorkspaceRole): Promise<void> {
   const member = await apiUpdateWorkspaceMemberRole(userId, role);
   workspaceMembers.update((list) => list.map((m) => (m.userId === userId ? member : m)));
+}
+
+export async function removeWorkspaceMember(userId: string): Promise<void> {
+  await apiRemoveWorkspaceMember(userId);
+  workspaceMembers.update((list) => list.filter((m) => m.userId !== userId));
+}
+
+export async function fetchWorkspaceInvites(): Promise<void> {
+  workspaceInvites.set(await apiListWorkspaceInvites());
+}
+
+export async function createWorkspaceInvite(email: string, role: WorkspaceRole): Promise<void> {
+  const invite = await apiCreateWorkspaceInvite(email, role);
+  workspaceInvites.update((list) => [...list, invite]);
+}
+
+export async function revokeWorkspaceInvite(id: string): Promise<void> {
+  await apiRevokeWorkspaceInvite(id);
+  workspaceInvites.update((list) => list.filter((i) => i.id !== id));
 }

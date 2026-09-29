@@ -13,6 +13,25 @@ agentsRouter.get('/agent-runs', async (c) => c.json(await agentRunRepo.list()));
 agentsRouter.get('/agent-runtimes', (c) => c.json(agentRuntimes.list().map((r) => r.id)));
 
 /**
+ * GET /api/agent-runtimes/:id/health — is the backend behind this runtime actually reachable
+ * right now (e.g. is Ollama up and responding)? A runtime with no {@link AgentRuntime.checkHealth}
+ * implementation is reported as healthy — there's no signal to the contrary, not evidence of a
+ * problem. This never proves any one agent's specific model works; see checkHealth's own doc
+ * comment for why that's a deliberately separate question.
+ */
+agentsRouter.get('/agent-runtimes/:id/health', async (c) => {
+  const id = c.req.param('id');
+  let runtime;
+  try {
+    runtime = agentRuntimes.resolve(id);
+  } catch {
+    return c.json({ error: `No agent runtime registered for "${id}"` }, 404);
+  }
+  const result = (await runtime.checkHealth?.()) ?? { ok: true };
+  return c.json(result);
+});
+
+/**
  * POST /api/agents — registers a new agent. Since an Agent is a User (`kind: 'agent'`)
  * plus a behavior record, this creates both: a synthetic user row so the agent is
  * assignable/mentionable/watchable immediately, and the Agent record itself. Both are

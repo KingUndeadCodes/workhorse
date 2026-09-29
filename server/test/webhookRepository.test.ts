@@ -47,4 +47,22 @@ describe('WebhookRepository', () => {
     await webhookRepo.delete('hook_1');
     expect(await webhookRepo.list()).toHaveLength(0);
   });
+
+  it('round-trips secret through create/list as plaintext to the caller', async () => {
+    const webhookRepo = await repo();
+    await webhookRepo.create(makeHook({ id: 'hook_1', secret: 'super-secret-hmac-key' }));
+
+    const hooks = await webhookRepo.list();
+    expect(hooks[0].secret).toBe('super-secret-hmac-key');
+  });
+
+  it('never stores the secret in plaintext in the underlying row', async () => {
+    const { db } = await import('../src/db/core');
+    const webhookRepo = new WebhookRepository(db);
+    await webhookRepo.create(makeHook({ id: 'hook_1', secret: 'super-secret-hmac-key' }));
+
+    const row = await db.selectFrom('webhook_subscriptions').selectAll().where('id', '=', 'hook_1').executeTakeFirstOrThrow();
+    expect(row.secret).not.toBe('super-secret-hmac-key');
+    expect(row.secret).toMatch(/^gcm1:/);
+  });
 });
