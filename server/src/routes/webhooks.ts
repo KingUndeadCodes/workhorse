@@ -4,6 +4,7 @@ import type { EventType, WebhookSubscription } from '../domain';
 import { requireNonGuest, type AuthVariables } from '../auth/middleware';
 import { webhookDeliveryRepo, webhookRepo, workspaceRepo } from '../container';
 import { toWebhookPublic } from '../db/mappers';
+import { validateWebhookUrl } from '../services/webhookTarget';
 
 const DEFAULT_DELIVERIES_LIMIT = 20;
 const MAX_DELIVERIES_LIMIT = 100;
@@ -28,6 +29,11 @@ webhooksRouter.post('/webhooks', async (c) => {
   if (forbidden) return c.json({ error: forbidden }, 403);
   const body = await c.req.json<{ targetUrl: string; eventFilter: EventType[] | '*' }>();
   if (!body.targetUrl?.trim()) return c.json({ error: 'targetUrl is required' }, 400);
+  try {
+    validateWebhookUrl(body.targetUrl.trim());
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : 'Invalid targetUrl' }, 400);
+  }
   const hook: WebhookSubscription = {
     id: `hook_${randomUUID()}`,
     workspaceId: (await workspaceRepo.getWorkspace()).id,
@@ -46,6 +52,13 @@ webhooksRouter.patch('/webhooks/:id', async (c) => {
   const forbidden = await requireNonGuest(c, 'manage webhooks');
   if (forbidden) return c.json({ error: forbidden }, 403);
   const body = await c.req.json<Partial<Pick<WebhookSubscription, 'targetUrl' | 'eventFilter' | 'enabled'>>>();
+  if (body.targetUrl !== undefined) {
+    try {
+      validateWebhookUrl(String(body.targetUrl).trim());
+    } catch (err) {
+      return c.json({ error: err instanceof Error ? err.message : 'Invalid targetUrl' }, 400);
+    }
+  }
   const updated = await webhookRepo.update(c.req.param('id'), body);
   if (!updated) return c.json({ error: 'Not found' }, 404);
   return c.json(toWebhookPublic(updated));

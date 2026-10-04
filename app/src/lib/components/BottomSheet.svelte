@@ -9,17 +9,12 @@
    * Desktop-agnostic on purpose: this component has no `@media` gate of its own. Callers decide
    * *whether* to render it (typically behind `{#if $isMobile}`) — it doesn't decide for them.
    */
-  import { createEventDispatcher } from 'svelte';
-
   export let open: boolean;
   export let title: string | undefined = undefined;
   export let onClose: () => void;
 
-  const dispatch = createEventDispatcher<{ close: void }>();
-
   function close() {
     onClose();
-    dispatch('close');
   }
 </script>
 

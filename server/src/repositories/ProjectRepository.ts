@@ -54,4 +54,26 @@ export class ProjectRepository {
     persistState();
     return merged;
   }
+
+  /**
+   * The next `${projectKey}-${n}` issue key for a project: a per-project counter, not a random suffix (a
+   * random 6-hex suffix collides by the birthday bound around a few thousand issues, silently). Runs in a
+   * transaction so concurrent creations get distinct numbers, and skips any number whose key already exists —
+   * older databases hold random-suffix keys that could look like a number — so it never hands out a duplicate.
+   */
+  async allocateIssueKey(projectId: string, projectKey: string): Promise<string> {
+    const key = await this.db.transaction().execute(async (trx) => {
+      const project = await trx.selectFrom('project').select('next_issue_number').where('id', '=', projectId).executeTakeFirst();
+      let n = project?.next_issue_number;
+      if (!n) {
+        const { count } = await trx.selectFrom('issues').select((eb) => eb.fn.countAll<number>().as('count')).where('project_id', '=', projectId).executeTakeFirstOrThrow();
+        n = Number(count) + 1;
+      }
+      while (await trx.selectFrom('issues').select('id').where('key', '=', `${projectKey}-${n}`).executeTakeFirst()) n++;
+      await trx.updateTable('project').set({ next_issue_number: n + 1 }).where('id', '=', projectId).execute();
+      return `${projectKey}-${n}`;
+    });
+    persistState();
+    return key;
+  }
 }

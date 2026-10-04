@@ -19,6 +19,18 @@ export class UserRepository {
     return row ? rowToUser(row) : undefined;
   }
 
+  /** True if any of `ids` is an AI agent — an `IN` lookup, not a scan of every user. */
+  async hasAgent(ids: string[]): Promise<boolean> {
+    if (ids.length === 0) return false;
+    return !!(await this.db.selectFrom('users').select('id').where('kind', '=', 'agent').where('id', 'in', ids).executeTakeFirst());
+  }
+
+  /** Which of `ids` are real users. */
+  async findExistingIds(ids: string[]): Promise<Set<string>> {
+    if (ids.length === 0) return new Set();
+    return new Set((await this.db.selectFrom('users').select('id').where('id', 'in', ids).execute()).map((r) => r.id));
+  }
+
   async getById(id: string): Promise<User | undefined> {
     const row = await this.db.selectFrom('users').selectAll().where('id', '=', id).executeTakeFirst();
     return row ? rowToUser(row) : undefined;

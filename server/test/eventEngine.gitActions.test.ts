@@ -57,7 +57,7 @@ describe('EventEngine readRepoFile/writeRepoFile actions', () => {
     expect(getAllEvents(workspaceId).some((e) => e.payload.type === 'issue.repoFileRead')).toBe(false);
   });
 
-  it('readRepoFile records the file content via issue.repoFileRead', async () => {
+  it('readRepoFile records only the size and hash of what it read — never the content, which any member can read from the event log', async () => {
     const { engine, workspaceRepo, automationRepo, gitRepoLinkRepo, gitProviders, reporter, issue } = await setup();
     gitProviders.register(fakeGitProvider({ id: 'fake', readFile: async () => ({ content: 'hello world' }) }));
     await linkRepo(gitRepoLinkRepo, issue.projectId, reporter.id);
@@ -74,8 +74,14 @@ describe('EventEngine readRepoFile/writeRepoFile actions', () => {
 
     const { getAllEvents } = await import('../src/eventLog');
     const workspaceId = (await workspaceRepo.getWorkspace()).id;
-    const readEvent = getAllEvents(workspaceId).find((e) => e.payload.type === 'issue.repoFileRead');
-    expect(readEvent?.payload).toMatchObject({ path: 'README.md', content: 'hello world' });
+    const events = getAllEvents(workspaceId);
+    const readEvent = events.find((e) => e.payload.type === 'issue.repoFileRead');
+    expect(readEvent?.payload).toMatchObject({
+      path: 'README.md',
+      sizeBytes: 11,
+      sha256: 'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9',
+    });
+    expect(JSON.stringify(events)).not.toContain('hello world');
   });
 
   it('writeRepoFile creates the branch first when it does not exist yet, then writes', async () => {
@@ -185,14 +191,33 @@ describe('EventEngine readRepoFile/writeRepoFile actions', () => {
     await expect(fireReadRule(ctx)).rejects.toThrow(/No fake account is connected/);
   });
 
+  it('rejects an invalid branch name for writeRepoFile before touching the provider (an agent chooses this name)', async () => {
+    const { engine, automationRepo, gitRepoLinkRepo, gitProviders, reporter, issue } = await setup();
+    const verifyAccess = vi.fn(async () => {});
+    const createBranch = vi.fn(async () => ({ url: 'x' }));
+    gitProviders.register(fakeGitProvider({ id: 'fake', verifyAccess, createBranch }));
+    await linkRepo(gitRepoLinkRepo, issue.projectId, reporter.id);
+    await seedAutomationRule(automationRepo, { eventFilter: ['issue.priorityChanged'], actions: [{ type: 'writeRepoFile', path: 'a.ts', content: 'x', branchName: '-D' }] });
+
+    await expect(
+      engine.emitEvent({
+        actor: { kind: 'user', userId: reporter.id },
+        subject: { type: 'issue', id: issue.id },
+        payload: { type: 'issue.priorityChanged', issueId: issue.id, fromPriority: 'medium', toPriority: 'high' },
+      }),
+    ).rejects.toThrow(/Invalid branch name/);
+    expect(verifyAccess).not.toHaveBeenCalled();
+    expect(createBranch).not.toHaveBeenCalled();
+  });
+
   describe('when an agent acts (commits by proxy — an agent has no git identity of its own)', () => {
-    async function agentSetup() {
+    async function agentSetup(policy = approvalPolicy('requireApprovalForAll')) {
       const ctx = await setup();
       const readFile = vi.fn(async () => ({ content: 'x' }));
       ctx.gitProviders.register(fakeGitProvider({ id: 'fake', readFile }));
       ctx.agentRuntimes.register(fixedDecisionRuntime([{ name: 'readRepoFile', input: { path: 'README.md' } }]));
       await linkRepo(ctx.gitRepoLinkRepo, ctx.issue.projectId);
-      const agent = await seedAgent(ctx.userRepo, ctx.agentRepo, { eventFilter: ['comment.created'], allowedActionTypes: ['readRepoFile'], approvalPolicy: approvalPolicy('requireApprovalForAll') });
+      const agent = await seedAgent(ctx.userRepo, ctx.agentRepo, { eventFilter: ['comment.created'], allowedActionTypes: ['readRepoFile'], approvalPolicy: policy });
       await ctx.issueRepo.assignAgent(ctx.issue.id, agent.userId, new Date().toISOString());
       const approver = await seedHumanUser(ctx.userRepo, 'approver@example.com', 'Approver');
       const connect = (userId: string, token: string) =>
@@ -211,6 +236,15 @@ describe('EventEngine readRepoFile/writeRepoFile actions', () => {
       };
       return { ...ctx, agent, approver, readFile, connect, askAndHold };
     }
+
+    it('holds repo actions for approval even when the agent is set to auto-apply everything (comments can steer an agent)', async () => {
+      const ctx = await agentSetup(approvalPolicy('autoApplyAll'));
+
+      const run = await ctx.askAndHold(); // asserts status === 'awaitingApproval'
+
+      expect(run.proposedActions).toEqual([{ type: 'readRepoFile', path: 'README.md' }]);
+      expect(ctx.readFile).not.toHaveBeenCalled();
+    });
 
     it("uses the approver's credential first", async () => {
       const { engine, approver, reporter, readFile, connect, askAndHold } = await agentSetup();

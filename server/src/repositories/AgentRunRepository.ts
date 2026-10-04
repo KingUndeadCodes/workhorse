@@ -16,6 +16,12 @@ export class AgentRunRepository {
     return (await this.db.selectFrom('agent_runs').selectAll().where('agent_user_id', '=', agentUserId).orderBy('started_at', 'asc').execute()).map(rowToAgentRun);
   }
 
+  /** Runs for one agent that started at or after `sinceIso` — what the budget checks actually need (a rolling day at most), instead of the agent's entire history. */
+  async listForAgentSince(agentUserId: string, sinceIso: string): Promise<AgentRun[]> {
+    const rows = await this.db.selectFrom('agent_runs').selectAll().where('agent_user_id', '=', agentUserId).where('started_at', '>=', sinceIso).orderBy('started_at', 'asc').execute();
+    return rows.map(rowToAgentRun);
+  }
+
   async get(id: string): Promise<AgentRun | undefined> {
     const row = await this.db.selectFrom('agent_runs').selectAll().where('id', '=', id).executeTakeFirst();
     return row ? rowToAgentRun(row) : undefined;

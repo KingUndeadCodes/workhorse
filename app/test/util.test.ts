@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AgentRun, AutomationAction, Comment, EventEnvelope, User, Workflow } from '$domain';
 import {
-  agentRunStatusLabel, avatarColor, describeAutomationAction, describeEvent, describeEventType, formatBucketLabel, formatDuration, formatHours,
+  agentRunStatusLabel, avatarColor, legalColumnTarget, legalTargetStatusIds, describeAutomationAction, describeEvent, describeEventType, formatBucketLabel, formatDuration, formatHours,
   formatRelativeDate, formatTokenCount, initials, priorityIcon, recentRunsForAgent, removeCommentSubtree, renderMarkdown, splitHumansAndAgents,
   storyPointColor, storyPointDueDateWarning, totalTokensForAgent, typeIcon,
 } from '../src/lib/util';
@@ -214,3 +214,38 @@ describe('activity descriptions', () => {
     expect(d({ type: 'writeRepoFile', path: 'a.ts', content: '', branchName: 'b' })).toBe('automation.action.writeRepoFile{"path":"a.ts","branch":"b"}');
   });
 });
+
+describe('workflow transitions (what the UI may offer)', () => {
+  const workflow = {
+    statuses: [],
+    transitions: [
+      { id: 't1', name: 'Start', fromStatusId: 'todo', toStatusId: 'doing' },
+      { id: 't2', name: 'Finish', fromStatusId: 'doing', toStatusId: 'done' },
+      { id: 't3', name: 'Reopen', fromStatusId: '*', toStatusId: 'todo' },
+    ],
+  } as unknown as Workflow;
+
+  it('legalTargetStatusIds follows the transitions out of the current status, plus wildcards', () => {
+    expect([...legalTargetStatusIds(workflow, 'todo')]).toEqual(['doing']);
+    expect([...legalTargetStatusIds(workflow, 'doing')].sort()).toEqual(['done', 'todo']);
+    expect([...legalTargetStatusIds(workflow, 'done')]).toEqual(['todo']);
+  });
+
+  it('never lists the current status itself, even when a wildcard points at it', () => {
+    expect(legalTargetStatusIds(workflow, 'todo').has('todo')).toBe(false);
+  });
+
+  it('offers nothing for an unknown status without a wildcard, and nothing while the workflow is still loading', () => {
+    expect([...legalTargetStatusIds(workflow, 'ghost')]).toEqual(['todo']); // only the wildcard applies
+    expect(legalTargetStatusIds(null, 'todo').size).toBe(0);
+    expect(legalTargetStatusIds(undefined, 'todo').size).toBe(0);
+  });
+
+  it('legalColumnTarget picks the first status in the column the issue may actually move to', () => {
+    expect(legalColumnTarget(workflow, ['review', 'doing'], 'todo')).toBe('doing'); // skips a status it can't reach
+    expect(legalColumnTarget(workflow, ['done'], 'todo')).toBeUndefined(); // To Do -> Done isn't a transition
+    expect(legalColumnTarget(workflow, ['todo'], 'done')).toBe('todo');
+    expect(legalColumnTarget(workflow, [], 'todo')).toBeUndefined();
+  });
+});
+

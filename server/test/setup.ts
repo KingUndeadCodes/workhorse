@@ -31,6 +31,7 @@ vi.mock('../src/db/core', async (importOriginal) => {
     eventsKysely,
     persistState: () => {},
     persistEvents: () => {},
+    flushPersistence: () => {},
   };
 });
 

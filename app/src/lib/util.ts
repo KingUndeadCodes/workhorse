@@ -147,6 +147,25 @@ export function agentRunStatusLabel(status: AgentRunStatus, t: Translate): strin
   return t(`agentsSettings.statusLabels.${status}`);
 }
 
+/**
+ * The statuses an issue currently in `fromStatusId` may move to: every transition leaving that status (or
+ * leaving `'*'`, meaning "from anywhere"). The server enforces the same rule on every status edit
+ * (routes/issues.ts's checkTransition) — this is what lets the UI offer only moves that will succeed.
+ */
+export function legalTargetStatusIds(workflow: Workflow | null | undefined, fromStatusId: string): Set<string> {
+  const targets = new Set<string>();
+  for (const t of workflow?.transitions ?? []) {
+    if ((t.fromStatusId === fromStatusId || t.fromStatusId === '*') && t.toStatusId !== fromStatusId) targets.add(t.toStatusId);
+  }
+  return targets;
+}
+
+/** Which of a board column's statuses (a column can hold several) an issue in `fromStatusId` can actually move to — the first legal one, or `undefined` if the column is off-limits for it. */
+export function legalColumnTarget(workflow: Workflow | null | undefined, columnStatusIds: string[], fromStatusId: string): string | undefined {
+  const legal = legalTargetStatusIds(workflow, fromStatusId);
+  return columnStatusIds.find((id) => legal.has(id));
+}
+
 /** Maps an {@link IssuePriority} to the icon name that represents it (see public/icons.svg). */
 export function priorityIcon(priority: string): string {
   switch (priority) {

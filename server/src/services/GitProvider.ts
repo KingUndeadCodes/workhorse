@@ -29,6 +29,9 @@ export interface GitProvider {
   /** Creates `newBranchName` on `repo`, branched off the head of `fromBranch`. Throws on any provider-side failure. */
   createBranch(opts: { owner: string; repo: string; auth: GitAuth; fromBranch: string; newBranchName: string }): Promise<{ url: string }>;
 
+  /** Deletes a branch this app just created — used only to undo a branch whose record then failed to save (a lost race), so it isn't left behind on the host. Omit if the host can't. */
+  deleteBranch?(opts: { owner: string; repo: string; auth: GitAuth; branchName: string }): Promise<void>;
+
   /** Reads one file's content from `branch`. Throws if the path doesn't exist there. */
   readFile(opts: { owner: string; repo: string; auth: GitAuth; branch: string; path: string }): Promise<{ content: string }>;
 

@@ -17,7 +17,7 @@
   import TermsOfUse from './lib/components/TermsOfUse.svelte';
   import AccessibilityStatement from './lib/components/AccessibilityStatement.svelte';
   import { currentUser } from './lib/stores/auth';
-  import { currentView, initWorkspace, loaded, loadError, selectedIssueId, settingsJumpTab } from './lib/stores/workspace';
+  import { currentView, initWorkspace, loaded, loadError, selectedIssueId, settingsJumpTab, statusChangeError } from './lib/stores/workspace';
   import { initNotifications, resetNotifications } from './lib/stores/notifications';
   import { connectWebSocket, disconnectWebSocket } from './lib/ws';
   import { isMobile } from './lib/stores/viewport';
@@ -107,6 +107,13 @@
     </main>
     <MobileNav />
   </div>
+  {#if $statusChangeError}
+    <!-- A refused status change (drag, menu, or drawer) — see statusChangeError in stores/workspace.ts. -->
+    <div class="notice" role="alert">
+      <span>{$statusChangeError}</span>
+      <button type="button" class="notice-dismiss" on:click={() => ($statusChangeError = null)}>{$t('common.close')}</button>
+    </div>
+  {/if}
 {/if}
 
 <style>
@@ -116,6 +123,16 @@
     padding: 10px 16px; border-radius: 6px; transition: top .15s ease;
   }
   .skip-link:focus-visible { top: 8px; }
+  .notice {
+    position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 900;
+    display: flex; align-items: center; gap: 12px; max-width: min(520px, calc(100vw - 32px)); padding: 10px 14px;
+    background: var(--surface); color: var(--text); border: 1px solid var(--critical); border-radius: 8px;
+    font-size: 12.5px; line-height: 1.4;
+  }
+  .notice-dismiss { flex: 0 0 auto; font-size: 12px; font-weight: 600; color: var(--accent-strong); }
+  @media (max-width: 768px) {
+    .notice { bottom: calc(72px + env(safe-area-inset-bottom)); }
+  }
   .app {
     display: flex;
     height: 100vh;

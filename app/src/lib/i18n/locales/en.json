@@ -71,6 +71,8 @@
     "logOutRow": "Log out"
   },
   "board": {
+    "moveNotAllowed": "That move isn't allowed by this workflow.",
+    "moveFailed": "Couldn't move the issue: {reason}",
     "noEpic": "No Epic",
     "noIssues": "No issues",
     "keyboardNav": {

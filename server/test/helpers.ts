@@ -78,11 +78,12 @@ export async function seedHumanUser(userRepo: UserRepository, email: string, dis
   return userRepo.createHuman(email, displayName, 'test-hash');
 }
 
+let seedIssueSeq = 0;
 export async function seedIssue(issueRepo: IssueRepository, overrides: Partial<Issue> & { reporterId: string }): Promise<Issue> {
   const now = new Date().toISOString();
   const issue: Issue = {
     id: `issue_${randomUUID()}`,
-    key: `TEST-${Math.floor(Math.random() * 100_000)}`,
+    key: `TEST-${++seedIssueSeq}`, // unique, since issues.key has a unique index
     projectId: 'proj_test',
     issueTypeId: 'type_test',
     statusId: 'st_todo',
@@ -124,6 +125,13 @@ export async function seedWorkflow(db: Kysely<DB>): Promise<void> {
     .values([
       { id: 'st_todo', workflow_id: workflowId, name: 'To Do', category_id: todoCategoryId, color: null },
       { id: 'st_done', workflow_id: workflowId, name: 'Done', category_id: doneCategoryId, color: null },
+    ])
+    .execute();
+  await db
+    .insertInto('workflow_transitions')
+    .values([
+      { id: 'tr_finish', workflow_id: workflowId, name: 'Finish', from_status_id: 'st_todo', to_status_id: 'st_done', required_field_ids: null },
+      { id: 'tr_reopen', workflow_id: workflowId, name: 'Reopen', from_status_id: 'st_done', to_status_id: 'st_todo', required_field_ids: null },
     ])
     .execute();
 }

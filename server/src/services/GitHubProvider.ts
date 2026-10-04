@@ -82,6 +82,11 @@ export const githubProvider: GitProvider = {
     return { url: `https://github.com/${owner}/${repo}/tree/${encodeURIComponent(newBranchName)}` };
   },
 
+  async deleteBranch({ owner, repo, auth, branchName }) {
+    const res = await fetch(`${repoUrl(owner, repo)}/git/refs/heads/${encodePath(branchName)}`, { method: 'DELETE', headers: headers(authToken(auth)) });
+    if (!res.ok && res.status !== 404) throw new Error(`Could not delete branch "${branchName}": ${res.status}`);
+  },
+
   async readFile({ owner, repo, auth, branch, path }) {
     const token = authToken(auth);
     const res = await fetch(`${repoUrl(owner, repo)}/contents/${encodePath(path)}?ref=${encodeURIComponent(branch)}`, { headers: headers(token) });

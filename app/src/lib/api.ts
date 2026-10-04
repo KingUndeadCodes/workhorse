@@ -163,6 +163,11 @@ export function fetchIssueEvents(issueId: string): Promise<{ events: ActivityEve
   return get<{ events: ActivityEventSummary[] }>(`/issues/${issueId}/events`);
 }
 
+/** A one-time, 30-second pass for opening the live-update websocket — the websocket URL carries this instead of the long-lived login token, so a logged URL isn't a credential. */
+export function fetchWsTicket(): Promise<{ ticket: string }> {
+  return post('/ws-ticket', {});
+}
+
 /** Fetches one event's full payload — called only when a user expands that Activity row. */
 export function fetchEventDetail(eventId: string): Promise<{ event: EventEnvelope }> {
   return get<{ event: EventEnvelope }>(`/events/${eventId}`);

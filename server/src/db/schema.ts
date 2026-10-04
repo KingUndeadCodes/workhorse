@@ -1,3 +1,4 @@
+import type { Database } from 'sql.js';
 import { all, eventsDb, get, run, stateDb } from './core';
 import { PROJECT_COLORS } from '../domain';
 
@@ -5,10 +6,10 @@ import { PROJECT_COLORS } from '../domain';
  * has no `IF NOT EXISTS` form in SQLite, so this checks `pragma table_info` first. Needed
  * for columns added after a table already shipped (the `CREATE TABLE IF NOT EXISTS` above
  * it only helps on a brand-new database). */
-function addColumnIfMissing(table: string, column: string, type: string): void {
-  const columns = all<{ name: string }>(stateDb, `PRAGMA table_info(${table})`);
+function addColumnIfMissing(table: string, column: string, type: string, database: Database = stateDb): void {
+  const columns = all<{ name: string }>(database, `PRAGMA table_info(${table})`);
   if (columns.some((c) => c.name === column)) return;
-  run(stateDb, `ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+  run(database, `ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
 }
 
 /**
@@ -27,6 +28,8 @@ export function migrateStateDb(): void {
   // Issue keys are `${project.key}-${suffix}` — two projects sharing a prefix would make keys
   // ambiguous. Safe/idempotent against the single pre-existing seeded project.
   run(stateDb, `CREATE UNIQUE INDEX IF NOT EXISTS idx_project_key ON project(key)`);
+  // Next number for `${key}-${n}` issue keys — see ProjectRepository.allocateIssueKey.
+  addColumnIfMissing('project', 'next_issue_number', 'INTEGER');
   addColumnIfMissing('project', 'color', 'TEXT');
   addColumnIfMissing('project', 'feature_flags', 'TEXT');
   run(
@@ -71,6 +74,8 @@ export function migrateStateDb(): void {
   );
   addColumnIfMissing('agent_runs', 'token_usage', 'INTEGER');
   addColumnIfMissing('agent_runs', 'issue_id', 'TEXT');
+  // The per-agent budget checks look up one agent's recent runs on every trigger.
+  run(stateDb, `CREATE INDEX IF NOT EXISTS idx_agent_runs_agent_started ON agent_runs(agent_user_id, started_at)`);
   run(stateDb, `CREATE TABLE IF NOT EXISTS status_categories (id TEXT PRIMARY KEY, workspace_id TEXT, name TEXT, type TEXT, color TEXT, sort_order INTEGER)`);
   run(stateDb, `CREATE TABLE IF NOT EXISTS workflow (id TEXT PRIMARY KEY, name TEXT, initial_status_id TEXT)`);
   run(stateDb, `CREATE TABLE IF NOT EXISTS workflow_statuses (id TEXT PRIMARY KEY, workflow_id TEXT, name TEXT, category_id TEXT, color TEXT)`);
@@ -121,6 +126,15 @@ export function migrateStateDb(): void {
   addColumnIfMissing('issues', 'assignee_ids', 'TEXT');
   addColumnIfMissing('issues', 'assigned_by', 'TEXT');
   addColumnIfMissing('issues', 'agent_assignments', 'TEXT');
+  // Two issues sharing a key would make "PRJ-123" ambiguous everywhere it's typed or linked. Databases that
+  // already contain a duplicate (keys used to be a random 6-hex suffix, which collides eventually) can't take
+  // a unique index, so only add it when it's safe — and say so loudly instead of failing to boot.
+  const duplicateKey = get<{ key: string }>(stateDb, `SELECT key FROM issues GROUP BY key HAVING COUNT(*) > 1 LIMIT 1`);
+  if (duplicateKey) {
+    console.warn(`[schema] Duplicate issue key "${duplicateKey.key}" exists — skipping the unique index on issues.key until duplicates are resolved.`);
+  } else {
+    run(stateDb, `CREATE UNIQUE INDEX IF NOT EXISTS idx_issues_key ON issues(key)`);
+  }
   run(stateDb, `CREATE INDEX IF NOT EXISTS idx_issues_project ON issues(project_id)`);
   run(stateDb, `CREATE INDEX IF NOT EXISTS idx_issues_parent ON issues(parent_id)`);
   run(
@@ -300,4 +314,12 @@ export function migrateEventsDb(): void {
     )`,
   );
   run(eventsDb, `CREATE UNIQUE INDEX IF NOT EXISTS idx_events_sequence ON events(sequence)`);
+  // `nextSequence` runs MAX(sequence) per workspace on every append, and every read filters by workspace.
+  run(eventsDb, `CREATE INDEX IF NOT EXISTS idx_events_workspace_sequence ON events(workspace_id, sequence)`);
+  // `issue_id` is denormalized out of the JSON payload so an issue's Activity tab is an index lookup rather
+  // than loading and JSON-parsing the whole log. Rows written before this column existed are backfilled once
+  // here (json_extract), and every new row sets it in appendEvent.
+  addColumnIfMissing('events', 'issue_id', 'TEXT', eventsDb);
+  run(eventsDb, `UPDATE events SET issue_id = json_extract(payload, '$.issueId') WHERE issue_id IS NULL AND payload LIKE '%"issueId"%'`);
+  run(eventsDb, `CREATE INDEX IF NOT EXISTS idx_events_issue ON events(issue_id, sequence)`);
 }

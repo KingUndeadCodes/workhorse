@@ -17,7 +17,7 @@
   import type { Issue } from '$domain';
   import IssueCard from './IssueCard.svelte';
   import SearchFilterBar from './SearchFilterBar.svelte';
-  import { board, issueTypes, issuesStore, moveIssueToStatus, selectedIssueId, statusCategories, workflow } from '../stores/workspace';
+  import { board, issueTypes, issuesStore, moveIssueToColumn, selectedIssueId, statusCategories, workflow } from '../stores/workspace';
   import { issueFiltersStore, issueMatchesFilters } from '../stores/issueFilters';
   import { t } from '../i18n';
 
@@ -113,7 +113,7 @@
                 {doneStatusIds}
                 {columns}
                 moveMenuMode="sheet"
-                onMove={(issueId, statusIds) => statusIds[0] && moveIssueToStatus(issueId, statusIds[0])}
+                onMove={moveIssueToColumn}
               />
             </div>
           {/each}

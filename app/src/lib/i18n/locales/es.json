@@ -66,6 +66,8 @@
     "logOutRow": "Cerrar sesión"
   },
   "board": {
+    "moveNotAllowed": "Este flujo de trabajo no permite ese movimiento.",
+    "moveFailed": "No se pudo mover la incidencia: {reason}",
     "noEpic": "Sin épica",
     "noIssues": "Sin tareas",
     "keyboardNav": {

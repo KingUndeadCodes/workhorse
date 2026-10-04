@@ -4,7 +4,8 @@
   import IssueCard from './IssueCard.svelte';
   import SearchFilterBar from './SearchFilterBar.svelte';
   import KeyboardNavHint from './KeyboardNavHint.svelte';
-  import { board, issueTypes, issuesStore, moveIssueToStatus, selectedIssueId, statusCategories, workflow } from '../stores/workspace';
+  import { legalColumnTarget } from '../util';
+  import { board, draggedIssueId, issueTypes, issuesStore, moveIssueToColumn, selectedIssueId, statusCategories, workflow } from '../stores/workspace';
   import { issueFiltersStore, issueMatchesFilters } from '../stores/issueFilters';
   import { t } from '../i18n';
 
@@ -86,13 +87,14 @@
   function toggleHold() {
     if (heldIssueId) {
       const cell = navSwimlanes[navSwimlaneIndex]?.cells[navColumnIndex];
-      const targetStatusId = cell?.statusIds[0];
       const heldIssue = allIssues.find((i) => i.id === heldIssueId);
-      if (targetStatusId && heldIssue) {
-        moveIssueToStatus(heldIssueId, targetStatusId);
-        announce($t('board.keyboardNav.dropped', { title: heldIssue.title, column: columns[navColumnIndex]?.name ?? '' }));
-      }
+      const droppedId = heldIssueId;
       heldIssueId = null;
+      if (cell && heldIssue) {
+        moveIssueToColumn(droppedId, cell.statusIds).then((moved) =>
+          announce(moved ? $t('board.keyboardNav.dropped', { title: heldIssue.title, column: columns[navColumnIndex]?.name ?? '' }) : $t('board.moveNotAllowed')),
+        );
+      }
     } else {
       const issue = navSwimlanes[navSwimlaneIndex]?.cells[navColumnIndex]?.issues[navCardIndex];
       if (!issue) return;
@@ -195,7 +197,14 @@
     e.preventDefault();
     dragOverCell = null;
     const issueId = e.dataTransfer?.getData('text/issue-id');
-    if (issueId && statusIds[0]) moveIssueToStatus(issueId, statusIds[0]);
+    if (issueId) moveIssueToColumn(issueId, statusIds);
+  }
+
+  /** Whether the issue being dragged may be dropped on a column — only columns holding a status its workflow lets it move to (or the column it is already in) accept the drop. */
+  function acceptsDrop(statusIds: string[]): boolean {
+    const dragged = $draggedIssueId ? $issuesStore.find((i) => i.id === $draggedIssueId) : undefined;
+    if (!dragged) return true;
+    return statusIds.includes(dragged.statusId) || legalColumnTarget($workflow, statusIds, dragged.statusId) !== undefined;
   }
 
   function selectIssue(id: string) {
@@ -272,9 +281,10 @@
               id="nav-cell-0-{ci}"
               class="cell"
               class:drag-over={dragOverCell === key}
+              class:drop-blocked={$draggedIssueId && !acceptsDrop(col.statusIds)}
               class:nav-cell={cellIssues.length === 0}
               tabindex={cellIssues.length === 0 ? -1 : undefined}
-              on:dragover={(e) => { e.preventDefault(); dragOverCell = key; }}
+              on:dragover={(e) => { if (acceptsDrop(col.statusIds)) { e.preventDefault(); dragOverCell = key; } }}
               on:dragleave={() => (dragOverCell = null)}
               on:drop={(e) => handleDrop(e, col.statusIds)}
             >
@@ -291,7 +301,7 @@
                         onSelect={selectIssue}
                         {doneStatusIds}
                         {columns}
-                        onMove={(issueId, statusIds) => statusIds[0] && moveIssueToStatus(issueId, statusIds[0])}
+                        onMove={moveIssueToColumn}
                         held={heldIssueId === issue.id}
                         onGrab={() => handleCardGrab(issue.id)}
                       />
@@ -326,9 +336,10 @@
               id="nav-cell-{si}-{ci}"
               class="cell"
               class:drag-over={dragOverCell === key}
+              class:drop-blocked={$draggedIssueId && !acceptsDrop(col.statusIds)}
               class:nav-cell={cellIssues.length === 0}
               tabindex={cellIssues.length === 0 ? -1 : undefined}
-              on:dragover={(e) => { e.preventDefault(); dragOverCell = key; }}
+              on:dragover={(e) => { if (acceptsDrop(col.statusIds)) { e.preventDefault(); dragOverCell = key; } }}
               on:dragleave={() => (dragOverCell = null)}
               on:drop={(e) => handleDrop(e, col.statusIds)}
             >
@@ -345,7 +356,7 @@
                         onSelect={selectIssue}
                         {doneStatusIds}
                         {columns}
-                        onMove={(issueId, statusIds) => statusIds[0] && moveIssueToStatus(issueId, statusIds[0])}
+                        onMove={moveIssueToColumn}
                         held={heldIssueId === issue.id}
                         onGrab={() => handleCardGrab(issue.id)}
                       />
@@ -401,6 +412,7 @@
     display: flex; flex-direction: column; gap: 8px; transition: background .1s ease;
   }
   .cell-list { display: flex; flex-direction: column; gap: 8px; }
+  .cell.drop-blocked { opacity: .45; }
   .cell.drag-over { background: var(--accent-soft); outline: 2px dashed var(--accent); outline-offset: -2px; }
   /* Empty cells are always focusable (tabindex="-1") so a held card can be walked into a column
      with nothing in it yet. */

@@ -125,6 +125,8 @@ agentsRouter.patch('/agents/:userId', async (c) => {
  * an issue to reason about).
  */
 agentsRouter.post('/agents/:userId/trigger', async (c) => {
+  const forbidden = await requireNonGuest(c, 'trigger agents');
+  if (forbidden) return c.json({ error: forbidden }, 403);
   const userId = c.req.param('userId');
   const body = await c.req.json<{ issueId?: string }>();
   try {
@@ -138,6 +140,9 @@ agentsRouter.post('/agents/:userId/trigger', async (c) => {
 
 /** POST /api/agent-runs/:id/approve — executes a run that was `awaitingApproval`. */
 agentsRouter.post('/agent-runs/:id/approve', async (c) => {
+  // Approval is privileged: `reviewedBy` decides whose git credential a repo action runs with.
+  const forbidden = await requireNonGuest(c, 'approve agent runs');
+  if (forbidden) return c.json({ error: forbidden }, 403);
   const id = c.req.param('id');
   const run = await engine.resolveAgentRun(id, 'approved', c.get('user').id);
   if (!run) return c.json({ error: 'Run not found or not awaiting approval' }, 404);
@@ -146,6 +151,8 @@ agentsRouter.post('/agent-runs/:id/approve', async (c) => {
 
 /** POST /api/agent-runs/:id/reject — discards a run that was `awaitingApproval`. */
 agentsRouter.post('/agent-runs/:id/reject', async (c) => {
+  const forbidden = await requireNonGuest(c, 'reject agent runs');
+  if (forbidden) return c.json({ error: forbidden }, 403);
   const id = c.req.param('id');
   const run = await engine.resolveAgentRun(id, 'rejected', c.get('user').id);
   if (!run) return c.json({ error: 'Run not found or not awaiting approval' }, 404);

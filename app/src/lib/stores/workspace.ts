@@ -33,6 +33,7 @@ import type {
 import { DEFAULT_FEATURE_FLAGS } from '$domain';
 import {
   addAttachment as apiAddAttachment,
+  AuthError,
   addIssueLink as apiAddIssueLink,
   addWorklog as apiAddWorklog,
   assignAgentToIssue as apiAssignAgentToIssue,
@@ -62,7 +63,8 @@ import {
   updateProject as apiUpdateProject,
   updateWorkspaceMemberRole as apiUpdateWorkspaceMemberRole,
 } from '../api';
-import { removeCommentSubtree } from '../util';
+import { t } from '../i18n';
+import { legalColumnTarget, removeCommentSubtree } from '../util';
 import { currentUser, setCurrentUser } from './auth';
 
 /** Key used to persist which project was last active, so a reload lands back on it. */
@@ -284,6 +286,46 @@ export async function unlinkGitRepo(projectId: string): Promise<void> {
 export async function moveIssueToStatus(issueId: string, toStatusId: string): Promise<void> {
   const { issue } = await patchIssueStatus(issueId, toStatusId);
   replaceIssue(issue);
+}
+
+/** A short-lived message for a status change that was refused — shown by App.svelte. Moves are started from drag-and-drop and menus that don't await anything, so without this a refusal would vanish as an unhandled rejection. */
+export const statusChangeError = writable<string | null>(null);
+/** The issue currently being dragged, so a column can tell during `dragover` (when the drag payload is unreadable) whether it would accept it. */
+export const draggedIssueId = writable<string | null>(null);
+
+let statusErrorTimer: ReturnType<typeof setTimeout> | undefined;
+function reportStatusChangeError(message: string): void {
+  statusChangeError.set(message);
+  clearTimeout(statusErrorTimer);
+  statusErrorTimer = setTimeout(() => statusChangeError.set(null), 8000);
+}
+
+/** {@link moveIssueToStatus}, but a refusal becomes a visible notice instead of a rejection. Resolves to whether the issue moved. */
+export async function tryMoveIssueToStatus(issueId: string, toStatusId: string): Promise<boolean> {
+  try {
+    await moveIssueToStatus(issueId, toStatusId);
+    return true;
+  } catch (err) {
+    if (err instanceof AuthError) return false; // the session ended — the app is already back at the login screen
+    reportStatusChangeError(get(t)('board.moveFailed', { reason: err instanceof Error ? err.message : String(err) }));
+    return false;
+  }
+}
+
+/**
+ * Moves an issue into a board column: picks the column's first status the workflow lets this issue move to,
+ * and does nothing (beyond a notice) if there isn't one. Dropping an issue on the column it is already in is
+ * a quiet no-op. Every drag, keyboard move, and "move to" menu goes through here so they all follow the same rule.
+ */
+export async function moveIssueToColumn(issueId: string, columnStatusIds: string[]): Promise<boolean> {
+  const issue = get(issuesStore).find((i) => i.id === issueId);
+  if (!issue || columnStatusIds.includes(issue.statusId)) return false;
+  const target = legalColumnTarget(get(workflow), columnStatusIds, issue.statusId);
+  if (!target) {
+    reportStatusChangeError(get(t)('board.moveNotAllowed'));
+    return false;
+  }
+  return tryMoveIssueToStatus(issueId, target);
 }
 
 /** Sets one custom field's value on an issue. */

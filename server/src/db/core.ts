@@ -1,9 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, rmSync, writeSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Kysely } from 'kysely';
 import { SqlJsDialect } from 'kysely-wasm';
 import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js';
+import { CoalescingWriter } from './coalescingWriter';
 import type { DB, EventsDB } from './types';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -44,14 +45,53 @@ function loadOrCreate(path: string): Database {
   return new SQL.Database();
 }
 
-export function persistState(): void {
-  mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(STATE_DB_PATH, Buffer.from(stateDb.export()));
+/**
+ * Replaces `path` with `data` all-or-nothing: write a temp file in the same directory, fsync it, then
+ * rename over the target. A plain `writeFileSync(path, ...)` truncates the live file first, so a crash,
+ * a full disk, or a SIGKILL mid-write would leave a truncated database and lose everything on the next
+ * boot; with rename, the old file stays intact until the new one is completely on disk (rename within
+ * one filesystem is atomic).
+ */
+export function atomicWrite(path: string, data: Buffer): void {
+  mkdirSync(dirname(path), { recursive: true });
+  const tmp = `${path}.${process.pid}.tmp`;
+  try {
+    const fd = openSync(tmp, 'w');
+    try {
+      writeSync(fd, data);
+      fsyncSync(fd);
+    } finally {
+      closeSync(fd);
+    }
+    renameSync(tmp, path);
+  } catch (err) {
+    rmSync(tmp, { force: true }); // never leave a half-written temp file behind
+    throw err;
+  }
 }
 
+const stateWriter = new CoalescingWriter(() => atomicWrite(STATE_DB_PATH, Buffer.from(stateDb.export())));
+const eventsWriter = new CoalescingWriter(() => atomicWrite(EVENTS_DB_PATH, Buffer.from(eventsDb.export())));
+
+/** Records that `state.db` needs saving. The save is coalesced — see {@link flushPersistence}. */
+export function persistState(): void {
+  stateWriter.markDirty();
+}
+
+/** Records that `events.db` needs saving. The save is coalesced — see {@link flushPersistence}. */
 export function persistEvents(): void {
-  mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(EVENTS_DB_PATH, Buffer.from(eventsDb.export()));
+  eventsWriter.markDirty();
+}
+
+/**
+ * Writes whatever is owed to disk, right now. Called at the end of every request (before the response is
+ * sent, so a client is never told "done" about something that isn't on disk yet), after boot, and on
+ * shutdown. The event log goes first: it is the source of truth, so if the process dies between the two
+ * files the read model is the one that lags and can be rebuilt from the log.
+ */
+export function flushPersistence(): void {
+  eventsWriter.flush();
+  stateWriter.flush();
 }
 
 /**

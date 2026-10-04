@@ -7,3 +7,4 @@ server/coverage/
 *.log
 .env
 PROBLEMS.md
+IDEA.md

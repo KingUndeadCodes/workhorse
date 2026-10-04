@@ -66,6 +66,8 @@
     "logOutRow": "लॉग आउट"
   },
   "board": {
+    "moveNotAllowed": "यह वर्कफ़्लो उस बदलाव की अनुमति नहीं देता।",
+    "moveFailed": "इश्यू को स्थानांतरित नहीं किया जा सका: {reason}",
     "noEpic": "कोई एपिक नहीं",
     "noIssues": "कोई इश्यू नहीं",
     "keyboardNav": {

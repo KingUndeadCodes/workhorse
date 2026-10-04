@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import type { WorkspaceRole } from '../domain';
 import type { AuthVariables } from '../auth/middleware';
 import { userRepo, workspaceRepo } from '../container';
+import { disconnectUser } from '../ws';
 
 /**
  * Workspace membership — who's in this workspace, what role they hold, and (via
@@ -82,6 +83,7 @@ workspaceRouter.delete('/workspace-members/:userId', async (c) => {
     }
     const workspace = await workspaceRepo.getWorkspace();
     await workspaceRepo.removeMember(workspace.id, targetId);
+    disconnectUser(targetId);
     return c.json({ ok: true });
   });
 });

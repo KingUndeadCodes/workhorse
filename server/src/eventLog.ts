@@ -42,7 +42,7 @@ export function appendEvent(entry: { actor: EventEnvelope['actor']; subject: Ent
     occurredAt: new Date().toISOString(),
     ...entry,
   };
-  run(eventsDb, `INSERT INTO events (id, workspace_id, sequence, occurred_at, actor, subject_type, subject_id, payload) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [
+  run(eventsDb, `INSERT INTO events (id, workspace_id, sequence, occurred_at, actor, subject_type, subject_id, payload, issue_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
     event.id,
     event.workspaceId,
     event.sequence,
@@ -51,6 +51,7 @@ export function appendEvent(entry: { actor: EventEnvelope['actor']; subject: Ent
     event.subject.type,
     event.subject.id,
     JSON.stringify(event.payload),
+    'issueId' in event.payload ? (event.payload.issueId as string) : null,
   ]);
   persistEvents();
   return event;
@@ -60,20 +61,19 @@ export function getAllEvents(workspaceId: string): EventEnvelope[] {
   return all<EventRow>(eventsDb, `SELECT * FROM events WHERE workspace_id = ? ORDER BY sequence ASC`, [workspaceId]).map(rowToEvent);
 }
 
-export function getEventsSince(workspaceId: string, sequence: number): EventEnvelope[] {
-  return all<EventRow>(eventsDb, `SELECT * FROM events WHERE workspace_id = ? AND sequence > ? ORDER BY sequence ASC`, [workspaceId, sequence]).map(rowToEvent);
+/** Events after `sequence`, oldest first, at most `limit` of them — a caller that needs more asks again from the last sequence it got. */
+export function getEventsSince(workspaceId: string, sequence: number, limit = Number.MAX_SAFE_INTEGER): EventEnvelope[] {
+  return all<EventRow>(eventsDb, `SELECT * FROM events WHERE workspace_id = ? AND sequence > ? ORDER BY sequence ASC LIMIT ?`, [workspaceId, sequence, limit]).map(rowToEvent);
 }
 
 /**
- * Every event whose payload carries this `issueId` — the issue's own lifecycle (status,
- * assignees, links, worklogs, branches, ...) plus every comment event on it, since comments
- * carry their parent issue's id too. This is a full table scan of the log filtered in JS
- * rather than a SQL `WHERE`, same tradeoff `AuditService` already makes with `getAllEvents`:
- * `payload` is opaque JSON to SQLite, so there's no column to index on without denormalizing
- * `issueId` onto the row, which nothing else here needs. Fine at this app's scale.
+ * Every event whose payload carries this `issueId` — the issue's own lifecycle (status, assignees,
+ * links, worklogs, branches, ...) plus every comment event on it, since comments carry their parent
+ * issue's id too. Served from the denormalized, indexed `issue_id` column (see migrateEventsDb)
+ * rather than scanning and parsing the whole log.
  */
 export function getEventsForIssue(workspaceId: string, issueId: string): EventEnvelope[] {
-  return getAllEvents(workspaceId).filter((e) => 'issueId' in e.payload && e.payload.issueId === issueId);
+  return all<EventRow>(eventsDb, `SELECT * FROM events WHERE workspace_id = ? AND issue_id = ? ORDER BY sequence ASC`, [workspaceId, issueId]).map(rowToEvent);
 }
 
 export function getEventById(id: string): EventEnvelope | undefined {

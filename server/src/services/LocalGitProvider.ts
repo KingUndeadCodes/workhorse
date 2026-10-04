@@ -20,10 +20,11 @@
  */
 import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdir, mkdtemp, rm, writeFile as fsWriteFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, rm, writeFile as fsWriteFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve, sep } from 'node:path';
 import { promisify } from 'node:util';
+import { assertValidBranchName } from './branchName';
 import type { GitProvider } from './GitProvider';
 
 const execFileAsync = promisify(execFile);
@@ -41,6 +42,26 @@ function resolveRepoPath(repo: string): string {
   return resolved;
 }
 
+/**
+ * Refuses a path that runs through an existing symbolic link. The path string passes the "stays inside
+ * the worktree" check even when a committed link such as `docs -> /home/app` points outside it, and
+ * `writeFile`/`mkdir` follow links — so an agent-written file could land anywhere the server process can
+ * write. Each existing component is checked with `lstat` (which doesn't follow); once a component doesn't
+ * exist, nothing beyond it can be a link, so it's safe to create.
+ */
+async function assertNoSymlinkInPath(root: string, relPath: string): Promise<void> {
+  let current = root;
+  for (const segment of relPath.split(/[\\/]+/).filter(Boolean)) {
+    current = join(current, segment);
+    try {
+      if ((await lstat(current)).isSymbolicLink()) throw new Error(`"${relPath}" passes through a symbolic link, which can't be written through`);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return;
+      throw err;
+    }
+  }
+}
+
 async function git(repoPath: string, args: string[]): Promise<string> {
   try {
     const { stdout } = await execFileAsync('git', args, { cwd: repoPath });
@@ -55,6 +76,7 @@ export const localGitProvider: GitProvider = {
   id: 'local',
 
   async verifyAccess({ repo, branch }) {
+    assertValidBranchName(branch);
     const repoPath = resolveRepoPath(repo);
     try {
       await git(repoPath, ['rev-parse', '--verify', `refs/heads/${branch}`]);
@@ -64,12 +86,21 @@ export const localGitProvider: GitProvider = {
   },
 
   async createBranch({ repo, fromBranch, newBranchName }) {
+    assertValidBranchName(newBranchName);
+    assertValidBranchName(fromBranch);
     const repoPath = resolveRepoPath(repo);
-    await git(repoPath, ['branch', newBranchName, fromBranch]);
+    // `--` ends option parsing, so even a name that slipped past validation can't be read as a flag.
+    await git(repoPath, ['branch', '--', newBranchName, fromBranch]);
     return { url: `file://${join(repoPath)}` };
   },
 
+  async deleteBranch({ repo, branchName }) {
+    assertValidBranchName(branchName);
+    await git(resolveRepoPath(repo), ['branch', '-D', '--', branchName]);
+  },
+
   async readFile({ repo, branch, path }) {
+    assertValidBranchName(branch);
     const repoPath = resolveRepoPath(repo);
     try {
       const content = await git(repoPath, ['show', `${branch}:${path}`]);
@@ -86,15 +117,17 @@ export const localGitProvider: GitProvider = {
    * first via `createBranch` if needed — see applyAction's `writeRepoFile` case).
    */
   async writeFile({ repo, branch, path, content, commitMessage }) {
+    assertValidBranchName(branch);
     const repoPath = resolveRepoPath(repo);
     const worktreeDir = resolve(await mkdtemp(join(tmpdir(), 'workhorse-git-')));
     try {
-      await git(repoPath, ['worktree', 'add', '--quiet', worktreeDir, branch]);
+      await git(repoPath, ['worktree', 'add', '--quiet', '--', worktreeDir, branch]);
 
       const filePath = resolve(worktreeDir, path);
       if (filePath !== worktreeDir && !filePath.startsWith(worktreeDir + sep)) {
         throw new Error(`File path must stay within the repository`);
       }
+      await assertNoSymlinkInPath(worktreeDir, path);
       await mkdir(dirname(filePath), { recursive: true });
       await fsWriteFile(filePath, content, 'utf8');
 

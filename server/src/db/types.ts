@@ -20,6 +20,7 @@ export interface DB {
     default_workflow_id: string | null;
     color: string | null;
     feature_flags: string | null;
+    next_issue_number: number | null;
     created_at: string | null;
     archived_at: string | null;
   };

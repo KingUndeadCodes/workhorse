@@ -30,12 +30,13 @@
     sprints,
     statusCategories,
     unassignAgent,
+    tryMoveIssueToStatus,
     updateIssue,
     users,
     workflow,
   } from '../stores/workspace';
   import { createBranch as apiCreateBranch, deleteBranch as apiDeleteBranch, fetchEventDetail, fetchIssueEvents, getBranch, triggerAgent, type ActivityEventSummary } from '../api';
-  import { describeEvent, describeEventType, displayName, formatHours, formatRelativeDate, priorityIcon, renderMarkdown, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
+  import { describeEvent, describeEventType, displayName, formatHours, formatRelativeDate, legalTargetStatusIds, priorityIcon, renderMarkdown, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
   import { lineNumbers } from '../actions/lineNumbers';
   import { locale, t, tn } from '../i18n';
   import { STORY_POINT_VALUES, slugifyBranchName, type Branch, type EventEnvelope, type Issue, type IssueLinkType } from '$domain';
@@ -148,10 +149,19 @@
     $selectedIssueId = null;
   }
 
-  function handleStatusChange(e: Event) {
+  async function handleStatusChange(e: Event) {
     if (!issue) return;
-    updateIssue(issue.id, { statusId: (e.target as HTMLSelectElement).value });
+    const select = e.target as HTMLSelectElement;
+    const moved = await tryMoveIssueToStatus(issue.id, select.value);
+    if (!moved) select.value = issue.statusId; // the server refused (or the session ended) — show the status it really has
   }
+
+  /** The issue's current status plus only the statuses its workflow lets it move to — the dropdown offers nothing the server would refuse. */
+  $: statusOptions = (() => {
+    if (!issue) return [];
+    const legal = legalTargetStatusIds($workflow, issue.statusId);
+    return ($workflow?.statuses ?? []).filter((s) => s.id === issue.statusId || legal.has(s.id));
+  })();
 
   async function submitComment() {
     if (!issue || !draftComment.trim() || submittingComment) return;
@@ -399,7 +409,7 @@
         <span class="status-pill" class:done={category?.type === 'done'} class:inprogress={category?.type === 'inProgress'}>
           {status?.name}
           <select class="status-pill-select" value={issue.statusId} on:change={handleStatusChange}>
-            {#each $workflow?.statuses ?? [] as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
+            {#each statusOptions as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
           </select>
         </span>
       </div>

@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { cors } from 'hono/cors';
+import { flushPersistence } from './db/core';
 import { requireAuth } from './auth/middleware';
 import {
   agentRepo,
@@ -31,9 +33,27 @@ import { webhooksRouter } from './routes/webhooks';
 import { workflowRouter } from './routes/workflow';
 import { workspaceRouter } from './routes/workspace';
 
+const EVENTS_PAGE_DEFAULT = 500;
+const EVENTS_PAGE_MAX = 1000;
+
 export const app = new Hono();
 
+// Saves the database once per request, after the handler has finished but before the response is sent. Writes
+// during a request only mark the database dirty (see db/coalescingWriter.ts) instead of rewriting the whole file
+// each time. `finally` so a handler that throws still persists whatever it did before failing.
+app.use('*', async (_c, next) => {
+  try {
+    await next();
+  } finally {
+    flushPersistence();
+  }
+});
+
 app.use('*', cors());
+// Reject oversized bodies before they're parsed: c.req.json() is otherwise unbounded, and the avatar size
+// check in routes/auth.ts only runs after the whole body is already in memory. 5 MB leaves headroom over the
+// 4 MB avatar cap.
+app.use('/api/*', bodyLimit({ maxSize: 5 * 1024 * 1024, onError: (c) => c.json({ error: 'request body too large' }, 413) }));
 
 // Bearer tokens aren't sent ambiently by the browser the way cookies are, so an unconfigured
 // cors() above grants no extra authority to a malicious origin here — no origin allowlist needed.
@@ -88,7 +108,11 @@ app.get('/api/bootstrap', async (c) => {
  */
 app.get('/api/events', async (c) => {
   const since = Number(c.req.query('since') ?? 0);
-  return c.json(getEventsSince((await workspaceRepo.getWorkspace()).id, since));
+  // Bounded: an unbounded read returned the whole log in one response. A client that gets exactly `limit`
+  // events asks again from the last sequence it received.
+  const requested = Number(c.req.query('limit') ?? EVENTS_PAGE_DEFAULT);
+  const limit = Math.min(Math.max(Number.isFinite(requested) ? Math.floor(requested) : EVENTS_PAGE_DEFAULT, 1), EVENTS_PAGE_MAX);
+  return c.json(getEventsSince((await workspaceRepo.getWorkspace()).id, Number.isFinite(since) ? since : 0, limit));
 });
 
 /** GET /api/events/:id -> `{ event }` — one event's full payload, 404 if it doesn't exist. Used to lazily fill in an Activity row's details only once a user expands it (see routes/issues.ts's `/issues/:id/events`). */

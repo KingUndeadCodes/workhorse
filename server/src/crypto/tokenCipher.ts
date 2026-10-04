@@ -1,6 +1,6 @@
 /**
- * Encrypts small secrets at rest — `GitRepoLink.token` (a git host personal access token) and
- * `WebhookSubscription.secret` (used to HMAC-sign outbound deliveries) — so a stolen copy of
+ * Encrypts small secrets at rest — a person's git credential (`UserGitConnection`'s personal access
+ * token or OAuth access token) and `WebhookSubscription.secret` (used to HMAC-sign outbound deliveries) — so a stolen copy of
  * `state.db` alone doesn't hand over live write access to every linked repo or the ability to
  * forge signed webhook deliveries. AES-256-GCM with a random IV per call — GCM's auth tag also
  * means a corrupted/tampered ciphertext fails to decrypt loudly instead of silently returning

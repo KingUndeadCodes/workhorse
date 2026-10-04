@@ -12,7 +12,7 @@
 import type { Server as HttpServer, IncomingMessage } from 'node:http';
 import type { ServerType } from '@hono/node-server';
 import { WebSocketServer, type WebSocket } from 'ws';
-import { verifyToken, type AuthClaims } from './auth/jwt';
+import { randomUUID } from 'node:crypto';
 import { workspaceRepo } from './container';
 import type { EventEnvelope } from './domain';
 
@@ -31,6 +31,31 @@ interface Client {
 
 const clients = new Set<Client>();
 
+const TICKET_TTL_MS = 30_000;
+const tickets = new Map<string, { userId: string; exp: number }>();
+
+/**
+ * The browser's WebSocket API can't set an Authorization header, so something has to travel in the URL —
+ * and URLs end up in proxy and access logs. Putting the long-lived (7 day) JWT there meant every log line
+ * was a reusable credential. Instead, the signed-in app trades its bearer token for a ticket
+ * (`POST /api/ws-ticket`) that works once, for 30 seconds, for that user only; what lands in a log is
+ * already dead.
+ */
+export function issueWsTicket(userId: string): string {
+  const now = Date.now();
+  for (const [key, value] of tickets) if (value.exp < now) tickets.delete(key);
+  const ticket = randomUUID();
+  tickets.set(ticket, { userId, exp: now + TICKET_TTL_MS });
+  return ticket;
+}
+
+/** The user a live ticket was issued for — consumed on use, so a second attempt gets `undefined`. */
+export function redeemWsTicket(ticket: string): string | undefined {
+  const entry = tickets.get(ticket);
+  tickets.delete(ticket);
+  return entry && entry.exp >= Date.now() ? entry.userId : undefined;
+}
+
 /**
  * Attaches a WebSocket server to the same HTTP server Hono is already listening on — one
  * port, one process, no separate service to run. `serve()`'s return type also covers an
@@ -42,24 +67,20 @@ export function initWebSocketServer(httpServer: ServerType): void {
   const wss = new WebSocketServer({ server: httpServer as HttpServer, path: WS_PATH });
 
   wss.on('connection', async (ws, req: IncomingMessage) => {
-    // The browser's native WebSocket API can't set an Authorization header, so the token
-    // travels as a query param instead — the same tradeoff the OAuth "start" redirect
-    // discussion earlier ruled out for a full JWT, but here there's no alternative: this is
-    // the literal-only mechanism the browser's WebSocket constructor exposes.
-    const token = new URL(req.url ?? '', 'http://localhost').searchParams.get('token');
-    if (!token) return ws.close(4001, 'Missing token');
-
-    let claims: AuthClaims;
-    try {
-      claims = await verifyToken(token);
-    } catch {
-      return ws.close(4001, 'Invalid token');
-    }
+    const ticket = new URL(req.url ?? '', 'http://localhost').searchParams.get('ticket');
+    if (!ticket) return ws.close(4001, 'Missing ticket');
+    const userId = redeemWsTicket(ticket);
+    if (!userId) return ws.close(4001, 'Invalid or expired ticket');
+    const claims = { sub: userId };
     // Every event this app emits carries a workspaceId, and there's exactly one workspace per
     // deployment today (see seed.ts) — a real multi-workspace membership check would look up
     // which workspace(s) the verified user belongs to; not needed yet since nothing else in
     // this codebase enforces that boundary either.
     const workspaceId = (await workspaceRepo.getWorkspace()).id;
+
+    // A removed member's token is still valid, so check membership here too — otherwise they would
+    // keep receiving every event (and every notification) over a socket.
+    if (!(await workspaceRepo.getMember(claims.sub))) return ws.close(4003, 'Not a member');
 
     const client: Client = { ws, workspaceId, userId: claims.sub, alive: true };
     clients.add(client);
@@ -82,6 +103,16 @@ export function initWebSocketServer(httpServer: ServerType): void {
     }
   }, HEARTBEAT_INTERVAL_MS);
   wss.on('close', () => clearInterval(heartbeat));
+}
+
+/** Closes every live socket belonging to `userId` — called when they're removed from the workspace, since an already-open socket would otherwise keep streaming events to them. */
+export function disconnectUser(userId: string): void {
+  for (const client of clients) {
+    if (client.userId === userId) {
+      client.ws.close(4003, 'Not a member');
+      clients.delete(client);
+    }
+  }
 }
 
 /** Sends `event` to every connected client in `event.workspaceId`. Called once per event, right after it's appended — see EventEngine.writeEvent. Wrapped with a top-level `kind: 'event'` tag — see {@link broadcastToUser}'s doc comment for why both message shapes need an explicit, always-present discriminant rather than distinguishing them by field presence. */

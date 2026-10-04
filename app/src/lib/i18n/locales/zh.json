@@ -65,6 +65,8 @@
     "logOutRow": "退出登录"
   },
   "board": {
+    "moveNotAllowed": "此工作流不允许这样移动。",
+    "moveFailed": "无法移动该问题：{reason}",
     "noEpic": "无史诗任务",
     "noIssues": "没有事项",
     "keyboardNav": {

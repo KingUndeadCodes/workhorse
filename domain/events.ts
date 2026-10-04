@@ -132,7 +132,7 @@ export type EventPayload =
   | { type: 'issue.branchCreated'; issueId: IssueId; branchId: BranchId; gitRepoLinkId: GitRepoLinkId; name: string; url: string }
   | { type: 'issue.branchDeleted'; issueId: IssueId; branchId: BranchId }
   /** Notification-only — carries the read content so a webhook/automation can see what an agent looked at, without needing to re-read it itself. */
-  | { type: 'issue.repoFileRead'; issueId: IssueId; gitRepoLinkId: GitRepoLinkId; path: string; content: string }
+  | { type: 'issue.repoFileRead'; issueId: IssueId; gitRepoLinkId: GitRepoLinkId; path: string; sizeBytes: number; sha256: string }
   | { type: 'issue.repoFileWritten'; issueId: IssueId; gitRepoLinkId: GitRepoLinkId; path: string; branchName: string; url: string }
   /**
    * Automation actions themselves emit events, carrying the event that triggered them —

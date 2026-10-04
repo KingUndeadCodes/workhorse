@@ -13,7 +13,9 @@ export const requireAuth = createMiddleware<{ Variables: AuthVariables }>(async 
   try {
     const claims = await verifyToken(token);
     const user = await userRepo.getById(claims.sub);
-    if (!user) return c.json({ error: 'unauthorized' }, 401);
+    // A valid token alone isn't access: someone an admin has removed keeps a cryptographically valid
+    // token for days, so membership is checked on every request, not only at login.
+    if (!user || !(await workspaceRepo.getMember(user.id))) return c.json({ error: 'unauthorized' }, 401);
     c.set('user', user);
     await next();
   } catch {

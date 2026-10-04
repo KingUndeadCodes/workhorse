@@ -120,3 +120,79 @@ describe('issues', () => {
     expect(get(ws.issuesStore)[0].statusId).toBe('todo');
   });
 });
+
+describe('moving issues between board columns', () => {
+  const workflow = {
+    statuses: [],
+    transitions: [
+      { id: 't1', name: 'Start', fromStatusId: 'todo', toStatusId: 'doing' },
+      { id: 't2', name: 'Finish', fromStatusId: 'doing', toStatusId: 'done' },
+    ],
+  } as unknown as import('$domain').Workflow;
+
+  beforeEach(() => {
+    ws.workflow.set(workflow);
+    ws.statusChangeError.set(null);
+    ws.issuesStore.set([issue('i1', { statusId: 'todo' })]);
+  });
+
+  it('moves to the first status in the column its workflow allows, and applies the server response', async () => {
+    vi.mocked(api.patchIssueStatus).mockResolvedValueOnce({ issue: issue('i1', { statusId: 'doing' }), event: null });
+
+    expect(await ws.moveIssueToColumn('i1', ['review', 'doing'])).toBe(true);
+
+    expect(api.patchIssueStatus).toHaveBeenCalledWith('i1', 'doing');
+    expect(get(ws.issuesStore)[0].statusId).toBe('doing');
+    expect(get(ws.statusChangeError)).toBeNull();
+  });
+
+  it('refuses a move the workflow does not allow without calling the server, and says so', async () => {
+    expect(await ws.moveIssueToColumn('i1', ['done'])).toBe(false);
+
+    expect(api.patchIssueStatus).not.toHaveBeenCalled();
+    expect(get(ws.issuesStore)[0].statusId).toBe('todo');
+    expect(get(ws.statusChangeError)).toBe("That move isn't allowed by this workflow.");
+  });
+
+  it('dropping on the column the issue is already in is a quiet no-op', async () => {
+    expect(await ws.moveIssueToColumn('i1', ['todo', 'backlog'])).toBe(false);
+    expect(api.patchIssueStatus).not.toHaveBeenCalled();
+    expect(get(ws.statusChangeError)).toBeNull();
+  });
+
+  it('does nothing for an issue that is not loaded', async () => {
+    expect(await ws.moveIssueToColumn('i_ghost', ['doing'])).toBe(false);
+    expect(api.patchIssueStatus).not.toHaveBeenCalled();
+  });
+
+  it('a server refusal (e.g. a required field is empty) becomes a visible notice, not an unhandled rejection, and the card stays put', async () => {
+    vi.mocked(api.patchIssueStatus).mockRejectedValueOnce(new Error('Set Severity before moving to "In Progress"'));
+
+    expect(await ws.moveIssueToColumn('i1', ['doing'])).toBe(false);
+
+    expect(get(ws.statusChangeError)).toBe(`Couldn't move the issue: Set Severity before moving to "In Progress"`);
+    expect(get(ws.issuesStore)[0].statusId).toBe('todo');
+  });
+
+  it('the notice clears itself after a few seconds', async () => {
+    vi.useFakeTimers();
+    try {
+      await ws.moveIssueToColumn('i1', ['done']);
+      expect(get(ws.statusChangeError)).not.toBeNull();
+      vi.advanceTimersByTime(8001);
+      expect(get(ws.statusChangeError)).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('tryMoveIssueToStatus reports success and failure instead of throwing', async () => {
+    vi.mocked(api.patchIssueStatus).mockResolvedValueOnce({ issue: issue('i1', { statusId: 'doing' }), event: null });
+    expect(await ws.tryMoveIssueToStatus('i1', 'doing')).toBe(true);
+
+    vi.mocked(api.patchIssueStatus).mockRejectedValueOnce(new Error('nope'));
+    expect(await ws.tryMoveIssueToStatus('i1', 'done')).toBe(false);
+    expect(get(ws.statusChangeError)).toContain('nope');
+  });
+});
+

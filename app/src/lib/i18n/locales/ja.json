@@ -65,6 +65,8 @@
     "logOutRow": "ログアウト"
   },
   "board": {
+    "moveNotAllowed": "このワークフローではその移動は許可されていません。",
+    "moveFailed": "課題を移動できませんでした: {reason}",
     "noEpic": "エピックなし",
     "noIssues": "課題はありません",
     "keyboardNav": {

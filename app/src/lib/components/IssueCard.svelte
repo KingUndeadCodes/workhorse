@@ -3,8 +3,8 @@
   import Icon from './Icon.svelte';
   import Avatar from './Avatar.svelte';
   import BottomSheet from './BottomSheet.svelte';
-  import { issueTypes, users, labels, featureFlags } from '../stores/workspace';
-  import { displayName, priorityIcon, storyPointColor, typeIcon } from '../util';
+  import { draggedIssueId, issueTypes, users, labels, featureFlags, workflow } from '../stores/workspace';
+  import { displayName, legalColumnTarget, priorityIcon, storyPointColor, typeIcon } from '../util';
   import { t } from '../i18n';
 
   export let issue: Issue;
@@ -61,7 +61,14 @@
   /** Stashes the issue id in the drag payload so the drop target (Board.svelte) can read it. */
   function handleDragStart(e: DragEvent) {
     e.dataTransfer?.setData('text/issue-id', issue.id);
+    $draggedIssueId = issue.id;
   }
+  function handleDragEnd() {
+    $draggedIssueId = null;
+  }
+
+  /** The columns this issue can actually be moved to — other than the one it's in, only those holding a status its workflow allows it to move to. The menus offer nothing the server would refuse. */
+  $: moveTargets = columns.filter((col) => !col.statusIds.includes(issue.statusId) && legalColumnTarget($workflow, col.statusIds, issue.statusId) !== undefined);
 
   function toggleMoveMenu(e: MouseEvent) {
     e.stopPropagation();
@@ -90,6 +97,7 @@
   tabindex="0"
   draggable="true"
   on:dragstart={handleDragStart}
+  on:dragend={handleDragEnd}
   on:click={() => onSelect(issue.id)}
   on:keydown={(e) => {
     if (e.key === 'Enter') onSelect(issue.id);
@@ -108,15 +116,13 @@
       {#if $featureFlags.priority}
         <span class="priority-flag {issue.priority}"><Icon name={priorityIcon(issue.priority)} size={11} /></span>
       {/if}
-      {#if onMove && columns.length > 1}
+      {#if onMove && moveTargets.length > 0}
         {#if moveMenuMode === 'sheet'}
           <button class="move-trigger sheet-trigger" title={$t('issueCard.moveToTitle')} aria-label={$t('issueCard.moveToTitle')} on:click|stopPropagation={toggleMoveMenu}><Icon name="chevron" size={10} /></button>
           <BottomSheet open={showMoveMenu} title={$t('issueCard.moveToTitle')} onClose={() => (showMoveMenu = false)}>
             <div class="move-sheet-list">
-              {#each columns as col (col.id)}
-                {#if !col.statusIds.includes(issue.statusId)}
-                  <button type="button" class="move-sheet-item" on:click|stopPropagation={() => moveTo(col.statusIds)}>{col.name}</button>
-                {/if}
+              {#each moveTargets as col (col.id)}
+                <button type="button" class="move-sheet-item" on:click|stopPropagation={() => moveTo(col.statusIds)}>{col.name}</button>
               {/each}
             </div>
           </BottomSheet>
@@ -125,10 +131,8 @@
             <button class="move-trigger" title={$t('issueCard.moveToTitle')} aria-label={$t('issueCard.moveToTitle')} on:click={toggleMoveMenu}><Icon name="chevron" size={10} /></button>
             {#if showMoveMenu}
               <div class="move-menu">
-                {#each columns as col (col.id)}
-                  {#if !col.statusIds.includes(issue.statusId)}
-                    <button class="move-menu-item" on:click|stopPropagation={() => moveTo(col.statusIds)}>{col.name}</button>
-                  {/if}
+                {#each moveTargets as col (col.id)}
+                  <button class="move-menu-item" on:click|stopPropagation={() => moveTo(col.statusIds)}>{col.name}</button>
                 {/each}
               </div>
             {/if}

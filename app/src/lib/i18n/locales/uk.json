@@ -68,6 +68,8 @@
     "logOutRow": "Вийти"
   },
   "board": {
+    "moveNotAllowed": "Цей робочий процес не дозволяє такий перехід.",
+    "moveFailed": "Не вдалося перемістити задачу: {reason}",
     "noEpic": "Без епіка",
     "noIssues": "Немає задач",
     "keyboardNav": {

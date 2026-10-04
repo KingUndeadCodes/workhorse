@@ -12,7 +12,7 @@
     featureFlags,
     issueTypes,
     issuesStore,
-    moveIssueToStatus,
+    moveIssueToColumn,
     selectedIssueId,
     sprints,
     startSprint,
@@ -47,7 +47,7 @@
   }
 
   function moveIssue(issueId: string, statusIds: string[]) {
-    if (statusIds[0]) moveIssueToStatus(issueId, statusIds[0]);
+    moveIssueToColumn(issueId, statusIds);
   }
 
   async function submitNewSprint() {

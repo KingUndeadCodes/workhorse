@@ -4,6 +4,7 @@ import type { ActorRef, GitRepoLink, Project, User } from '../domain';
 import { DEFAULT_FEATURE_FLAGS, PROJECT_COLORS } from '../domain';
 import { requireNonGuest, type AuthVariables } from '../auth/middleware';
 import { engine, gitAuthResolver, gitProviders, gitRepoLinkRepo, planningRepo, projectRepo, workflowRepo, workspaceRepo } from '../container';
+import { isValidBranchName } from '../services/branchName';
 
 /** CRUD for projects, plus a project's linked git repo definition. Branch creation lives in issues.ts, via a registered GitProvider. */
 export const projectsRouter = new Hono<{ Variables: AuthVariables }>();
@@ -111,6 +112,10 @@ projectsRouter.post('/projects/:id/git-repo-link', async (c) => {
   const body = await c.req.json<{ provider: string; owner: string; repo: string; defaultBranch?: string }>();
   if (!body.provider?.trim() || !body.owner?.trim() || !body.repo?.trim()) {
     return c.json({ error: 'provider, owner, and repo are required' }, 400);
+  }
+
+  if (body.defaultBranch?.trim() && !isValidBranchName(body.defaultBranch.trim())) {
+    return c.json({ error: `Invalid branch name "${body.defaultBranch.trim()}" — use letters, digits, and . _ / - only, and don't start with "-"` }, 400);
   }
 
   const link: GitRepoLink = {

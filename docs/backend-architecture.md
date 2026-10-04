@@ -165,9 +165,17 @@ server/src/
 ### 2.1 Two SQLite files
 
 `state.db` and `events.db` are **separate sql.js databases**, each its own file on disk,
-loaded fully into memory and re-serialized to disk after every write
-(`persistState()`/`persistEvents()` in `db/core.ts` — `writeFileSync` of the whole DB export,
-not incremental). There is no native SQLite driver in play; sql.js is SQLite compiled to WASM,
+loaded fully into memory and re-serialized to disk (`persistState()`/`persistEvents()` in
+`db/core.ts` — a whole-database export, not incremental). Writes are **coalesced**: those two
+functions only mark the database dirty (`db/coalescingWriter.ts`), and `flushPersistence()`
+writes each dirty file once — at the end of every request (an app-level middleware in `app.ts`,
+before the response is sent, so a client is never told "done" about something not yet on disk),
+after boot, on SIGINT/SIGTERM, and on a next-event-loop-turn fallback for work outside a request
+(e.g. a webhook delivery logging its result). The event log is flushed first, since it is the
+source of truth. Each write is **atomic** (`atomicWrite`: temp file in the same directory,
+fsync, rename), so a crash or full disk mid-write can't leave a truncated database. The two
+files are still two files, not one transaction: a crash between them leaves the read model
+lagging the log (rebuildable from it — see `AuditService`). There is no native SQLite driver in play; sql.js is SQLite compiled to WASM,
 adopted specifically to avoid a native-binary crash the project hit with `better-sqlite3`.
 
 - `events.db` — a single `events` table, append-only, written to by exactly one function
@@ -251,8 +259,15 @@ sequentially:
    against the affected issue, executes its actions if they pass.
 3. Runs matching **agents** (`runAgents`) — for each enabled agent attached to the issue, checks
    budget/self-trigger/event-filter, then calls into the agent decision pipeline.
-4. Fires matching **webhooks** (`dispatchWebhooks`) — fire-and-forget HTTP POST, signed with
-   HMAC, errors only logged.
+4. Fires matching **webhooks** (`dispatchWebhooks`) — fire-and-forget HTTP POST, errors only
+   logged. Each delivery is signed with HMAC-SHA256 over `<timestamp>.<body>` and carries
+   `x-anvil-timestamp` + `x-anvil-signature`, so a receiver can reject stale (replayed) deliveries.
+   Targets are restricted (`services/webhookTarget.ts`): https only, no credentials in the URL, no
+   localhost/internal names or private/loopback/link-local addresses — checked when a hook is saved
+   and again on every delivery, with the connection's own DNS lookup refusing private resolutions
+   (so a name re-pointed at an internal address after being saved — DNS rebinding — is still
+   blocked), and redirects are not followed. `WEBHOOK_ALLOW_PRIVATE=1` lifts this for local
+   development only.
 
 All three reactive systems (automations, agents, webhooks) share one `EventSubscription` shape
 (`eventFilter: EventType[] | '*'`) from `domain/subscription.ts`, and automations/agents further
@@ -303,6 +318,18 @@ generally thin: parse/validate the body, call one or two repository/service meth
 the largest, covering issue CRUD, comments (incl. mention detection, see below), links, worklogs,
 attachments, and git-branch creation — arguably a candidate for splitting given its breadth
 relative to every other router.
+
+**Issue edits are validated and workflow-gated** (`routes/issues.ts`). Create and edit check field types
+and that every reference exists (status, assignees, labels, components, versions, sprint of the same
+project, parent, due-date format, non-negative estimates) before anything is written. A status change must
+also be a *legal move*: a workflow transition from the issue's current status (or from `'*'`, "anywhere")
+to the target must exist, and that transition's `requiredFieldIds` must be filled in
+(`checkTransition`). The UI mirrors the rule (`legalTargetStatusIds`/`legalColumnTarget` in
+`app/src/lib/util.ts`): the board only accepts drops on columns holding a legal target, the card's move
+menu and the drawer's status dropdown list only legal moves, and a refusal appears as a notice instead of
+failing silently. Moves made by automations and agents go through `EventEngine` and are **not** gated by
+this check. Route handlers also never spread a client body into a record — automation rules and field
+definitions pick the fields a client may set and assign `id` last.
 
 One inline route lives directly in `app.ts` rather than a router file: `GET /api/bootstrap`,
 which fetches ~20 lists in parallel (`Promise.all`) and returns them as one big payload — the
@@ -432,13 +459,29 @@ runtime binding actually exists.
 
 ## 8. Auth
 
-Stateless: `POST /auth/login`/`signup` issue a JWT (`auth/jwt.ts`); `requireAuth` middleware
-(`auth/middleware.ts`) validates the `Authorization: Bearer` header and attaches the resolved
-`User` to Hono's context on every `/api/*` route except the public auth router. No refresh
-tokens, no sessions table, no revocation list — a JWT is valid until it expires, full stop. The
+`POST /auth/login`/`signup` issue a JWT (`auth/jwt.ts`); `requireAuth` middleware
+(`auth/middleware.ts`) validates the `Authorization: Bearer` header **and that the user is still a
+workspace member**, then attaches the resolved `User` to Hono's context on every `/api/*` route
+except the public auth router. Membership is checked on every request, not only at login, so
+removing a member cuts off access immediately even though their JWT stays cryptographically valid
+for days (login also refuses non-members; the websocket checks on connect and
+`disconnectUser` closes a removed member's open sockets). There are still no refresh tokens or
+sessions table, so a JWT cannot be revoked on its own — membership is the revocation lever. The
 signing secret (`auth/secret.ts`) is either `JWT_SECRET` from the environment or a random value
 generated once and persisted to a file next to the two SQLite databases (so restarts don't
 invalidate every issued token in dev, but there's no rotation story).
+
+**Login hardening** (`routes/auth.ts`, `auth/password.ts`, `auth/rateLimit.ts`): password hashing is
+async scrypt (the sync version blocked the whole event loop per attempt); only the stored cost
+parameter(s) in an allowlist are honored, so a tampered hash can't demand an enormous N; an unknown
+email still pays for one derivation, so response time doesn't reveal which emails have accounts;
+logins are rate-limited per email and per client address, and signups per client address (429 +
+`Retry-After`). The client address is the socket's unless `TRUST_PROXY=1`, in which case
+`X-Forwarded-For` is trusted — set that only behind a proxy you control. All `/api` request bodies
+are capped at 5 MB (`bodyLimit`).
+
+**Live updates** (`ws.ts`): the websocket URL carries a one-time, 30-second ticket
+(`POST /api/ws-ticket`), never the long-lived JWT, so a logged URL isn't a reusable credential.
 
 Credentials live in a separate `credentials` table (`db/schema.ts`) from `users`, specifically so
 `SELECT * FROM users` (which feeds straight into API responses via `rowToUser`) can never leak a

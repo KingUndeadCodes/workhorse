@@ -89,7 +89,13 @@ OAuth App per environment; each has a single callback.
    default branch.
 4. **Agents** — give an agent the `readRepoFile` / `writeRepoFile` actions. Writes go to a branch
    named by the agent (created off the default branch if missing) and are committed under the
-   resolved person's credential (table above).
+   resolved person's credential (table above). **Repo actions always wait for a person to approve
+   them**, whatever the agent's approval policy says: comments are other people's input and become
+   the agent's context, so an auto-applied write would let a crafted comment cause a commit with a
+   real person's token. Only non-guest members can approve, trigger or reject a run. `readRepoFile`
+   records the file's **size and SHA-256** in the event log, never its content — the log is readable
+   by every member, streamed to every websocket client, and sent to matching webhooks, so storing a
+   private repo's file there would hand it to people with no access to the repo.
 
 ## Security
 
@@ -114,6 +120,11 @@ OAuth App per environment; each has a single callback.
   another site.
 - Owners, repos, branches and file paths are validated/encoded before being placed in GitHub API
   URLs, so user input can't redirect a request (made with the user's token) to another endpoint.
+- **Branch names are validated** (letters, digits, `. _ / -`; never starting with `-`) at the routes,
+  in the engine for agent-chosen names, and again in `LocalGitProvider`, which also passes `--` so
+  a name can never be read as a git option (`-D` would otherwise delete a branch).
+- `LocalGitProvider.writeFile` refuses any path that runs through a symbolic link, so a link
+  committed to a repo can't redirect an agent's write outside the worktree.
 - Nothing is stored unless it verifies: a pasted token must resolve to a real account, and linking
   a repo must reach the repo and branch.
 

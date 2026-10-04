@@ -213,3 +213,31 @@ describe('githubProvider URL safety (owner, repo, branch and path are user input
     expect(urls(writeMock)[1]).toBe('https://api.github.com/repos/acme/widgets/contents/src/dir%20name/a%23b.ts');
   });
 });
+
+describe('githubProvider.deleteBranch (undoing a branch whose record failed to save)', () => {
+  it('sends DELETE for exactly that ref, encoding the name', async () => {
+    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await githubProvider.deleteBranch!({ owner: 'acme', repo: 'widgets', auth, branchName: 'issue/PRJ-7-fix thing' });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://api.github.com/repos/acme/widgets/git/refs/heads/issue/PRJ-7-fix%20thing');
+    expect(init.method).toBe('DELETE');
+  });
+
+  it('treats an already-gone branch as done, but reports any other failure', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 404 })));
+    await expect(githubProvider.deleteBranch!({ owner: 'a', repo: 'b', auth, branchName: 'x' })).resolves.toBeUndefined();
+
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 403 })));
+    await expect(githubProvider.deleteBranch!({ owner: 'a', repo: 'b', auth, branchName: 'x' })).rejects.toThrow(/Could not delete branch "x": 403/);
+  });
+
+  it('refuses an invalid repository name before any request', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(githubProvider.deleteBranch!({ owner: '..', repo: 'b', auth, branchName: 'x' })).rejects.toThrow(/Invalid owner name/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});

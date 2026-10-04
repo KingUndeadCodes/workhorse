@@ -1,6 +1,6 @@
 import { get } from 'svelte/store';
 import type { EventEnvelope, FieldValue } from '$domain';
-import type { NotificationWithContext } from './api';
+import { fetchWsTicket, type NotificationWithContext } from './api';
 import { authToken } from './stores/auth';
 import { attachments, comments, currentProjectId, initWorkspace, issueLinks, issuesStore, sprints, worklogs } from './stores/workspace';
 import { initNotifications, receiveLiveNotification } from './stores/notifications';
@@ -23,13 +23,27 @@ let socket: WebSocket | null = null;
 let reconnectAttempt = 0;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
-export function connectWebSocket(): void {
-  const token = get(authToken);
-  if (!token) return;
-  if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) return;
+let connecting = false;
+
+export async function connectWebSocket(): Promise<void> {
+  if (!get(authToken)) return;
+  if (connecting || (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING))) return;
+
+  // Trade the login token for a one-time ticket first — the URL below carries the ticket, never the JWT.
+  connecting = true;
+  let ticket: string;
+  try {
+    ({ ticket } = await fetchWsTicket());
+  } catch {
+    connecting = false;
+    scheduleReconnect();
+    return;
+  }
+  connecting = false;
+  if (!get(authToken)) return; // logged out while the ticket request was in flight
 
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  socket = new WebSocket(`${protocol}//${location.host}/ws?token=${encodeURIComponent(token)}`);
+  socket = new WebSocket(`${protocol}//${location.host}/ws?ticket=${encodeURIComponent(ticket)}`);
 
   socket.addEventListener('open', () => {
     // A nonzero reconnectAttempt means this `open` follows a real drop, not the initial

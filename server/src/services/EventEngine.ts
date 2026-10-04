@@ -1,4 +1,4 @@
-import { createHmac, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomUUID } from 'node:crypto';
 import type {
   ActorRef,
   Agent,
@@ -34,6 +34,8 @@ import type { WorkspaceRepository } from '../repositories/WorkspaceRepository';
 import { broadcastEvent, broadcastToUser } from '../ws';
 import type { AgentRuntimeRegistry, AgentRuntimeTool } from './AgentRuntime';
 import type { EventProjector } from './EventProjector';
+import { assertValidBranchName } from './branchName';
+import { validateWebhookUrl, webhookDispatcher } from './webhookTarget';
 import type { GitAuthResolver } from './GitAuthResolver';
 import type { GitProviderRegistry } from './GitProvider';
 import { actorForEvent, computeNotificationContext } from './notificationContext';
@@ -177,6 +179,9 @@ function commentsInThread(rootId: string, comments: Comment[]): Comment[] {
   }
   return comments.filter((c) => ids.has(c.id));
 }
+
+/** Action types that spend a person's git credential — see startAgentRun: these always need human approval. */
+const ALWAYS_APPROVED_ACTIONS: ReadonlySet<string> = new Set(['readRepoFile', 'writeRepoFile']);
 
 /**
  * Reacts to events after they land in the log: runs automations, runs agents, and
@@ -563,14 +568,25 @@ export class EventEngine {
         const provider = this.gitProviders.resolve(link.provider);
         const auth = await this.gitAuth.resolve(link, this.actingUserIds(triggeringEvent, reviewedBy));
         const { content } = await provider.readFile({ owner: link.owner, repo: link.repo, auth, branch: link.defaultBranch, path: action.path });
+        // Deliberately NOT the content: every event is readable by any member via /api/events, broadcast to
+        // every websocket client, and sent to matching webhooks — so putting a private repo's file in the
+        // log would hand it to people who have no access to the repo. Size + hash still say *what* was read.
         await this.writeEvent({
           actor,
           subject: { type: 'issue', id: issue.id },
-          payload: { type: 'issue.repoFileRead', issueId: issue.id, gitRepoLinkId: link.id, path: action.path, content },
+          payload: {
+            type: 'issue.repoFileRead',
+            issueId: issue.id,
+            gitRepoLinkId: link.id,
+            path: action.path,
+            sizeBytes: Buffer.byteLength(content, 'utf8'),
+            sha256: createHash('sha256').update(content).digest('hex'),
+          },
         });
         return;
       }
       case 'writeRepoFile': {
+        assertValidBranchName(action.branchName);
         const link = await this.gitRepoLinks.getForProject(issue.projectId);
         if (!link) throw new Error('This project has no linked git repository');
         const provider = this.gitProviders.resolve(link.provider);
@@ -622,8 +638,9 @@ export class EventEngine {
 
   private async withinBudget(agent: Agent): Promise<boolean> {
     const { budget } = agent;
-    const runsForAgent = await this.agentRuns.listForAgent(agent.userId);
     const now = Date.now();
+    // Every window below is at most a day, so only the last day's runs are loaded — not the agent's whole history.
+    const runsForAgent = await this.agentRuns.listForAgentSince(agent.userId, new Date(now - 24 * 60 * 60 * 1000).toISOString());
     if (budget.maxRunsPerHour !== undefined) {
       const hourAgo = now - 60 * 60 * 1000;
       if (runsForAgent.filter((r) => new Date(r.startedAt).getTime() >= hourAgo).length >= budget.maxRunsPerHour) return false;
@@ -803,9 +820,14 @@ export class EventEngine {
     const bounded = actions.filter((a) => agent.allowedActionTypes.includes(a.type)).slice(0, agent.budget.maxActionsPerRun ?? actions.length);
 
     const policy = agent.approvalPolicy;
+    // Repo actions always wait for a human, whatever the agent's policy says. Comments are other people's
+    // input and become LLM context, so a crafted comment could steer an agent into a commit — and the
+    // commit is made with a real person's credential. `readRepoFile` is included: it spends their token too.
     const requiresApproval =
       bounded.length > 0 &&
-      (policy.mode === 'requireApprovalForAll' || (policy.mode === 'requireApprovalFor' && bounded.some((a) => policy.actionTypes.includes(a.type))));
+      (policy.mode === 'requireApprovalForAll' ||
+        (policy.mode === 'requireApprovalFor' && bounded.some((a) => policy.actionTypes.includes(a.type))) ||
+        bounded.some((a) => ALWAYS_APPROVED_ACTIONS.has(a.type)));
 
     const run: AgentRun = {
       id: `run_${randomUUID()}`,
@@ -895,7 +917,10 @@ export class EventEngine {
    */
   private async deliverToWebhook(hook: WebhookSubscription, event: EventEnvelope): Promise<void> {
     const payload = JSON.stringify(event);
-    const signature = createHmac('sha256', hook.secret).update(payload).digest('hex');
+    // Signed over `<timestamp>.<body>` and sent with the timestamp, so a receiver can reject stale deliveries —
+    // a signature over the body alone can be captured and replayed forever.
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const signature = createHmac('sha256', hook.secret).update(`${timestamp}.${payload}`).digest('hex');
     const base = {
       id: `whd_${randomUUID()}`,
       webhookId: hook.id,
@@ -904,12 +929,22 @@ export class EventEngine {
       createdAt: new Date().toISOString(),
     };
     try {
-      const res = await fetch(hook.targetUrl, {
+      // Re-checked on every delivery, not just when the hook was saved: the URL may predate these rules,
+      // and the dispatcher's own lookup refuses private addresses at connect time (see webhookTarget.ts).
+      const url = validateWebhookUrl(hook.targetUrl);
+      const res = await fetch(url, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-anvil-signature': signature },
+        headers: { 'content-type': 'application/json', 'x-anvil-signature': signature, 'x-anvil-timestamp': timestamp },
         body: payload,
         signal: AbortSignal.timeout(10_000),
-      });
+        redirect: 'manual', // a public URL could otherwise bounce the request to an internal one
+        dispatcher: webhookDispatcher(),
+      } as RequestInit);
+      await res.body?.cancel().catch(() => {});
+      if (res.status >= 300 && res.status < 400) {
+        await this.webhookDeliveries.create({ ...base, status: 'failure', statusCode: res.status, error: 'Redirects are not followed' });
+        return;
+      }
       await this.webhookDeliveries.create({ ...base, status: res.ok ? 'success' : 'failure', statusCode: res.status });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

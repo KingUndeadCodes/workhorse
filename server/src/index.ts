@@ -2,7 +2,7 @@
 import { serve } from '@hono/node-server';
 import { app } from './app';
 import { initContainer, planningRepo, userGitConnectionRepo, userRepo, workflowRepo, workspaceRepo } from './container';
-import { initDatabases, persistState } from './db/core';
+import { flushPersistence, initDatabases, persistEvents, persistState } from './db/core';
 import {
   backfillAgentAssignments,
   backfillAgentRunIssueIds,
@@ -64,6 +64,21 @@ backfillAgentAssignments();
 backfillAgentRunIssueIds();
 backfillProjectColors();
 persistState();
+persistEvents(); // the events-db migration (index + issue_id backfill) has no other reason to be written yet
+flushPersistence();
+
+// Saves are coalesced (see db/coalescingWriter.ts), so anything still owed when the process is asked to stop
+// has to be written now rather than lost.
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.on(signal, () => {
+    try {
+      flushPersistence();
+    } finally {
+      process.exit(0);
+    }
+  });
+}
+process.on('beforeExit', () => flushPersistence());
 
 const port = Number(process.env.PORT ?? 8787);
 

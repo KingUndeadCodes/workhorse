@@ -80,13 +80,14 @@ catalogRouter.post('/fields', async (c) => {
   const body = await c.req.json<Omit<FieldDefinition, 'id' | 'workspaceId'>>();
   if (!body.key?.trim() || !body.name?.trim()) return c.json({ error: 'key and name are required' }, 400);
   const workspace = await workspaceRepo.getWorkspace();
-  const field: FieldDefinition = { id: `field_${randomUUID()}`, workspaceId: workspace.id, ...body };
+  // id and workspaceId come last so a client-supplied value can't override what the server decides.
+  const field: FieldDefinition = { ...body, id: `field_${randomUUID()}`, workspaceId: workspace.id };
   return c.json(await catalogRepo.createField(field), 201);
 });
 
 catalogRouter.patch('/fields/:id', async (c) => {
-  const body = await c.req.json<Partial<FieldDefinition>>();
-  const updated = await catalogRepo.updateField(c.req.param('id'), body);
+  const { id: _id, workspaceId: _workspaceId, ...changes } = await c.req.json<Partial<FieldDefinition>>();
+  const updated = await catalogRepo.updateField(c.req.param('id'), changes);
   if (!updated) return c.json({ error: 'Not found' }, 404);
   return c.json(updated);
 });

@@ -2,8 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import type { ActorRef, FieldValue, Issue, IssueLinkType, IssuePriority, User } from '../domain';
 import { parseMentionedUserIds, slugifyBranchName, STORY_POINT_VALUES } from '../domain';
-import type { AuthVariables } from '../auth/middleware';
-import { agentRepo, engine, gitAuthResolver, gitProviders, gitRepoLinkRepo, issueRepo, projectRepo, userRepo, workflowRepo, workspaceRepo } from '../container';
+import { requireNonGuest, type AuthVariables } from '../auth/middleware';
+import { agentRepo, catalogRepo, engine, gitAuthResolver, gitProviders, gitRepoLinkRepo, issueRepo, planningRepo, projectRepo, userRepo, workflowRepo, workspaceRepo } from '../container';
+import { isValidBranchName } from '../services/branchName';
 import { getEventsForIssue } from '../eventLog';
 import { setsEqual } from '../util';
 
@@ -13,11 +14,98 @@ function actorFrom(user: User): ActorRef {
   return { kind: 'user', userId: user.id };
 }
 
+const isStringArray = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === 'string');
+
 /** True if any of the given ids belongs to an AI agent — assignees must be human, see `Issue.agentAssignments`. */
-async function containsAgentId(userIds: string[]): Promise<boolean> {
-  if (userIds.length === 0) return false;
-  const agentIds = new Set((await userRepo.list()).filter((u) => u.kind === 'agent').map((u) => u.id));
-  return userIds.some((id) => agentIds.has(id));
+async function containsAgentId(userIds: unknown): Promise<boolean> {
+  // Not an array of ids (or empty): nothing to check here — validateIssueFields rejects the malformed shape with a 400.
+  if (!isStringArray(userIds) || userIds.length === 0) return false;
+  return userRepo.hasAgent(userIds);
+}
+
+const PRIORITIES: readonly string[] = ['highest', 'high', 'medium', 'low', 'lowest'];
+const isNonNegativeNumber = (v: unknown) => v === undefined || v === null || (typeof v === 'number' && Number.isFinite(v) && v >= 0);
+
+/**
+ * Whether `issue` may move to `toStatusId` under the workflow's transitions — a transition from its current
+ * status (or from `'*'`, meaning anywhere) to the target must exist, and its required fields must be filled in.
+ * Returns a message safe to show the user, or `undefined` if the move is allowed. Applies to edits made through
+ * the API (the board, the drawer); automations and agents move issues through the engine and are not gated here.
+ */
+async function checkTransition(issue: Issue, toStatusId: string): Promise<string | undefined> {
+  const [workflow, fields] = await Promise.all([workflowRepo.getWorkflow(), catalogRepo.listFieldDefinitions()]);
+  const statusName = (id: string) => workflow.statuses.find((s) => s.id === id)?.name ?? id;
+  const candidates = workflow.transitions.filter((t) => (t.fromStatusId === issue.statusId || t.fromStatusId === '*') && t.toStatusId === toStatusId);
+  if (candidates.length === 0) return `The workflow doesn't allow moving from "${statusName(issue.statusId)}" to "${statusName(toStatusId)}"`;
+
+  const isUnset = (fieldId: string) => {
+    const value = issue.fieldValues.find((f) => f.fieldId === fieldId)?.value;
+    return value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0);
+  };
+  const unsetFor = (t: (typeof candidates)[number]) => (t.requiredFieldIds ?? []).filter(isUnset);
+  // Allowed if *any* matching transition is satisfied (a wildcard and a specific one can both apply).
+  if (candidates.some((t) => unsetFor(t).length === 0)) return undefined;
+  const names = unsetFor(candidates[0]).map((id) => fields.find((f) => f.id === id)?.name ?? id);
+  return `Set ${names.join(', ')} before moving to "${statusName(toStatusId)}"`;
+}
+
+/**
+ * Checks that every field a client sent for an issue has the right type and — for references — points at
+ * something that exists. Without this a bad `statusId`, a made-up label, or a number where an array belongs
+ * is written into the log and the read model as-is, and the board then has a card in a column that doesn't
+ * exist. Returns a message safe to show the user, or `undefined` if the body is fine. Only fields present in
+ * `body` are checked, so it serves create and partial edits alike.
+ *
+ * Whether the workflow allows the *move* to `statusId` is a separate check, {@link checkTransition}, because
+ * it needs the issue's current status and field values; PATCH runs it right after this.
+ */
+async function validateIssueFields(body: Record<string, unknown>, projectId: string, selfId?: string): Promise<string | undefined> {
+  if ('title' in body && (typeof body.title !== 'string' || !body.title.trim())) return 'title must be a non-empty string';
+  if ('description' in body && body.description != null && typeof body.description !== 'string') return 'description must be a string';
+  if ('priority' in body && !PRIORITIES.includes(body.priority as string)) return `priority must be one of ${PRIORITIES.join(', ')}`;
+  if ('dueDate' in body && body.dueDate != null) {
+    if (typeof body.dueDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(body.dueDate) || Number.isNaN(Date.parse(body.dueDate))) return 'dueDate must be a YYYY-MM-DD date';
+  }
+  for (const field of ['originalEstimateSeconds', 'remainingEstimateSeconds'] as const) {
+    if (field in body && !isNonNegativeNumber(body[field])) return `${field} must be a non-negative number`;
+  }
+  for (const field of ['assigneeIds', 'labelIds', 'componentIds', 'fixVersionIds'] as const) {
+    if (field in body && body[field] != null && !isStringArray(body[field])) return `${field} must be an array of ids`;
+  }
+
+  if ('statusId' in body) {
+    const workflow = await workflowRepo.getWorkflow();
+    if (typeof body.statusId !== 'string' || !workflow.statuses.some((s) => s.id === body.statusId)) return 'statusId is not a status in this workflow';
+  }
+  if (isStringArray(body.assigneeIds) && body.assigneeIds.length > 0) {
+    const known = await userRepo.findExistingIds(body.assigneeIds);
+    const missing = body.assigneeIds.find((id) => !known.has(id));
+    if (missing) return `Unknown assignee "${missing}"`;
+  }
+  if (isStringArray(body.labelIds) && body.labelIds.length > 0) {
+    const known = new Set((await catalogRepo.listLabels()).map((l) => l.id));
+    const missing = body.labelIds.find((id) => !known.has(id));
+    if (missing) return `Unknown label "${missing}"`;
+  }
+  if (isStringArray(body.componentIds) && body.componentIds.length > 0) {
+    const known = new Set((await catalogRepo.listComponents(projectId)).map((x) => x.id));
+    const missing = body.componentIds.find((id) => !known.has(id));
+    if (missing) return `Unknown component "${missing}" for this project`;
+  }
+  if (isStringArray(body.fixVersionIds) && body.fixVersionIds.length > 0) {
+    const known = new Set((await catalogRepo.listVersions(projectId)).map((x) => x.id));
+    const missing = body.fixVersionIds.find((id) => !known.has(id));
+    if (missing) return `Unknown version "${missing}" for this project`;
+  }
+  if ('sprintId' in body && body.sprintId != null) {
+    const sprint = typeof body.sprintId === 'string' ? await planningRepo.getSprint(body.sprintId) : undefined;
+    if (!sprint || sprint.projectId !== projectId) return 'sprintId is not a sprint of this project';
+  }
+  if ('parentId' in body && body.parentId != null) {
+    const parent = typeof body.parentId === 'string' && body.parentId !== selfId ? await issueRepo.get(body.parentId) : undefined;
+    if (!parent) return 'parentId is not an existing issue';
+  }
+  return undefined;
 }
 
 /** `undefined`/`null` clears the estimate and is always allowed; anything else must be one of {@link STORY_POINT_VALUES}. */
@@ -61,12 +149,14 @@ issuesRouter.post('/issues', async (c) => {
 
   const project = await projectRepo.getProjectById(projectId);
   if (!project) return c.json({ error: 'Unknown projectId' }, 400);
+  const invalid = await validateIssueFields(body, project.id);
+  if (invalid) return c.json({ error: invalid }, 400);
   const workflow = await workflowRepo.getWorkflow();
   const now = new Date().toISOString();
   const id = `issue_${randomUUID()}`;
   const issue: Issue = {
     id,
-    key: `${project.key}-${id.slice(-6)}`,
+    key: await projectRepo.allocateIssueKey(project.id, project.key),
     projectId: project.id,
     issueTypeId,
     statusId: workflow.initialStatusId,
@@ -120,6 +210,12 @@ issuesRouter.patch('/issues/:id', async (c) => {
   }
   if ('assigneeIds' in body && (await containsAgentId((body.assigneeIds as string[]) ?? []))) {
     return c.json({ error: "Agents can't be assignees — add them from the AI Agents section instead" }, 400);
+  }
+  const invalid = await validateIssueFields(body, issue.projectId, issue.id);
+  if (invalid) return c.json({ error: invalid }, 400);
+  if ('statusId' in body && body.statusId !== issue.statusId) {
+    const notAllowed = await checkTransition(issue, body.statusId as string);
+    if (notAllowed) return c.json({ error: notAllowed }, 400);
   }
 
   if ('statusId' in body && body.statusId !== issue.statusId) {
@@ -186,6 +282,7 @@ issuesRouter.patch('/issues/:id/fields/:fieldId', async (c) => {
   const issue = await issueRepo.get(id);
   if (!issue) return c.json({ error: 'Issue not found' }, 404);
 
+  if (!(await catalogRepo.listFieldDefinitions()).some((f) => f.id === fieldId)) return c.json({ error: 'Unknown field' }, 404);
   const body = await c.req.json<{ value: FieldValue['value'] }>();
   const fromValue = issue.fieldValues.find((f) => f.fieldId === fieldId)?.value ?? null;
 
@@ -199,6 +296,8 @@ issuesRouter.patch('/issues/:id/fields/:fieldId', async (c) => {
 
 /** DELETE /api/issues/:id — deletes an issue and cascades to its comments/worklogs/attachments/links. */
 issuesRouter.delete('/issues/:id', async (c) => {
+  const forbidden = await requireNonGuest(c, 'delete issues');
+  if (forbidden) return c.json({ error: forbidden }, 403);
   const id = c.req.param('id');
   if (!(await issueRepo.get(id))) return c.json({ error: 'Issue not found' }, 404);
 
@@ -340,6 +439,8 @@ issuesRouter.post('/issues/:id/links', async (c) => {
 
 /** DELETE /api/issues/:issueId/links/:linkId — removes a link; emits `issue.unlinked`. */
 issuesRouter.delete('/issues/:issueId/links/:linkId', async (c) => {
+  const forbidden = await requireNonGuest(c, 'remove issue links');
+  if (forbidden) return c.json({ error: forbidden }, 403);
   const { issueId, linkId } = c.req.param();
   const link = (await issueRepo.listLinksFor(issueId)).find((l) => l.id === linkId);
   if (!link) return c.json({ error: 'Link not found' }, 404);
@@ -373,6 +474,8 @@ issuesRouter.post('/issues/:id/agents', async (c) => {
 
 /** DELETE /api/issues/:id/agents/:agentUserId — detaches an agent from the issue; emits `issue.agentUnassigned`. */
 issuesRouter.delete('/issues/:id/agents/:agentUserId', async (c) => {
+  const forbidden = await requireNonGuest(c, 'detach agents');
+  if (forbidden) return c.json({ error: forbidden }, 403);
   const { id, agentUserId } = c.req.param();
   const issue = await issueRepo.get(id);
   if (!issue) return c.json({ error: 'Issue not found' }, 404);
@@ -474,6 +577,7 @@ issuesRouter.post('/issues/:id/branch', async (c) => {
 
   const body = await c.req.json<{ name?: string }>().catch(() => ({}) as { name?: string });
   const name = body.name?.trim() || slugifyBranchName(issue.key, issue.title);
+  if (!isValidBranchName(name)) return c.json({ error: `Invalid branch name "${name}" — use letters, digits, and . _ / - only, and don't start with "-"` }, 400);
 
   let auth;
   try {
@@ -482,9 +586,10 @@ issuesRouter.post('/issues/:id/branch', async (c) => {
     return c.json({ error: err instanceof Error ? err.message : String(err) }, 400);
   }
 
+  const provider = gitProviders.resolve(link.provider);
   let result: { url: string };
   try {
-    result = await gitProviders.resolve(link.provider).createBranch({ owner: link.owner, repo: link.repo, auth, fromBranch: link.defaultBranch, newBranchName: name });
+    result = await provider.createBranch({ owner: link.owner, repo: link.repo, auth, fromBranch: link.defaultBranch, newBranchName: name });
   } catch (err) {
     return c.json({ error: `Branch creation failed: ${err instanceof Error ? err.message : String(err)}` }, 502);
   }
@@ -501,9 +606,10 @@ issuesRouter.post('/issues/:id/branch', async (c) => {
     // The unique index on branches(issue_id) is what actually enforces "at most one branch
     // per issue" — the check above is only a fast path, not a lock, so a concurrent request
     // can still lose the race here. Surface that as the same 400 the fast path returns,
-    // rather than a raw constraint-violation 500 — the remote ref this request just created
-    // is orphaned in that case, but no duplicate row is written.
+    // rather than a raw constraint-violation 500. The remote ref this request just created has no
+    // record pointing at it now, so it's deleted again (best-effort — a failure here must not mask the 400).
     if (err instanceof Error && /unique/i.test(err.message)) {
+      await provider.deleteBranch?.({ owner: link.owner, repo: link.repo, auth, branchName: name }).catch((e) => console.error('Could not clean up an orphaned branch:', e));
       return c.json({ error: 'Issue already has a branch' }, 400);
     }
     throw err;
@@ -514,6 +620,8 @@ issuesRouter.post('/issues/:id/branch', async (c) => {
 
 /** DELETE /api/issues/:id/branch — removes the branch record only (no provider call — this app only ever creates refs, never deletes them remotely). Emits `issue.branchDeleted`. */
 issuesRouter.delete('/issues/:id/branch', async (c) => {
+  const forbidden = await requireNonGuest(c, 'remove branch records');
+  if (forbidden) return c.json({ error: forbidden }, 403);
   const id = c.req.param('id');
   const branch = await issueRepo.getBranchFor(id);
   if (!branch) return c.json({ error: 'Not found' }, 404);
