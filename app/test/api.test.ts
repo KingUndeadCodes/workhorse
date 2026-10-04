@@ -78,6 +78,9 @@ describe('git client', () => {
     expect(await api.startGitHubConnect('http://localhost:5173/')).toEqual({ url: 'https://github.com/login/oauth/authorize?x=1' });
     expect(lastCall()).toMatchObject({ url: '/api/git-connections/github/oauth/start', method: 'POST', body: { returnTo: 'http://localhost:5173/' } });
 
+    await api.completeGitHubConnect('ticket-123');
+    expect(lastCall()).toMatchObject({ url: '/api/git-connections/github/oauth/complete', method: 'POST', body: { ticket: 'ticket-123' } });
+
     await api.listGitRepos('github');
     expect(lastCall()).toMatchObject({ url: '/api/git-connections/github/repos', method: 'GET' });
   });

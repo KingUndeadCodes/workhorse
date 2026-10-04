@@ -228,7 +228,8 @@
     "connecting": "Подключение…",
     "connectToken": "Подключить по токену",
     "useOauthInstead": "Подключиться через GitHub",
-    "failedConnect": "Не удалось подключить GitHub"
+    "failedConnect": "Не удалось подключить GitHub",
+    "failedDisconnect": "Не удалось отключить"
   },
   "projectSettings": {
     "tabs": {

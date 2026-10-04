@@ -102,7 +102,6 @@ export function initContainer(): void {
   gitRepoLinkRepo = new GitRepoLinkRepository(db);
   userGitConnectionRepo = new UserGitConnectionRepository(db);
   gitAuthResolver = new GitAuthResolver(userGitConnectionRepo);
-  void userGitConnectionRepo.encryptLegacyPlaintext().catch((err) => console.error('Failed to encrypt legacy git credentials:', err));
   projectRepo = new ProjectRepository(db);
 
   agentRuntimes = new AgentRuntimeRegistry();

@@ -109,14 +109,14 @@ describe('githubProvider.createBranch', () => {
 });
 
 describe('githubProvider.readFile', () => {
-  it('decodes base64 content and URL-encodes the path and ref', async () => {
+  it('decodes base64 content and encodes each path segment (keeping the slashes) and the ref', async () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ content: Buffer.from('héllo').toString('base64') }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
 
     const { content } = await githubProvider.readFile({ owner: 'acme', repo: 'widgets', auth, branch: 'feat/x', path: 'src/a b.ts' });
 
     expect(content).toBe('héllo');
-    expect((fetchMock.mock.calls[0] as unknown as [string])[0]).toBe('https://api.github.com/repos/acme/widgets/contents/src%2Fa%20b.ts?ref=feat%2Fx');
+    expect((fetchMock.mock.calls[0] as unknown as [string])[0]).toBe('https://api.github.com/repos/acme/widgets/contents/src/a%20b.ts?ref=feat%2Fx');
   });
 
   it('says which file and branch were missing on a 404', async () => {
@@ -162,5 +162,54 @@ describe('githubProvider.writeFile', () => {
   it('reports a failed write', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(new Response('{}', { status: 404 })).mockResolvedValueOnce(new Response('{}', { status: 409 })));
     await expect(githubProvider.writeFile(opts)).rejects.toThrow(/Could not write "README.md": 409/);
+  });
+});
+
+describe('githubProvider URL safety (owner, repo, branch and path are user input called with the user\'s token)', () => {
+  const urls = (fetchMock: ReturnType<typeof vi.fn>) => (fetchMock.mock.calls as unknown as [string][]).map(([u]) => u);
+
+  it.each([
+    ['owner with a path traversal', { owner: 'x/../../user', repo: 'widgets' }],
+    ['owner of just ..', { owner: '..', repo: 'widgets' }],
+    ['repo of just .', { owner: 'acme', repo: '.' }],
+    ['repo with a query string', { owner: 'acme', repo: 'widgets?x=1' }],
+    ['repo with a fragment', { owner: 'acme', repo: 'widgets#frag' }],
+    ['empty owner', { owner: '', repo: 'widgets' }],
+    ['repo with a slash', { owner: 'acme', repo: 'a/b' }],
+  ])('rejects %s before any request is made, on every method', async (_label, { owner, repo }) => {
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(githubProvider.verifyAccess({ owner, repo, auth, branch: 'main' })).rejects.toThrow(/Invalid (owner|repository) name/);
+    await expect(githubProvider.createBranch({ owner, repo, auth, fromBranch: 'main', newBranchName: 'x' })).rejects.toThrow(/Invalid/);
+    await expect(githubProvider.readFile({ owner, repo, auth, branch: 'main', path: 'a' })).rejects.toThrow(/Invalid/);
+    await expect(githubProvider.writeFile({ owner, repo, auth, branch: 'main', path: 'a', content: '', commitMessage: 'm' })).rejects.toThrow(/Invalid/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('accepts ordinary GitHub names, including dots, dashes and underscores', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })));
+    await expect(githubProvider.verifyAccess({ owner: 'my-org', repo: 'my.repo_name-2', auth, branch: 'main' })).resolves.toBeUndefined();
+  });
+
+  it('keeps a branch\'s slashes as path separators but encodes anything that could change the endpoint', async () => {
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await githubProvider.verifyAccess({ owner: 'acme', repo: 'widgets', auth, branch: 'feat/new thing?x=1#y' });
+
+    expect(urls(fetchMock)[1]).toBe('https://api.github.com/repos/acme/widgets/git/ref/heads/feat/new%20thing%3Fx%3D1%23y');
+  });
+
+  it('encodes a source branch the same way when branching, and file paths segment by segment', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ object: { sha: 's' } }), { status: 200 })).mockResolvedValueOnce(new Response('{}', { status: 201 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await githubProvider.createBranch({ owner: 'acme', repo: 'widgets', auth, fromBranch: 'release/1.0', newBranchName: 'x' });
+    expect(urls(fetchMock)[0]).toBe('https://api.github.com/repos/acme/widgets/git/ref/heads/release/1.0');
+
+    const writeMock = vi.fn().mockResolvedValueOnce(new Response('{}', { status: 404 })).mockResolvedValueOnce(new Response('{}', { status: 201 }));
+    vi.stubGlobal('fetch', writeMock);
+    await githubProvider.writeFile({ owner: 'acme', repo: 'widgets', auth, branch: 'b', path: 'src/dir name/a#b.ts', content: '', commitMessage: 'm' });
+    expect(urls(writeMock)[1]).toBe('https://api.github.com/repos/acme/widgets/contents/src/dir%20name/a%23b.ts');
   });
 });

@@ -23,6 +23,9 @@ fi
 
 SERVER_PORT=8787
 APP_PORT=5173
+# The origin the browser loads the app from — the only place the GitHub OAuth callback may send the
+# browser back to. Vite serves the app on its own port here, so it differs from the API's PUBLIC_URL.
+export APP_URL="${APP_URL:-http://localhost:$APP_PORT}"
 KILL_EXISTING=1
 
 for arg in "$@"; do

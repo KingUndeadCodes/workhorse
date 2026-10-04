@@ -158,12 +158,15 @@ export function migrateStateDb(): void {
   // Move any such credential onto its creator's own connection (idempotent — INSERT OR IGNORE, and
   // the legacy column is nulled so a later boot finds nothing to move). The value is still the
   // original ciphertext, so no re-encryption happens here. 'local' rows held a throwaway value.
+  // A connection is one per (user, provider), so a creator with several links keeps only their
+  // *newest* credential (ORDER BY ... DESC: the first row inserted wins, OR IGNORE drops the rest).
   addColumnIfMissing('git_repo_links', 'auth_kind', 'TEXT');
   run(
     stateDb,
     `INSERT OR IGNORE INTO user_git_connections (user_id, provider, auth_kind, token, account_login, created_at)
      SELECT created_by, provider, COALESCE(auth_kind, 'token'), token, NULL, created_at FROM git_repo_links
-     WHERE token IS NOT NULL AND token != '' AND provider != 'local' AND created_by IS NOT NULL`,
+     WHERE token IS NOT NULL AND token != '' AND provider != 'local' AND created_by IS NOT NULL
+     ORDER BY created_at DESC`,
   );
   run(stateDb, `UPDATE git_repo_links SET token = NULL, auth_kind = NULL WHERE token IS NOT NULL`);
   run(

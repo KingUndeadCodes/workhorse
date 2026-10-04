@@ -19,8 +19,8 @@ GitHub auth mechanism that satisfies that requirement — at the cost of the acc
 **Revision note 2 (per-account credentials):** the credential no longer lives on the project's repo
 link. Each person connects their own GitHub account once (`UserGitConnection`, Settings → Git) and
 `GitRepoLink` holds only owner/repo/branch. Agent actions resolve whose credential to use at the
-moment they act (`GitAuthResolver`: the run's approver, else the person whose event triggered it,
-else the link's creator) — see `docs/backend-architecture.md` §6.1. Where §2–§4 below still say
+moment they act (`GitAuthResolver`: the run's approver, else the person whose event triggered it —
+no fallback to the link's creator, which would let anyone act with that person's credential) — see `docs/backend-architecture.md` §6.1. Where §2–§4 below still say
 `GitRepoLink.auth` or describe a per-project connect flow, this note wins: the type is `GitAuth`
 on `UserGitConnection`, the OAuth routes live at `/api/git-connections/github/oauth/*` (callback
 URL to register: `<PUBLIC_URL>/api/git-connections/github/oauth/callback`), and the Connect button

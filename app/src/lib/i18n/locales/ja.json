@@ -225,7 +225,8 @@
     "connecting": "接続中…",
     "connectToken": "トークンで接続",
     "useOauthInstead": "代わりに GitHub で接続する",
-    "failedConnect": "GitHub に接続できませんでした"
+    "failedConnect": "GitHub に接続できませんでした",
+    "failedDisconnect": "接続を解除できませんでした"
   },
   "projectSettings": {
     "tabs": {

@@ -11,9 +11,8 @@
  *   - `repo` is a path *relative to* LOCAL_GIT_ROOT (default: "<repo root>/local-repos"),
  *     e.g. repo: "my-project" resolves to "<LOCAL_GIT_ROOT>/my-project".
  *   - `owner` is ignored entirely.
- *   - `auth` is ignored entirely (the link-creation form still requires *something* be typed
- *     into the token field, since that requirement lives in the generic route, not per-provider
- *     — type anything).
+ *   - `auth` is ignored entirely — `GitAuthResolver` hands `local` an empty placeholder, so no
+ *     account connection is needed to link or use a local repo.
  *
  * `repo` is resolved and checked against LOCAL_GIT_ROOT before any `git` command runs — without
  * that check, a project's git link (writable by any authenticated user, not just admins) could

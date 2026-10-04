@@ -231,7 +231,8 @@
     "connecting": "Connecting…",
     "connectToken": "Connect with token",
     "useOauthInstead": "Connect with GitHub instead",
-    "failedConnect": "Failed to connect GitHub"
+    "failedConnect": "Failed to connect GitHub",
+    "failedDisconnect": "Failed to disconnect"
   },
   "projectSettings": {
     "tabs": {

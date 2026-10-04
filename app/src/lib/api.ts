@@ -442,6 +442,10 @@ export function listGitConnections(): Promise<{ connections: UserGitConnectionPu
 export function listGitRepos(provider: string): Promise<GitRepoSummary[]> {
   return get(`/git-connections/${provider}/repos`);
 }
+/** Finishes GitHub OAuth as the signed-in user: redeems the one-time ticket the server's callback put in the URL. The server refuses unless the ticket was issued for this user. */
+export function completeGitHubConnect(ticket: string): Promise<UserGitConnectionPublic> {
+  return post('/git-connections/github/oauth/complete', { ticket });
+}
 export function connectGitWithToken(provider: string, token: string): Promise<UserGitConnectionPublic> {
   return put(`/git-connections/${provider}`, { token });
 }

@@ -352,8 +352,9 @@ user+provider, via Settings → Git; a pasted token or a GitHub OAuth App flow),
 (crypto/tokenCipher.ts, AES-256-GCM) — `UserGitConnectionRepository` is the only place a plaintext
 secret crosses the database boundary. Commits are made by proxy: `GitAuthResolver` picks the
 credential of whoever the action is on behalf of (the run's approver, else the person whose event
-triggered it, else the link's creator), so an agent never has a git identity of its own and a
-commit is always attributable to a real person. Which of those credentials a `GitProvider` method
+triggered it — never the link's creator, so linking a repo doesn't lend its creator's account to
+everyone else), so an agent never has a git identity of its own and a commit is always attributable
+to a real person; with no connected candidate the action fails closed. Which of those credentials a `GitProvider` method
 receives is a `GitAuth` (`{kind:'token'}` or `{kind:'oauth'}`); `GitHubProvider` treats both as a
 bearer token.
 
@@ -366,9 +367,13 @@ with none registered, the Git tab shows an explicit "no provider is configured" 
 
 Per-account connections live in `routes/gitConnections.ts` (`GET/PUT/DELETE /api/git-connections`,
 the repo-picker source `GET /api/git-connections/:provider/repos`, and the GitHub OAuth
-start/callback pair). The callback is the one git route mounted *before* `requireAuth` in
-`app.ts` — GitHub redirects the browser to it, so it can't carry a bearer token; the HMAC-signed
-`state` (githubOAuth.ts) is its authorization. Two optional `GitProvider` methods exist only for
+start/callback/complete trio). The callback is the one git route mounted *before* `requireAuth` in
+`app.ts` — GitHub redirects the browser to it, so it can't carry a bearer token — and precisely
+because it can't tell who is at the keyboard it saves nothing: it parks the token behind a one-time
+ticket and the signed-in app redeems it via `/oauth/complete`, where the server checks the ticket
+was issued for that user (this is what defeats login CSRF). The HMAC-signed `state`
+(githubOAuth.ts) carries a single-use nonce, and the post-callback redirect is restricted to
+`APP_URL`/`PUBLIC_URL`. Two optional `GitProvider` methods exist only for
 this surface: `identify` (reject a bad credential and show "connected as @login") and `listRepos`
 (the picker). Setup, attribution rules, security notes, and troubleshooting:
 `docs/github-integration.md`.

@@ -14,11 +14,14 @@ describe('EventEngine readRepoFile/writeRepoFile actions', () => {
     return { engine, workspaceRepo, userRepo, automationRepo, issueRepo, agentRepo, agentRunRepo, agentRuntimes, gitRepoLinkRepo, userGitConnectionRepo, gitProviders, reporter, issue };
   }
 
-  /** Links the project's repo as 'u_test' and — unless told otherwise — gives that creator a connection, the last-resort credential. */
-  async function linkRepo(gitRepoLinkRepo: Awaited<ReturnType<typeof setup>>['gitRepoLinkRepo'], projectId: string, creatorToken: string | null = 'creator-token'): Promise<GitRepoLink> {
-    if (creatorToken) {
+  /**
+   * Links the project's repo as 'u_test'. `connectUserId`, if given, gets a connection for it — who has
+   * connected is the whole point of these tests, so nothing is connected unless a test says so.
+   */
+  async function linkRepo(gitRepoLinkRepo: Awaited<ReturnType<typeof setup>>['gitRepoLinkRepo'], projectId: string, connectUserId?: string): Promise<GitRepoLink> {
+    if (connectUserId) {
       const { db } = await import('../src/db/core');
-      await new UserGitConnectionRepository(db).upsert({ userId: 'u_test', provider: 'fake', auth: { kind: 'token', token: creatorToken }, createdAt: new Date().toISOString() });
+      await new UserGitConnectionRepository(db).upsert({ userId: connectUserId, provider: 'fake', auth: { kind: 'token', token: 'irrelevant-for-a-fake-provider' }, createdAt: new Date().toISOString() });
     }
     return gitRepoLinkRepo.create({
       id: 'gitlink_test',
@@ -57,7 +60,7 @@ describe('EventEngine readRepoFile/writeRepoFile actions', () => {
   it('readRepoFile records the file content via issue.repoFileRead', async () => {
     const { engine, workspaceRepo, automationRepo, gitRepoLinkRepo, gitProviders, reporter, issue } = await setup();
     gitProviders.register(fakeGitProvider({ id: 'fake', readFile: async () => ({ content: 'hello world' }) }));
-    await linkRepo(gitRepoLinkRepo, issue.projectId);
+    await linkRepo(gitRepoLinkRepo, issue.projectId, reporter.id);
     await seedAutomationRule(automationRepo, {
       eventFilter: ['issue.priorityChanged'],
       actions: [{ type: 'readRepoFile', path: 'README.md' }],
@@ -89,7 +92,7 @@ describe('EventEngine readRepoFile/writeRepoFile actions', () => {
         writeFile,
       }),
     );
-    await linkRepo(gitRepoLinkRepo, issue.projectId);
+    await linkRepo(gitRepoLinkRepo, issue.projectId, reporter.id);
     await seedAutomationRule(automationRepo, {
       eventFilter: ['issue.priorityChanged'],
       actions: [{ type: 'writeRepoFile', path: 'src/x.ts', content: 'export {}', branchName: 'agent/fix-1' }],
@@ -109,7 +112,7 @@ describe('EventEngine readRepoFile/writeRepoFile actions', () => {
     const { engine, automationRepo, gitRepoLinkRepo, gitProviders, reporter, issue } = await setup();
     const createBranch = vi.fn(async ({ newBranchName }: { newBranchName: string }) => ({ url: `fake://branch/${newBranchName}` }));
     gitProviders.register(fakeGitProvider({ id: 'fake', verifyAccess: async () => {}, createBranch }));
-    await linkRepo(gitRepoLinkRepo, issue.projectId);
+    await linkRepo(gitRepoLinkRepo, issue.projectId, reporter.id);
     await seedAutomationRule(automationRepo, {
       eventFilter: ['issue.priorityChanged'],
       actions: [{ type: 'writeRepoFile', path: 'src/x.ts', content: 'export {}', branchName: 'existing-branch' }],
@@ -128,7 +131,7 @@ describe('EventEngine readRepoFile/writeRepoFile actions', () => {
     const { engine, automationRepo, gitRepoLinkRepo, gitProviders, reporter, issue } = await setup();
     const writeFile = vi.fn(async ({ branch, path }: { branch: string; path: string }) => ({ url: `fake://file/${branch}/${path}` }));
     gitProviders.register(fakeGitProvider({ id: 'fake', verifyAccess: async () => {}, writeFile }));
-    await linkRepo(gitRepoLinkRepo, issue.projectId);
+    await linkRepo(gitRepoLinkRepo, issue.projectId, reporter.id);
     await seedAutomationRule(automationRepo, {
       eventFilter: ['issue.priorityChanged'],
       actions: [{ type: 'writeRepoFile', path: 'src/x.ts', content: 'export {}', branchName: 'b' }],
@@ -152,7 +155,7 @@ describe('EventEngine readRepoFile/writeRepoFile actions', () => {
     });
   };
 
-  it("acts with the triggering person's own credential, not the link creator's", async () => {
+  it("acts with the triggering person's own credential", async () => {
     const ctx = await setup();
     const readFile = vi.fn(async () => ({ content: 'x' }));
     ctx.gitProviders.register(fakeGitProvider({ id: 'fake', readFile }));
@@ -164,21 +167,20 @@ describe('EventEngine readRepoFile/writeRepoFile actions', () => {
     expect(readFile).toHaveBeenCalledWith(expect.objectContaining({ auth: { kind: 'oauth', accessToken: 'reporter-token' } }));
   });
 
-  it('falls back to the link creator when the triggering person has not connected an account', async () => {
+  it("never borrows the link creator's credential — someone with no connection of their own cannot act with it", async () => {
     const ctx = await setup();
     const readFile = vi.fn(async () => ({ content: 'x' }));
     ctx.gitProviders.register(fakeGitProvider({ id: 'fake', readFile }));
-    await linkRepo(ctx.gitRepoLinkRepo, ctx.issue.projectId);
+    await linkRepo(ctx.gitRepoLinkRepo, ctx.issue.projectId, 'u_test'); // the creator HAS connected; the reporter has not
 
-    await fireReadRule(ctx);
-
-    expect(readFile).toHaveBeenCalledWith(expect.objectContaining({ auth: { kind: 'token', token: 'creator-token' } }));
+    await expect(fireReadRule(ctx)).rejects.toThrow(/No fake account is connected/);
+    expect(readFile).not.toHaveBeenCalled();
   });
 
   it('fails with a clear error when nobody involved has connected an account', async () => {
     const ctx = await setup();
     ctx.gitProviders.register(fakeGitProvider({ id: 'fake' }));
-    await linkRepo(ctx.gitRepoLinkRepo, ctx.issue.projectId, null);
+    await linkRepo(ctx.gitRepoLinkRepo, ctx.issue.projectId);
 
     await expect(fireReadRule(ctx)).rejects.toThrow(/No fake account is connected/);
   });
@@ -189,8 +191,7 @@ describe('EventEngine readRepoFile/writeRepoFile actions', () => {
       const readFile = vi.fn(async () => ({ content: 'x' }));
       ctx.gitProviders.register(fakeGitProvider({ id: 'fake', readFile }));
       ctx.agentRuntimes.register(fixedDecisionRuntime([{ name: 'readRepoFile', input: { path: 'README.md' } }]));
-      // No default creator connection here — each test says exactly who has connected.
-      await linkRepo(ctx.gitRepoLinkRepo, ctx.issue.projectId, null);
+      await linkRepo(ctx.gitRepoLinkRepo, ctx.issue.projectId);
       const agent = await seedAgent(ctx.userRepo, ctx.agentRepo, { eventFilter: ['comment.created'], allowedActionTypes: ['readRepoFile'], approvalPolicy: approvalPolicy('requireApprovalForAll') });
       await ctx.issueRepo.assignAgent(ctx.issue.id, agent.userId, new Date().toISOString());
       const approver = await seedHumanUser(ctx.userRepo, 'approver@example.com', 'Approver');
@@ -234,18 +235,9 @@ describe('EventEngine readRepoFile/writeRepoFile actions', () => {
       expect(readFile).toHaveBeenCalledWith(expect.objectContaining({ auth: { kind: 'token', token: 'asker-token' } }));
     });
 
-    it('falls back to the link creator last', async () => {
-      const { engine, approver, readFile, connect, askAndHold } = await agentSetup();
-      await connect('u_test', 'creator-token');
-      const run = await askAndHold();
-
-      await engine.resolveAgentRun(run.id, 'approved', approver.id);
-
-      expect(readFile).toHaveBeenCalledWith(expect.objectContaining({ auth: { kind: 'token', token: 'creator-token' } }));
-    });
-
-    it('fails the run (not the request) with a clear reason when nobody involved has connected', async () => {
-      const { engine, approver, agent, agentRunRepo, readFile, askAndHold } = await agentSetup();
+    it("fails the run rather than using the link creator's credential when neither approver nor asker has connected", async () => {
+      const { engine, approver, agent, agentRunRepo, readFile, connect, askAndHold } = await agentSetup();
+      await connect('u_test', 'creator-token'); // exists, but must not be used
       const run = await askAndHold();
 
       const resolved = await engine.resolveAgentRun(run.id, 'approved', approver.id);

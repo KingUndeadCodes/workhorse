@@ -54,6 +54,16 @@ describe('UserGitConnectionRepository', () => {
     expect((await r.get('u_1', 'github'))?.auth).toEqual({ kind: 'oauth', accessToken: 'gho_new' });
   });
 
+  it('listForUser returns only that user\'s connections', async () => {
+    const { r } = await repo();
+    await r.upsert(conn());
+    await r.upsert(conn({ provider: 'gitlab-like' }));
+    await r.upsert(conn({ userId: 'u_2' }));
+
+    expect((await r.listForUser('u_1')).map((c) => c.provider).sort()).toEqual(['github', 'gitlab-like']);
+    expect(await r.listForUser('nobody')).toEqual([]);
+  });
+
   it('delete removes only that user\'s connection', async () => {
     const { r } = await repo();
     await r.upsert(conn());
@@ -68,16 +78,23 @@ describe('UserGitConnectionRepository', () => {
 describe('GitAuthResolver', () => {
   const link: GitRepoLink = { id: 'l', projectId: 'p', provider: 'github', owner: 'a', repo: 'b', defaultBranch: 'main', createdAt: '', createdBy: 'creator' };
 
-  it('prefers the first candidate with a connection, then the creator, else throws', async () => {
+  it('uses the first candidate that has a connection, and throws when none does', async () => {
     const { r } = await repo();
     const resolver = new GitAuthResolver(r);
-    await r.upsert(conn({ userId: 'creator', auth: { kind: 'token', token: 'creator-token' } }));
     await r.upsert(conn({ userId: 'approver', auth: { kind: 'token', token: 'approver-token' } }));
+    await r.upsert(conn({ userId: 'asker', auth: { kind: 'token', token: 'asker-token' } }));
 
     expect(await resolver.resolve(link, ['approver', 'asker'])).toEqual({ kind: 'token', token: 'approver-token' });
-    expect(await resolver.resolve(link, [undefined, 'asker'])).toEqual({ kind: 'token', token: 'creator-token' });
-    await r.delete('creator', 'github');
-    await expect(resolver.resolve(link, ['asker'])).rejects.toThrow(/No github account is connected/);
+    expect(await resolver.resolve(link, [undefined, 'asker'])).toEqual({ kind: 'token', token: 'asker-token' });
+    await expect(resolver.resolve(link, ['nobody'])).rejects.toThrow(/No github account is connected/);
+    await expect(resolver.resolve(link, [])).rejects.toThrow(/No github account is connected/);
+  });
+
+  it("never falls back to the link creator's connection — otherwise anyone could act with it", async () => {
+    const { r } = await repo();
+    await r.upsert(conn({ userId: 'creator', auth: { kind: 'token', token: 'creator-token' } }));
+
+    await expect(new GitAuthResolver(r).resolve(link, ['someone-else'])).rejects.toThrow(/No github account is connected/);
   });
 
   it('needs no credential for local', async () => {

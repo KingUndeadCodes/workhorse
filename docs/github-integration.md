@@ -13,19 +13,21 @@ deliberately — see [`plans/GIT_OAUTH_PLAN.md`](../plans/GIT_OAUTH_PLAN.md) §6
 holds no secret.
 
 **Commits are made by proxy.** An agent has no git identity of its own. When it acts, the server
-picks a real person's credential, so every commit is attributable to someone accountable. For a
+uses a real person's credential, so every commit is attributable to someone accountable. For a
 repo action the credential comes from the first of these who has connected an account:
 
 | Order | Whose credential | Why |
 |---|---|---|
 | 1 | The person who **approved** the agent run | They are accountable for it going ahead |
 | 2 | The person whose **event triggered** the run (e.g. the commenter) | They asked for it |
-| 3 | The user who **created the repo link** | Last resort |
 
-If nobody in that list has connected, the run fails with *"No github account is connected for this
-action — connect yours under Settings → Git."* — the request that triggered it still succeeds.
-Branch creation from the UI uses the clicking user's own account (then the link creator's).
-Linking a repo verifies access with the linking user's account. `local` repos need no credential.
+**There is no fallback to whoever created the repo link.** Linking a repo does not lend its
+creator's account to everyone else: someone with no connection of their own — a guest, or a member
+who never connected — cannot make the app act with another person's credential. If neither person
+above has connected, the run fails with *"No github account is connected for this action — connect
+yours under Settings → Git."*; the request that triggered it still succeeds. Branch creation from
+the UI uses only the clicking user's own account, and linking a repo verifies access with the
+linking user's account. `local` repos need no credential.
 
 ## Setup (whoever deploys Workhorse)
 
@@ -52,6 +54,7 @@ matching* off, and don't enable expiring user tokens — tokens are stored witho
 | `GITHUB_OAUTH_CLIENT_ID` | The OAuth App's client id |
 | `GITHUB_OAUTH_CLIENT_SECRET` | The OAuth App's client secret |
 | `PUBLIC_URL` | The server's own origin, used to build the callback URL (e.g. `http://localhost:8787`) |
+| `APP_URL` *(optional)* | The origin the app is served from, if different from `PUBLIC_URL`'s — the only place the callback may send the browser back to. Defaults to `PUBLIC_URL`'s origin; `dev.sh` sets it to `http://localhost:5173` |
 | `TOKEN_ENCRYPTION_KEY` *(optional)* | Key for encrypting stored credentials. If unset, one is generated once and kept in `server/data/token-encryption.key` |
 | `OAUTH_STATE_SECRET` *(optional)* | Key for signing the OAuth `state`. If unset, generated into `server/data/oauth-state.key` |
 
@@ -67,7 +70,8 @@ PUBLIC_URL=http://localhost:8787
 ```
 
 Restart `./dev.sh` after editing it. In production, set the variables however you set the others
-(`JWT_SECRET`, `OLLAMA_HOST`, …) — nothing but `dev.sh` reads `.env`.
+(`JWT_SECRET`, `OLLAMA_HOST`, …) — nothing but `dev.sh` reads `.env`. If the app and API are served
+from different origins there, set `APP_URL` too; if they share one, `PUBLIC_URL` is enough.
 
 **Localhost works.** GitHub accepts `http://localhost` callbacks. The registered URL must match
 `PUBLIC_URL` + the path exactly (port, `localhost` vs `127.0.0.1`, no trailing slash). Register one
@@ -96,9 +100,20 @@ OAuth App per environment; each has a single callback.
   just the linked repo — the accepted cost of commits being attributable to a person. A
   fine-grained personal access token scoped to specific repos is the tighter alternative and stays
   fully supported.
-- The OAuth `state` is HMAC-signed, expires after 10 minutes, and names the user the callback
-  saves the connection for. The callback route is public (GitHub redirects the browser to it); the
-  signed state is its only authorization.
+- **The callback saves nothing.** It is public (GitHub redirects the browser to it) and cannot tell
+  who is at the keyboard — only who *started* the flow. Saving there would let an attacker start a
+  flow, send the authorize link to a victim, and have the victim's token saved to the attacker's
+  account (login CSRF). Instead the callback exchanges the code, parks the token behind a one-time
+  ticket (60 seconds, in memory), and redirects to the app. The signed-in app then calls
+  `POST /api/git-connections/github/oauth/complete`, and the server refuses unless the ticket was
+  issued for *that* user. A mismatch burns the ticket.
+- The OAuth `state` is HMAC-signed, expires after 10 minutes, carries a single-use nonce, and
+  names the user who started the flow. A used state cannot be replayed.
+- `returnTo` (where the browser goes afterwards) must be on the app's own origin — `APP_URL` or
+  `PUBLIC_URL`, never a value the client picks — so neither the browser nor a ticket can be sent to
+  another site.
+- Owners, repos, branches and file paths are validated/encoded before being placed in GitHub API
+  URLs, so user input can't redirect a request (made with the user's token) to another endpoint.
 - Nothing is stored unless it verifies: a pasted token must resolve to a real account, and linking
   a repo must reach the repo and branch.
 
@@ -111,8 +126,9 @@ OAuth App per environment; each has a single callback.
 | `PUT /api/git-connections/:provider` | Connect with a pasted token (`{ token }`), verified first |
 | `DELETE /api/git-connections/:provider` | Disconnect the caller's account |
 | `GET /api/git-connections/:provider/repos` | Repos the caller's account can reach (repo picker); up to 300 |
-| `POST /api/git-connections/github/oauth/start` | Returns GitHub's authorize URL (`{ returnTo }`) |
-| `GET /api/git-connections/github/oauth/callback` | **Public.** Completes the OAuth flow, redirects to `returnTo?gitConnect=ok\|error` |
+| `POST /api/git-connections/github/oauth/start` | Returns GitHub's authorize URL (`{ returnTo }`, which must be on the app's origin) |
+| `GET /api/git-connections/github/oauth/callback` | **Public.** Exchanges the code and redirects to `returnTo?gitConnect=ready&ticket=…` (or `gitConnect=error&message=…`). Saves nothing |
+| `POST /api/git-connections/github/oauth/complete` | Redeems the ticket (`{ ticket }`) as the signed-in user and saves the connection |
 | `GET/POST/DELETE /api/projects/:id/git-repo-link` | Read / link (`{ provider, owner, repo, defaultBranch? }`) / unlink |
 | `POST /api/issues/:id/branch` | Create a branch for a ticket |
 
@@ -136,7 +152,8 @@ Guests cannot connect accounts or link repos.
 `user_git_connections (user_id, provider, auth_kind, token, account_login, created_at)`, primary key
 `(user_id, provider)`. Older databases stored a credential on `git_repo_links`; on boot the schema
 moves each one onto its creator's connection (skipping `local` and orphaned rows, never
-overwriting an existing connection) and a one-time pass encrypts anything still in plaintext. The
+overwriting an existing connection; a creator with several links keeps their **newest** credential)
+and a one-time pass, finished before the server starts serving, encrypts anything still in plaintext. The
 legacy `git_repo_links.token` / `auth_kind` columns remain but are always null.
 
 ## Limits
@@ -156,10 +173,12 @@ legacy `git_repo_links.token` / `auth_kind` columns remain but are always null.
 | "No github account is connected for this action" | Nobody in the resolution order has connected — connect under Settings → Git |
 | "GitHub rejected this token" | The token was revoked or expired — reconnect |
 | "This connect attempt expired — start again" | More than 10 minutes between starting and finishing the GitHub authorize step |
+| "returnTo must be on this app's own origin" | The app is served from an origin that is neither `APP_URL` nor `PUBLIC_URL` — set `APP_URL` |
+| "This connect attempt is invalid or has expired" | The ticket was older than 60 seconds, already used, or issued for a different signed-in user |
 
 ## Tests
 
-`server/test/`: `gitRoutes` (HTTP routes), `userGitConnectionRepository` (+ `GitAuthResolver`),
+`server/test/`: `gitRoutes` (HTTP routes, including the login-CSRF scenario), `userGitConnectionRepository` (+ `GitAuthResolver`),
 `gitConnectionMigration`, `githubOAuth` (state + code exchange), `githubProvider` (mocked
 `fetch`), `eventEngine.gitActions` (agent actions and credential choice),
 `gitRepoLinkRepository`, `tokenCipher`. Run with `cd server && npx vitest run`.

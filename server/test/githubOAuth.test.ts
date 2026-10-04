@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { buildAuthorizeUrl, exchangeCodeForToken, getGitHubOAuthConfig, signState, verifyState } from '../src/services/githubOAuth';
+import {
+  buildAuthorizeUrl, consumeState, exchangeCodeForToken, getGitHubOAuthConfig, isAllowedReturnTo, issueConnectTicket, redeemConnectTicket, signState, verifyState,
+} from '../src/services/githubOAuth';
 
 const config = { clientId: 'cid', clientSecret: 'secret', callbackUrl: 'http://localhost:8787/api/git-connections/github/oauth/callback' };
 const payload = { projectId: 'p1', userId: 'u1', owner: 'acme', repo: 'widgets', defaultBranch: 'main', returnTo: 'http://localhost:5173/' };
@@ -38,6 +40,66 @@ describe('OAuth state', () => {
     const state = signState(payload);
     vi.advanceTimersByTime(11 * 60 * 1000);
     expect(() => verifyState(state)).toThrow(/expired/);
+  });
+});
+
+describe('OAuth state hardening', () => {
+  it('rejects a multi-byte signature with "Invalid OAuth state", not a RangeError from timingSafeEqual', () => {
+    const body = signState(payload).split('.')[0];
+    const forged = '✓'.repeat(43); // same character count as a real signature, different byte length
+    expect(() => verifyState(`${body}.${forged}`)).toThrow('Invalid OAuth state');
+  });
+
+  it('gives every state its own nonce, and lets it be consumed only once', () => {
+    const a = verifyState(signState(payload));
+    const b = verifyState(signState(payload));
+    expect(a.nonce).not.toBe(b.nonce);
+
+    expect(consumeState(a)).toBe(true);
+    expect(consumeState(a)).toBe(false); // replay
+    expect(consumeState(b)).toBe(true);
+  });
+});
+
+describe('connect tickets (the callback parks the token; only the signed-in user it was issued for can redeem it)', () => {
+  it('releases the token to the user it was issued for, once', () => {
+    const ticket = issueConnectTicket('u_victim', 'gho_victim');
+    expect(redeemConnectTicket(ticket, 'u_victim')).toBe('gho_victim');
+    expect(redeemConnectTicket(ticket, 'u_victim')).toBeUndefined();
+  });
+
+  it('refuses anyone else, and burns the ticket so it cannot be retried', () => {
+    const ticket = issueConnectTicket('u_attacker', 'gho_victim');
+    expect(redeemConnectTicket(ticket, 'u_victim')).toBeUndefined();
+    expect(redeemConnectTicket(ticket, 'u_attacker')).toBeUndefined();
+  });
+
+  it('refuses an unknown or expired ticket', () => {
+    expect(redeemConnectTicket('no-such-ticket', 'u1')).toBeUndefined();
+    vi.useFakeTimers();
+    const ticket = issueConnectTicket('u1', 'gho_x');
+    vi.advanceTimersByTime(61_000);
+    expect(redeemConnectTicket(ticket, 'u1')).toBeUndefined();
+  });
+});
+
+describe('isAllowedReturnTo', () => {
+  it('allows only the app\'s own origins (APP_URL, PUBLIC_URL) — never a client-chosen one', () => {
+    vi.stubEnv('PUBLIC_URL', 'http://localhost:8787');
+    vi.stubEnv('APP_URL', 'http://localhost:5173');
+    expect(isAllowedReturnTo(new URL('http://localhost:5173/settings?x=1'))).toBe(true);
+    expect(isAllowedReturnTo(new URL('http://localhost:8787/'))).toBe(true);
+    expect(isAllowedReturnTo(new URL('https://evil.example/'))).toBe(false);
+    expect(isAllowedReturnTo(new URL('http://localhost:5174/'))).toBe(false);
+    expect(isAllowedReturnTo(new URL('https://localhost:5173/'))).toBe(false);
+  });
+
+  it('with no APP_URL, defaults to PUBLIC_URL\'s origin; with neither, allows nothing', () => {
+    vi.stubEnv('APP_URL', '');
+    vi.stubEnv('PUBLIC_URL', 'https://work.example.com');
+    expect(isAllowedReturnTo(new URL('https://work.example.com/x'))).toBe(true);
+    vi.stubEnv('PUBLIC_URL', '');
+    expect(isAllowedReturnTo(new URL('https://work.example.com/x'))).toBe(false);
   });
 });
 

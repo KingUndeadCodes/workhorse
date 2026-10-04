@@ -226,7 +226,8 @@
     "connecting": "Conectando…",
     "connectToken": "Conectar con token",
     "useOauthInstead": "Conectar con GitHub",
-    "failedConnect": "No se pudo conectar GitHub"
+    "failedConnect": "No se pudo conectar GitHub",
+    "failedDisconnect": "No se pudo desconectar"
   },
   "projectSettings": {
     "tabs": {

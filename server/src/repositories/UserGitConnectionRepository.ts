@@ -1,4 +1,4 @@
-import type { Kysely } from 'kysely';
+import type { Kysely, Selectable } from 'kysely';
 import type { DB } from '../db/types';
 import { persistState } from '../db/core';
 import { decryptToken, encryptToken } from '../crypto/tokenCipher';
@@ -10,6 +10,15 @@ import type { GitAuth, UserGitConnection } from '../domain';
  * once, so this class is the only place a plaintext git secret touches the database.
  * (`WebhookRepository` applies the same encryption to `WebhookSubscription.secret`.)
  */
+type ConnectionRow = Selectable<DB['user_git_connections']>;
+
+function toConnection(row: ConnectionRow): UserGitConnection | undefined {
+  if (!row.token) return undefined;
+  const secret = decryptToken(row.token);
+  const auth: GitAuth = row.auth_kind === 'oauth' ? { kind: 'oauth', accessToken: secret } : { kind: 'token', token: secret };
+  return { userId: row.user_id, provider: row.provider, auth, accountLogin: row.account_login ?? undefined, createdAt: row.created_at ?? '' };
+}
+
 export class UserGitConnectionRepository {
   constructor(private readonly db: Kysely<DB>) {}
 
@@ -29,16 +38,12 @@ export class UserGitConnectionRepository {
 
   async get(userId: string, provider: string): Promise<UserGitConnection | undefined> {
     const row = await this.db.selectFrom('user_git_connections').selectAll().where('user_id', '=', userId).where('provider', '=', provider).executeTakeFirst();
-    if (!row || !row.token) return undefined;
-    const secret = decryptToken(row.token);
-    const auth: GitAuth = row.auth_kind === 'oauth' ? { kind: 'oauth', accessToken: secret } : { kind: 'token', token: secret };
-    return { userId: row.user_id, provider: row.provider, auth, accountLogin: row.account_login ?? undefined, createdAt: row.created_at ?? '' };
+    return row ? toConnection(row) : undefined;
   }
 
   async listForUser(userId: string): Promise<UserGitConnection[]> {
-    const rows = await this.db.selectFrom('user_git_connections').select('provider').where('user_id', '=', userId).execute();
-    const all = await Promise.all(rows.map((r) => this.get(userId, r.provider)));
-    return all.filter((c): c is UserGitConnection => !!c);
+    const rows = await this.db.selectFrom('user_git_connections').selectAll().where('user_id', '=', userId).execute();
+    return rows.map(toConnection).filter((c): c is UserGitConnection => !!c);
   }
 
   /** Connecting again replaces the previous connection for that provider. */

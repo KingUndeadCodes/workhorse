@@ -9,6 +9,7 @@ vi.stubEnv('OAUTH_STATE_SECRET', 'test-oauth-state-secret');
 vi.stubEnv('GITHUB_OAUTH_CLIENT_ID', 'cid');
 vi.stubEnv('GITHUB_OAUTH_CLIENT_SECRET', 'csecret');
 vi.stubEnv('PUBLIC_URL', 'http://localhost:8787');
+vi.stubEnv('APP_URL', 'http://localhost:5173');
 
 const pat: GitAuth = { kind: 'token', token: 'ghp_mine' };
 
@@ -153,10 +154,33 @@ describe('GET /api/git-connections/:provider/repos (repo picker source)', () => 
   });
 });
 
-describe('GitHub OAuth start + callback', () => {
+describe('GitHub OAuth start, callback and complete', () => {
   const returnTo = 'http://localhost:5173/';
 
-  it('start returns a GitHub authorize URL carrying a signed state for the caller', async () => {
+  async function bootOAuth() {
+    const ctx = await boot();
+    // The victim/second person in the attack scenarios: a real member with their own session.
+    const other = await ctx.container.userRepo.createHuman('other@example.com', 'Other', 'hash');
+    await ctx.container.workspaceRepo.addMember(ctx.workspaceId, other.id, 'member', new Date().toISOString());
+    const { signToken } = await import('../src/auth/jwt');
+    const otherToken = await signToken(other);
+    const asOther = (path: string, init: { method?: string; body?: unknown } = {}) =>
+      ctx.app.request(`/api${path}`, {
+        method: init.method ?? 'GET',
+        headers: { authorization: `Bearer ${otherToken}`, 'content-type': 'application/json' },
+        body: init.body === undefined ? undefined : JSON.stringify(init.body),
+      });
+    const { signState } = await import('../src/services/githubOAuth');
+    const callback = (query: Record<string, string>) =>
+      ctx.app.request(`/api/git-connections/github/oauth/callback?${new URLSearchParams(query)}`, { redirect: 'manual' });
+    const exchangeReturns = (access_token: string) =>
+      vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ access_token }), { status: 200 })));
+    ctx.container.gitProviders.register(fakeGitProvider({ id: 'github', identify: async () => ({ login: 'octocat' }) }));
+    return { ...ctx, other, asOther, signState, callback, exchangeReturns };
+  }
+  const ticketFrom = (res: Response) => new URL(res.headers.get('location')!).searchParams.get('ticket')!;
+
+  it('start returns a GitHub authorize URL carrying a signed, single-use state for the caller', async () => {
     const { call, user } = await boot();
 
     const { url } = (await (await call('/git-connections/github/oauth/start', { method: 'POST', body: { returnTo } })).json()) as { url: string };
@@ -168,10 +192,16 @@ describe('GitHub OAuth start + callback', () => {
     expect(verifyState(u.searchParams.get('state')!)).toMatchObject({ userId: user.id, returnTo });
   });
 
-  it('start rejects a non-http(s) returnTo, guests, and an unconfigured server', async () => {
+  it('start rejects a returnTo that is not the app\'s own origin, so the callback can never send a browser (or a ticket) to another site', async () => {
+    const { call } = await boot();
+    for (const bad of ['https://evil.example/', 'http://localhost:5174/', 'https://localhost:5173/', 'javascript:alert(1)', 'not a url']) {
+      expect((await call('/git-connections/github/oauth/start', { method: 'POST', body: { returnTo: bad } })).status, bad).toBe(400);
+    }
+  });
+
+  it('start rejects guests and an unconfigured server', async () => {
     const { call, guestCall } = await boot();
-    expect((await call('/git-connections/github/oauth/start', { method: 'POST', body: { returnTo: 'javascript:alert(1)' } })).status).toBe(400);
-    expect((await call('/git-connections/github/oauth/start', { method: 'POST', body: { returnTo: 'not a url' } })).status).toBe(400);
+    expect((await guestCall('/git-connections/github/oauth/start', { method: 'POST', body: { returnTo } })).status).toBe(403);
 
     vi.stubEnv('GITHUB_OAUTH_CLIENT_ID', '');
     try {
@@ -179,58 +209,111 @@ describe('GitHub OAuth start + callback', () => {
     } finally {
       vi.stubEnv('GITHUB_OAUTH_CLIENT_ID', 'cid');
     }
-    expect((await guestCall('/git-connections/github/oauth/start', { method: 'POST', body: { returnTo } })).status).toBe(403);
   });
 
-  async function callback(app: Awaited<ReturnType<typeof boot>>['app'], query: Record<string, string>) {
-    return app.request(`/api/git-connections/github/oauth/callback?${new URLSearchParams(query)}`, { redirect: 'manual' });
-  }
+  it('callback saves NOTHING — it exchanges the code and hands the app a one-time ticket instead', async () => {
+    const { container, user, signState, callback, exchangeReturns } = await bootOAuth();
+    exchangeReturns('gho_fresh');
 
-  it('callback (no bearer token — authorized by state alone) exchanges the code and saves the connection for the state\'s user', async () => {
-    const { app, container, user } = await boot();
-    container.gitProviders.register(fakeGitProvider({ id: 'github', identify: async () => ({ login: 'octocat' }) }));
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ access_token: 'gho_fresh' }), { status: 200 })));
-    const { signState } = await import('../src/services/githubOAuth');
-
-    const res = await callback(app, { code: 'abc', state: signState({ userId: user.id, returnTo }) });
-
+    const res = await callback({ code: 'abc', state: signState({ userId: user.id, returnTo }) });
     vi.unstubAllGlobals();
+
     expect(res.status).toBe(302);
-    expect(res.headers.get('location')).toBe(`${returnTo}?gitConnect=ok`);
-    expect(await container.userGitConnectionRepo.get(user.id, 'github')).toMatchObject({ auth: { kind: 'oauth', accessToken: 'gho_fresh' }, accountLogin: 'octocat' });
+    const location = new URL(res.headers.get('location')!);
+    expect(location.origin + location.pathname).toBe(returnTo);
+    expect(location.searchParams.get('gitConnect')).toBe('ready');
+    expect(ticketFrom(res)).toBeTruthy();
+    expect(JSON.stringify([...location.searchParams])).not.toContain('gho_fresh');
+    expect(await container.userGitConnectionRepo.get(user.id, 'github')).toBeUndefined();
   });
 
-  it('callback rejects a missing, forged, or expired state without redirecting', async () => {
-    const { app, user } = await boot();
-    const { signState } = await import('../src/services/githubOAuth');
-    expect((await callback(app, { code: 'abc' })).status).toBe(400);
-    expect((await callback(app, { code: 'abc', state: 'forged.state' })).status).toBe(400);
+  it('complete (signed in) redeems the ticket and saves the connection, once', async () => {
+    const { call, container, user, signState, callback, exchangeReturns } = await bootOAuth();
+    exchangeReturns('gho_fresh');
+    const ticket = ticketFrom(await callback({ code: 'abc', state: signState({ userId: user.id, returnTo }) }));
+    vi.unstubAllGlobals();
+
+    const res = await call('/git-connections/github/oauth/complete', { method: 'POST', body: { ticket } });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ provider: 'github', accountLogin: 'octocat', authKind: 'oauth' });
+    expect((await container.userGitConnectionRepo.get(user.id, 'github'))?.auth).toEqual({ kind: 'oauth', accessToken: 'gho_fresh' });
+    expect((await call('/git-connections/github/oauth/complete', { method: 'POST', body: { ticket } })).status).toBe(400); // replay
+  });
+
+  it('LOGIN CSRF: a victim tricked into finishing the attacker\'s flow cannot have their token saved to the attacker', async () => {
+    const { call, asOther, container, user, other, signState, callback, exchangeReturns } = await bootOAuth();
+    // The attacker (`user`) starts a flow naming themselves and sends the URL to the victim (`other`),
+    // who approves it on GitHub — so GitHub exchanges *the victim's* authorization for a token.
+    exchangeReturns('gho_VICTIM_TOKEN');
+    const ticket = ticketFrom(await callback({ code: 'victims-code', state: signState({ userId: user.id, returnTo }) }));
+    vi.unstubAllGlobals();
+
+    // The victim's browser lands back in the app, signed in as the victim, and tries to complete.
+    const asVictim = await asOther('/git-connections/github/oauth/complete', { method: 'POST', body: { ticket } });
+    expect(asVictim.status).toBe(400);
+
+    // The attacker can't redeem it either — the ticket was burned by the mismatch, and they never see it anyway.
+    expect((await call('/git-connections/github/oauth/complete', { method: 'POST', body: { ticket } })).status).toBe(400);
+
+    expect(await container.userGitConnectionRepo.get(user.id, 'github')).toBeUndefined();
+    expect(await container.userGitConnectionRepo.get(other.id, 'github')).toBeUndefined();
+  });
+
+  it('complete rejects a forged or expired ticket, a missing one, and guests', async () => {
+    const { call, guestCall } = await boot();
+    expect((await call('/git-connections/github/oauth/complete', { method: 'POST', body: { ticket: 'forged' } })).status).toBe(400);
+    expect((await call('/git-connections/github/oauth/complete', { method: 'POST', body: {} })).status).toBe(400);
+    expect((await guestCall('/git-connections/github/oauth/complete', { method: 'POST', body: { ticket: 'x' } })).status).toBe(403);
+  });
+
+  it('complete refuses a token the provider cannot resolve to a real account, saving nothing', async () => {
+    const { call, container, user, signState, callback, exchangeReturns } = await bootOAuth();
+    container.gitProviders.register(fakeGitProvider({ id: 'github', identify: async () => { throw new Error('GitHub rejected this token'); } }));
+    exchangeReturns('gho_bad');
+    const ticket = ticketFrom(await callback({ code: 'abc', state: signState({ userId: user.id, returnTo }) }));
+    vi.unstubAllGlobals();
+
+    const res = await call('/git-connections/github/oauth/complete', { method: 'POST', body: { ticket } });
+
+    expect(res.status).toBe(400);
+    expect(await container.userGitConnectionRepo.get(user.id, 'github')).toBeUndefined();
+  });
+
+  it('callback rejects a missing, forged, expired, or already-used state without redirecting', async () => {
+    const { user, signState, callback, exchangeReturns } = await bootOAuth();
+    expect((await callback({ code: 'abc' })).status).toBe(400);
+    expect((await callback({ code: 'abc', state: 'forged.state' })).status).toBe(400);
+
+    exchangeReturns('gho_x');
+    const state = signState({ userId: user.id, returnTo });
+    expect((await callback({ code: 'abc', state })).status).toBe(302);
+    expect((await callback({ code: 'abc', state })).status).toBe(400); // replayed state
+    vi.unstubAllGlobals();
 
     vi.useFakeTimers();
-    const state = signState({ userId: user.id, returnTo });
+    const old = signState({ userId: user.id, returnTo });
     vi.advanceTimersByTime(11 * 60 * 1000);
     try {
-      expect((await callback(app, { code: 'abc', state })).status).toBe(400);
+      expect((await callback({ code: 'abc', state: old })).status).toBe(400);
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it('callback redirects back with an error when the user denies access or the exchange fails, saving nothing', async () => {
-    const { app, container, user } = await boot();
-    const { signState } = await import('../src/services/githubOAuth');
-    const state = signState({ userId: user.id, returnTo });
+  it('callback redirects back with an error when the user denies access or the exchange fails, issuing no ticket', async () => {
+    const { user, signState, callback } = await bootOAuth();
 
-    const denied = await callback(app, { state, error_description: 'The user has denied your application access.' });
+    const denied = await callback({ state: signState({ userId: user.id, returnTo }), error_description: 'The user has denied your application access.' });
     expect(new URL(denied.headers.get('location')!).searchParams.get('message')).toMatch(/denied/);
 
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: 'bad_verification_code', error_description: 'The code passed is incorrect or expired.' }), { status: 200 })));
-    const failed = await callback(app, { code: 'stale', state });
+    const failed = await callback({ code: 'stale', state: signState({ userId: user.id, returnTo }) });
     vi.unstubAllGlobals();
     const location = new URL(failed.headers.get('location')!);
     expect(location.searchParams.get('gitConnect')).toBe('error');
     expect(location.searchParams.get('message')).toMatch(/incorrect or expired/);
-    expect(await container.userGitConnectionRepo.get(user.id, 'github')).toBeUndefined();
+    expect(location.searchParams.has('ticket')).toBe(false);
   });
 });
 

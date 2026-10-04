@@ -108,6 +108,13 @@
   let reposState: 'idle' | 'loading' | 'ready' | 'error' = 'idle';
   let repoFilter = '';
   let selectedRepo = '';
+  // Start over whenever the provider changes — otherwise the previous provider's repo list lingers, and a failed load never retries.
+  $: if (newRepoProvider !== undefined) {
+    reposState = 'idle';
+    repos = [];
+    selectedRepo = '';
+    repoFilter = '';
+  }
   $: if (newRepoProvider !== '' && myConnection && reposState === 'idle') loadRepos(newRepoProvider);
   async function loadRepos(provider: string) {
     reposState = 'loading';

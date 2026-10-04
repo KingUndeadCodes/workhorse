@@ -56,13 +56,17 @@ describe('git_repo_links -> user_git_connections migration', () => {
     expect(await db.selectFrom('user_git_connections').selectAll().execute()).toHaveLength(1);
   });
 
-  it('two projects by one creator collapse to a single connection', async () => {
-    const { db, migrate, legacyLink } = await setup();
-    await legacyLink('l1', 'p1', 'github', 'u_creator', 'ghp_one', null);
-    await legacyLink('l2', 'p2', 'github', 'u_creator', 'ghp_two', null);
+  it('a creator with several links keeps their newest credential, deliberately', async () => {
+    const { db, migrate, connections } = await setup();
+    const link = (id: string, token: string, createdAt: string) =>
+      db.insertInto('git_repo_links').values({ id, project_id: id, provider: 'github', owner: 'acme', repo: id, default_branch: 'main', token, auth_kind: null, created_at: createdAt, created_by: 'u_creator' }).execute();
+    await link('l_old', 'ghp_old', '2026-01-01T00:00:00.000Z');
+    await link('l_new', 'ghp_new', '2026-03-01T00:00:00.000Z');
+    await link('l_mid', 'ghp_mid', '2026-02-01T00:00:00.000Z');
 
     migrate();
 
     expect(await db.selectFrom('user_git_connections').selectAll().execute()).toHaveLength(1);
+    expect((await connections.get('u_creator', 'github'))?.auth).toEqual({ kind: 'token', token: 'ghp_new' });
   });
 });

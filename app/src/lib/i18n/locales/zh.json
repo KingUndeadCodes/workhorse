@@ -225,7 +225,8 @@
     "connecting": "连接中…",
     "connectToken": "使用令牌连接",
     "useOauthInstead": "改用 GitHub 连接",
-    "failedConnect": "无法连接 GitHub"
+    "failedConnect": "无法连接 GitHub",
+    "failedDisconnect": "无法断开连接"
   },
   "projectSettings": {
     "tabs": {

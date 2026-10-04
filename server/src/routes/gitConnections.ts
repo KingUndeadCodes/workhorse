@@ -2,7 +2,9 @@ import { Hono } from 'hono';
 import type { GitAuth, UserGitConnection, UserGitConnectionPublic } from '../domain';
 import { requireNonGuest, type AuthVariables } from '../auth/middleware';
 import { gitProviders, userGitConnectionRepo } from '../container';
-import { buildAuthorizeUrl, exchangeCodeForToken, getGitHubOAuthConfig, signState, verifyState } from '../services/githubOAuth';
+import {
+  buildAuthorizeUrl, consumeState, exchangeCodeForToken, getGitHubOAuthConfig, isAllowedReturnTo, issueConnectTicket, redeemConnectTicket, signState, verifyState,
+} from '../services/githubOAuth';
 
 /**
  * Each person's own git-host connections (their GitHub account) — what an agent uses when it acts
@@ -84,6 +86,9 @@ gitConnectionsRouter.post('/git-connections/github/oauth/start', async (c) => {
   } catch {
     return c.json({ error: 'returnTo must be an http(s) URL' }, 400);
   }
+  if (!isAllowedReturnTo(returnTo)) {
+    return c.json({ error: "returnTo must be on this app's own origin (set APP_URL if the app is served from a different origin than PUBLIC_URL)" }, 400);
+  }
   return c.json({ url: buildAuthorizeUrl(config, signState({ userId: c.get('user').id, returnTo: returnTo.toString() })) });
 });
 
@@ -91,9 +96,30 @@ gitConnectionsRouter.post('/git-connections/github/oauth/start', async (c) => {
 export const gitConnectionsCallbackRouter = new Hono();
 
 /**
- * GET /api/git-connections/github/oauth/callback?code&state. Exchanges the code, identifies the
- * GitHub account, saves it as the state's user's connection, then redirects the browser back to the
- * page that started the flow with `?gitConnect=ok` or `?gitConnect=error&message=`.
+ * POST /api/git-connections/github/oauth/complete — body `{ ticket }`. Finishes the flow *as the
+ * signed-in caller*: the ticket must have been issued for them. This is what stops a victim who is
+ * tricked into approving an attacker's authorize URL from having their token saved to the
+ * attacker's account — the victim's own session redeems the ticket, and it names someone else.
+ */
+gitConnectionsRouter.post('/git-connections/github/oauth/complete', async (c) => {
+  const forbidden = await requireNonGuest(c, 'connect a git account');
+  if (forbidden) return c.json({ error: forbidden }, 403);
+  const body = await c.req.json<{ ticket: string }>();
+  const accessToken = typeof body.ticket === 'string' ? redeemConnectTicket(body.ticket, c.get('user').id) : undefined;
+  if (!accessToken) return c.json({ error: 'This connect attempt is invalid or has expired — start again' }, 400);
+  try {
+    return c.json(toPublic(await saveConnection(c.get('user').id, 'github', { kind: 'oauth', accessToken })));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 400);
+  }
+});
+
+/**
+ * GET /api/git-connections/github/oauth/callback?code&state. Verifies the state (signed, unexpired,
+ * not already used), exchanges the code, and parks the token behind a one-time ticket — it does
+ * *not* save anything, since this public route can't tell who is at the keyboard (see
+ * {@link issueConnectTicket}). Redirects back to the app with `?gitConnect=ready&ticket=` for the
+ * signed-in SPA to redeem via `/oauth/complete`, or `?gitConnect=error&message=`.
  */
 gitConnectionsCallbackRouter.get('/git-connections/github/oauth/callback', async (c) => {
   const config = getGitHubOAuthConfig();
@@ -106,10 +132,17 @@ gitConnectionsCallbackRouter.get('/git-connections/github/oauth/callback', async
     return c.text(err instanceof Error ? err.message : 'Invalid OAuth state', 400);
   }
 
-  const back = (result: 'ok' | { error: string }) => {
+  if (!consumeState(state)) return c.text('This connect attempt was already used — start again', 400);
+
+  const back = (result: { ticket: string } | { error: string }) => {
     const url = new URL(state.returnTo);
-    url.searchParams.set('gitConnect', result === 'ok' ? 'ok' : 'error');
-    if (result !== 'ok') url.searchParams.set('message', result.error);
+    if ('ticket' in result) {
+      url.searchParams.set('gitConnect', 'ready');
+      url.searchParams.set('ticket', result.ticket);
+    } else {
+      url.searchParams.set('gitConnect', 'error');
+      url.searchParams.set('message', result.error);
+    }
     return c.redirect(url.toString());
   };
 
@@ -118,8 +151,7 @@ gitConnectionsCallbackRouter.get('/git-connections/github/oauth/callback', async
 
   try {
     const accessToken = await exchangeCodeForToken(config, code);
-    await saveConnection(state.userId, 'github', { kind: 'oauth', accessToken });
-    return back('ok');
+    return back({ ticket: issueConnectTicket(state.userId, accessToken) });
   } catch (err) {
     return back({ error: err instanceof Error ? err.message : String(err) });
   }

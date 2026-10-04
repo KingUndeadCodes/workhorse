@@ -226,7 +226,8 @@
     "connecting": "कनेक्ट हो रहा है…",
     "connectToken": "टोकन से कनेक्ट करें",
     "useOauthInstead": "इसके बजाय GitHub से कनेक्ट करें",
-    "failedConnect": "GitHub कनेक्ट नहीं हो सका"
+    "failedConnect": "GitHub कनेक्ट नहीं हो सका",
+    "failedDisconnect": "डिस्कनेक्ट नहीं हो सका"
   },
   "projectSettings": {
     "tabs": {

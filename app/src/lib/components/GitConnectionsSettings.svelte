@@ -26,14 +26,32 @@
   }
   refresh();
 
-  // Return trip from the server's OAuth callback: it redirects back here with ?gitConnect=ok|error.
+  // Return trip from the server's OAuth callback: it redirects back here with ?gitConnect=ready&ticket=…
+  // or ?gitConnect=error&message=…. The callback saves nothing itself — this signed-in session finishes
+  // the connection by redeeming the ticket, and the server refuses unless the ticket was issued for *this* user.
   const returned = new URLSearchParams(window.location.search);
-  if (returned.has('gitConnect')) {
-    if (returned.get('gitConnect') === 'error') error = returned.get('message') ?? $t('gitConnections.failedConnect');
+  const returnedStatus = returned.get('gitConnect');
+  const returnedTicket = returned.get('ticket');
+  const returnedMessage = returned.get('message');
+  if (returnedStatus) {
     const clean = new URL(window.location.href);
-    clean.searchParams.delete('gitConnect');
-    clean.searchParams.delete('message');
+    for (const key of ['gitConnect', 'ticket', 'message']) clean.searchParams.delete(key);
     window.history.replaceState(null, '', clean.toString());
+    if (returnedStatus === 'error') error = returnedMessage ?? $t('gitConnections.failedConnect');
+    else if (returnedStatus === 'ready' && returnedTicket) completeConnect(returnedTicket);
+  }
+
+  async function completeConnect(ticket: string) {
+    busy = true;
+    error = '';
+    try {
+      await api.completeGitHubConnect(ticket);
+      await refresh();
+    } catch (err) {
+      error = err instanceof Error ? err.message : $t('gitConnections.failedConnect');
+    } finally {
+      busy = false;
+    }
   }
 
   async function connectWithGithub() {
@@ -65,8 +83,13 @@
   }
 
   async function disconnect() {
-    await api.disconnectGit('github');
-    await refresh();
+    error = '';
+    try {
+      await api.disconnectGit('github');
+      await refresh();
+    } catch (err) {
+      error = err instanceof Error ? err.message : $t('gitConnections.failedDisconnect');
+    }
   }
 </script>
 

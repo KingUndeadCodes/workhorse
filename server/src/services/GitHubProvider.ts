@@ -8,6 +8,24 @@ import { authToken, type GitProvider } from './GitProvider';
 
 const GITHUB_API = 'https://api.github.com';
 
+/** Encodes each `/`-separated segment but keeps the slashes — for branch names and file paths, which GitHub's API expects as real path segments. */
+function encodePath(path: string): string {
+  return path.split('/').map(encodeURIComponent).join('/');
+}
+
+/**
+ * `<api>/repos/<owner>/<repo>`, after checking both are plain GitHub names. They arrive from
+ * user input and are interpolated into a URL that is then called with the user's token, so a value
+ * like `x/../../user` or `repo?x=` could otherwise change *which endpoint* gets called. `.` and `..`
+ * pass the character check but are path-traversal segments, so they are rejected explicitly.
+ */
+function repoUrl(owner: string, repo: string): string {
+  for (const [label, value] of [['owner', owner], ['repository', repo]] as const) {
+    if (!/^[A-Za-z0-9._-]+$/.test(value) || /^\.+$/.test(value)) throw new Error(`Invalid ${label} name "${value}"`);
+  }
+  return `${GITHUB_API}/repos/${owner}/${repo}`;
+}
+
 function headers(token: string): HeadersInit {
   return { authorization: `Bearer ${token}`, accept: 'application/vnd.github+json' };
 }
@@ -39,23 +57,23 @@ export const githubProvider: GitProvider = {
 
   async verifyAccess({ owner, repo, auth, branch }) {
     const token = authToken(auth);
-    const repoRes = await fetch(`${GITHUB_API}/repos/${owner}/${repo}`, { headers: headers(token) });
+    const repoRes = await fetch(repoUrl(owner, repo), { headers: headers(token) });
     if (repoRes.status === 404) throw new Error(`Repository "${owner}/${repo}" not found, or this token can't see it`);
     if (repoRes.status === 401) throw new Error('GitHub rejected this token — check that it is valid and not expired');
     if (!repoRes.ok) throw new Error(`Could not verify repository access: ${repoRes.status}`);
 
-    const refRes = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/git/ref/heads/${branch}`, { headers: headers(token) });
+    const refRes = await fetch(`${repoUrl(owner, repo)}/git/ref/heads/${encodePath(branch)}`, { headers: headers(token) });
     if (refRes.status === 404) throw new Error(`Branch "${branch}" not found in ${owner}/${repo}`);
     if (!refRes.ok) throw new Error(`Could not verify branch: ${refRes.status}`);
   },
 
   async createBranch({ owner, repo, auth, fromBranch, newBranchName }) {
     const token = authToken(auth);
-    const refRes = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/git/ref/heads/${fromBranch}`, { headers: headers(token) });
+    const refRes = await fetch(`${repoUrl(owner, repo)}/git/ref/heads/${encodePath(fromBranch)}`, { headers: headers(token) });
     if (!refRes.ok) throw new Error(`Could not look up "${fromBranch}": ${refRes.status}`);
     const { object } = (await refRes.json()) as { object: { sha: string } };
 
-    const createRes = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/git/refs`, {
+    const createRes = await fetch(`${repoUrl(owner, repo)}/git/refs`, {
       method: 'POST',
       headers: { ...headers(token), 'content-type': 'application/json' },
       body: JSON.stringify({ ref: `refs/heads/${newBranchName}`, sha: object.sha }),
@@ -66,7 +84,7 @@ export const githubProvider: GitProvider = {
 
   async readFile({ owner, repo, auth, branch, path }) {
     const token = authToken(auth);
-    const res = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`, { headers: headers(token) });
+    const res = await fetch(`${repoUrl(owner, repo)}/contents/${encodePath(path)}?ref=${encodeURIComponent(branch)}`, { headers: headers(token) });
     if (res.status === 404) throw new Error(`"${path}" not found on branch "${branch}"`);
     if (!res.ok) throw new Error(`Could not read "${path}": ${res.status}`);
     const { content } = (await res.json()) as { content: string };
@@ -79,16 +97,16 @@ export const githubProvider: GitProvider = {
   // failing and must not be silently treated as "create a new file".
   async writeFile({ owner, repo, auth, branch, path, content, commitMessage }) {
     const token = authToken(auth);
-    const existing = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`, { headers: headers(token) });
+    const existing = await fetch(`${repoUrl(owner, repo)}/contents/${encodePath(path)}?ref=${encodeURIComponent(branch)}`, { headers: headers(token) });
     if (!existing.ok && existing.status !== 404) throw new Error(`Could not check whether "${path}" already exists: ${existing.status}`);
     const sha = existing.ok ? ((await existing.json()) as { sha: string }).sha : undefined;
 
-    const res = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`, {
+    const res = await fetch(`${repoUrl(owner, repo)}/contents/${encodePath(path)}`, {
       method: 'PUT',
       headers: { ...headers(token), 'content-type': 'application/json' },
       body: JSON.stringify({ message: commitMessage, content: Buffer.from(content, 'utf8').toString('base64'), branch, sha }),
     });
     if (!res.ok) throw new Error(`Could not write "${path}": ${res.status}`);
-    return { url: `https://github.com/${owner}/${repo}/blob/${encodeURIComponent(branch)}/${path}` };
+    return { url: `https://github.com/${owner}/${repo}/blob/${encodeURIComponent(branch)}/${encodePath(path)}` };
   },
 };

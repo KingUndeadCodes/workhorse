@@ -1,7 +1,7 @@
 /** Entry point: boots both databases, wires the OO container, creates the minimal structural rows if `state.db` is brand new (see seed.ts — no sample content), then serves the Hono app (app.ts) on `PORT`, defaulting to 8787. */
 import { serve } from '@hono/node-server';
 import { app } from './app';
-import { initContainer, planningRepo, userRepo, workflowRepo, workspaceRepo } from './container';
+import { initContainer, planningRepo, userGitConnectionRepo, userRepo, workflowRepo, workspaceRepo } from './container';
 import { initDatabases, persistState } from './db/core';
 import {
   backfillAgentAssignments,
@@ -18,6 +18,8 @@ const { isFreshState } = await initDatabases();
 migrateStateDb();
 migrateEventsDb();
 initContainer();
+// Awaited, not fire-and-forget: a request that arrived mid-pass could otherwise read a row before it is encrypted.
+await userGitConnectionRepo.encryptLegacyPlaintext();
 
 if (isFreshState) bootstrapDatabase();
 
