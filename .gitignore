@@ -5,4 +5,5 @@ build/
 server/data/
 server/coverage/
 *.log
+.env
 PROBLEMS.md

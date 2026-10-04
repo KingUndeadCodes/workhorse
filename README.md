@@ -4,7 +4,7 @@ A self-hosted, Jira-shaped issue tracker — projects, boards, backlogs, sprints
 workflows — with first-class AI agents that can be attached to a ticket and act on it (comment,
 transition status, edit fields, touch a linked repo) under an approval/budget policy you control.
 
-Single workspace, event-driven, auditable. No third-party service integrations.
+Single workspace, event-driven, auditable. The only external integration is optional GitHub linking (each person connects their own account); there are no other third-party services.
 
 ## Stack
 
@@ -57,6 +57,7 @@ cd app && npm run check
 - [`docs/ui-style-guide.md`](docs/ui-style-guide.md) — UI color/style conventions
 - [`docs/project-plan.md`](docs/project-plan.md) — whole-project roadmap and subsystem status
 - [`plans/AGENTS_PLAN.md`](plans/AGENTS_PLAN.md) — detailed spec for the agent/automation subsystem
+- [`plans/GIT_OAUTH_PLAN.md`](plans/GIT_OAUTH_PLAN.md) — plan for OAuth-based GitHub git linking (GitHub only; GitLab support has been dropped)
 
 ## License
 

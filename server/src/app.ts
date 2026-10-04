@@ -21,6 +21,7 @@ import { toWebhookPublic } from './db/mappers';
 import { agentsRouter } from './routes/agents';
 import { automationsRouter } from './routes/automations';
 import { catalogRouter } from './routes/catalog';
+import { gitConnectionsCallbackRouter, gitConnectionsRouter } from './routes/gitConnections';
 import { meRouter, publicAuthRouter } from './routes/auth';
 import { issuesRouter } from './routes/issues';
 import { notificationsRouter } from './routes/notifications';
@@ -37,6 +38,7 @@ app.use('*', cors());
 // Bearer tokens aren't sent ambiently by the browser the way cookies are, so an unconfigured
 // cors() above grants no extra authority to a malicious origin here — no origin allowlist needed.
 app.route('/api', publicAuthRouter); // signup, login — public, no token required
+app.route('/api', gitConnectionsCallbackRouter); // GitHub redirects the browser here — authorized by its signed `state`, not a bearer token
 
 app.use('/api/*', requireAuth); // everything below this line requires a valid bearer token
 
@@ -119,3 +121,4 @@ app.route('/api', webhooksRouter);
 app.route('/api', notificationsRouter);
 app.route('/api', workspaceRouter);
 app.route('/api', projectsRouter);
+app.route('/api', gitConnectionsRouter);

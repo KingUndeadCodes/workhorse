@@ -10,7 +10,6 @@ import type {
   EventType,
   FieldDefinition,
   GitRepoLink,
-  GitRepoLinkPublic,
   Issue,
   IssueLink,
   IssueType,
@@ -390,16 +389,9 @@ export function rowToGitRepoLink(r: Record<string, unknown>): GitRepoLink {
     owner: r.owner as string,
     repo: r.repo as string,
     defaultBranch: r.default_branch as string,
-    token: r.token as string,
     createdAt: r.created_at as string,
     createdBy: r.created_by as string,
   };
-}
-
-/** Enforcement point: every route returning a `GitRepoLink` must go through this — the token never reaches a client response, not even on creation. */
-export function toGitRepoLinkPublic(link: GitRepoLink): GitRepoLinkPublic {
-  const { token: _token, ...pub } = link;
-  return pub;
 }
 
 export function rowToBranch(r: Record<string, unknown>): Branch {

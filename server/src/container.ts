@@ -16,6 +16,7 @@ import { IssueRepository } from './repositories/IssueRepository';
 import { NotificationRepository } from './repositories/NotificationRepository';
 import { PlanningRepository } from './repositories/PlanningRepository';
 import { ProjectRepository } from './repositories/ProjectRepository';
+import { UserGitConnectionRepository } from './repositories/UserGitConnectionRepository';
 import { UserRepository } from './repositories/UserRepository';
 import { WebhookDeliveryRepository } from './repositories/WebhookDeliveryRepository';
 import { WebhookRepository } from './repositories/WebhookRepository';
@@ -25,6 +26,8 @@ import { AgentRuntimeRegistry } from './services/AgentRuntime';
 import { AuditService } from './services/AuditService';
 import { EventEngine } from './services/EventEngine';
 import { EventProjector } from './services/EventProjector';
+import { githubProvider } from './services/GitHubProvider';
+import { GitAuthResolver } from './services/GitAuthResolver';
 import { GitProviderRegistry } from './services/GitProvider';
 import { localGitProvider } from './services/LocalGitProvider';
 import { OllamaAgentRuntime } from './services/OllamaAgentRuntime';
@@ -56,6 +59,8 @@ export let issueRepo: IssueRepository;
 export let notificationRepo: NotificationRepository;
 export let webhookDeliveryRepo: WebhookDeliveryRepository;
 export let gitRepoLinkRepo: GitRepoLinkRepository;
+export let userGitConnectionRepo: UserGitConnectionRepository;
+export let gitAuthResolver: GitAuthResolver;
 export let projectRepo: ProjectRepository;
 
 export let projector: EventProjector;
@@ -64,10 +69,11 @@ export let auditService: AuditService;
 export let statsService: StatsService;
 /**
  * Every supported git host, keyed by `GitRepoLink.provider` — see services/GitProvider.ts.
- * `'local'` (services/LocalGitProvider.ts, shells out to the server's own `git` binary) is
- * registered directly below. A hosted git host is added the same way: a new `GitProvider`
- * implementation, registered here — routes/projects.ts and routes/issues.ts only ever resolve
- * through this registry, never a concrete provider directly.
+ * `'local'` (services/LocalGitProvider.ts, shells out to the server's own `git` binary) and
+ * `'github'` (services/GitHubProvider.ts) are registered directly below. GitHub only, by
+ * decision — see plans/GIT_OAUTH_PLAN.md §6. A further hosted git host is added the same way:
+ * a new `GitProvider` implementation, registered here — routes/projects.ts and routes/issues.ts
+ * only ever resolve through this registry, never a concrete provider directly.
  */
 export let gitProviders: GitProviderRegistry;
 /**
@@ -94,17 +100,21 @@ export function initContainer(): void {
   notificationRepo = new NotificationRepository(db);
   webhookDeliveryRepo = new WebhookDeliveryRepository(db);
   gitRepoLinkRepo = new GitRepoLinkRepository(db);
+  userGitConnectionRepo = new UserGitConnectionRepository(db);
+  gitAuthResolver = new GitAuthResolver(userGitConnectionRepo);
+  void userGitConnectionRepo.encryptLegacyPlaintext().catch((err) => console.error('Failed to encrypt legacy git credentials:', err));
   projectRepo = new ProjectRepository(db);
 
   agentRuntimes = new AgentRuntimeRegistry();
   registerSafely('agent runtime "ollama"', () => agentRuntimes.register(new OllamaAgentRuntime()));
   gitProviders = new GitProviderRegistry();
   registerSafely('git provider "local"', () => gitProviders.register(localGitProvider));
+  registerSafely('git provider "github"', () => gitProviders.register(githubProvider));
 
   projector = new EventProjector(issueRepo, agentRunRepo, planningRepo);
   engine = new EventEngine(
     workspaceRepo, issueRepo, agentRepo, agentRunRepo, automationRepo, webhookRepo, catalogRepo, workflowRepo, userRepo,
-    projector, projectRepo, agentRuntimes, gitRepoLinkRepo, gitProviders, notificationRepo, webhookDeliveryRepo,
+    projector, projectRepo, agentRuntimes, gitRepoLinkRepo, gitProviders, notificationRepo, webhookDeliveryRepo, gitAuthResolver,
   );
   auditService = new AuditService(workspaceRepo, issueRepo);
   statsService = new StatsService(workspaceRepo, issueRepo);

@@ -6,14 +6,14 @@
  * comment there) — a second git host (GitHub, GitLab, ...) would be added the same way: a new
  * `GitProvider` implementation, registered alongside this one.
  *
- * `GitRepoLink.owner`/`repo`/`token` were shaped for hosted providers (GitHub, GitLab, ...) —
+ * `GitRepoLink.owner`/`repo`/`auth` were shaped for hosted providers (GitHub, GitLab, ...) —
  * this provider reuses that same shape rather than changing the domain model for one provider:
  *   - `repo` is a path *relative to* LOCAL_GIT_ROOT (default: "<repo root>/local-repos"),
  *     e.g. repo: "my-project" resolves to "<LOCAL_GIT_ROOT>/my-project".
  *   - `owner` is ignored entirely.
- *   - `token` is ignored entirely (the link-creation form still requires *something* be typed
- *     into it, since that requirement lives in the generic route, not per-provider — type
- *     anything).
+ *   - `auth` is ignored entirely (the link-creation form still requires *something* be typed
+ *     into the token field, since that requirement lives in the generic route, not per-provider
+ *     — type anything).
  *
  * `repo` is resolved and checked against LOCAL_GIT_ROOT before any `git` command runs — without
  * that check, a project's git link (writable by any authenticated user, not just admins) could

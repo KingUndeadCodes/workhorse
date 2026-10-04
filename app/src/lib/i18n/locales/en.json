@@ -158,6 +158,7 @@
       "workflow": "Workflow",
       "automations": "Automations",
       "agents": "Agents",
+      "git": "Git",
       "webhooks": "Webhooks",
       "accessibility": "Accessibility"
     },
@@ -217,6 +218,21 @@
       "keyboardNavHint": "Every board, backlog, and the workflow editor can be used without a mouse: arrow keys move focus, Space picks up and drops an item, Enter opens it, and Escape cancels. This is always on."
     }
   },
+  "gitConnections": {
+    "hint": "Agents commit by proxy, using the GitHub account of the person they're acting for — so connect yours once here. It isn't tied to any project.",
+    "connectedAs": "Connected as {login}",
+    "connected": "Connected",
+    "disconnect": "Disconnect",
+    "oauthHint": "Authorize Workhorse on GitHub. You'll return here afterwards.",
+    "connectGithub": "Connect GitHub",
+    "usePatInstead": "Use a personal access token instead",
+    "tokenPlaceholder": "Personal access token",
+    "tokenHint": "A GitHub personal access token with repo scope — stored encrypted, never shown again.",
+    "connecting": "Connecting…",
+    "connectToken": "Connect with token",
+    "useOauthInstead": "Connect with GitHub instead",
+    "failedConnect": "Failed to connect GitHub"
+  },
   "projectSettings": {
     "tabs": {
       "project": "Project",
@@ -256,9 +272,9 @@
     "ownerPlaceholder": "Owner",
     "repoPlaceholder": "Repo",
     "defaultBranchPlaceholder": "Default branch (main)",
-    "accessTokenPlaceholder": "Access token",
-    "tokenHintGithub": "A GitHub personal access token with repo scope — stored encrypted, never shown again.",
-    "tokenHintLocal": "Ignored for a local repo — type anything.",
+    "connectAccountHint": "You haven't connected a GitHub account yet. Connections belong to you, not to this project — set yours up once under Settings → Git.",
+    "connectAccountButton": "Open Git settings",
+    "linkingAsHint": "Access is checked with your GitHub account ({login}). Connections are per account — manage yours under Settings → Git.",
     "linkRepoButton": "Link repository",
     "linkingRepoButton": "Linking…",
     "failedLinkRepo": "Failed to link repository",

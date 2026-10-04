@@ -34,6 +34,7 @@ import type { WorkspaceRepository } from '../repositories/WorkspaceRepository';
 import { broadcastEvent, broadcastToUser } from '../ws';
 import type { AgentRuntimeRegistry, AgentRuntimeTool } from './AgentRuntime';
 import type { EventProjector } from './EventProjector';
+import type { GitAuthResolver } from './GitAuthResolver';
 import type { GitProviderRegistry } from './GitProvider';
 import { actorForEvent, computeNotificationContext } from './notificationContext';
 
@@ -208,6 +209,7 @@ export class EventEngine {
     private readonly gitProviders: GitProviderRegistry,
     private readonly notifications: NotificationRepository,
     private readonly webhookDeliveries: WebhookDeliveryRepository,
+    private readonly gitAuth: GitAuthResolver,
   ) {}
 
   /** One chained promise per agent — see {@link withAgentLock}. */
@@ -322,7 +324,7 @@ export class EventEngine {
         // inside whatever route's `emitEvent` call triggered the agent (e.g. posting a
         // comment), and an uncaught throw here would 500 that unrelated request instead of
         // just marking this run failed.
-        await this.applyAction(run.proposedActions[i], issue, actor, triggeringEvent);
+        await this.applyAction(run.proposedActions[i], issue, actor, triggeringEvent, run.reviewedBy);
         run.appliedActionIndexes.push(i);
         // Re-fetch so the next action sees this one's effect (e.g. a second assignTo builds its
         // toUserIds off the updated assigneeIds) instead of the stale pre-run snapshot. `undefined`
@@ -481,7 +483,15 @@ export class EventEngine {
   }
 
   /** `triggeringEvent`, if given, is what an `addComment` action replies to when it was itself a comment — see that case below. Every other action ignores it. */
-  private async applyAction(action: AutomationAction, issue: Issue, actor: ActorRef, triggeringEvent?: EventEnvelope): Promise<void> {
+  /**
+   * Whose git credential a repo action uses: the person who approved the run (accountable for it
+   * going ahead), else whoever's event set it off — see GitAuthResolver for the last-resort fallback.
+   */
+  private actingUserIds(triggeringEvent: EventEnvelope | undefined, reviewedBy: string | undefined): (string | undefined)[] {
+    return [reviewedBy, triggeringEvent?.actor.kind === 'user' ? triggeringEvent.actor.userId : undefined];
+  }
+
+  private async applyAction(action: AutomationAction, issue: Issue, actor: ActorRef, triggeringEvent?: EventEnvelope, reviewedBy?: string): Promise<void> {
     switch (action.type) {
       case 'transitionStatus': {
         if (issue.statusId === action.toStatusId) return;
@@ -551,7 +561,8 @@ export class EventEngine {
         const link = await this.gitRepoLinks.getForProject(issue.projectId);
         if (!link) throw new Error('This project has no linked git repository');
         const provider = this.gitProviders.resolve(link.provider);
-        const { content } = await provider.readFile({ owner: link.owner, repo: link.repo, token: link.token, branch: link.defaultBranch, path: action.path });
+        const auth = await this.gitAuth.resolve(link, this.actingUserIds(triggeringEvent, reviewedBy));
+        const { content } = await provider.readFile({ owner: link.owner, repo: link.repo, auth, branch: link.defaultBranch, path: action.path });
         await this.writeEvent({
           actor,
           subject: { type: 'issue', id: issue.id },
@@ -563,7 +574,7 @@ export class EventEngine {
         const link = await this.gitRepoLinks.getForProject(issue.projectId);
         if (!link) throw new Error('This project has no linked git repository');
         const provider = this.gitProviders.resolve(link.provider);
-        const opts = { owner: link.owner, repo: link.repo, token: link.token };
+        const opts = { owner: link.owner, repo: link.repo, auth: await this.gitAuth.resolve(link, this.actingUserIds(triggeringEvent, reviewedBy)) };
         // verifyAccess against the target branch doubles as an existence check — if it throws,
         // the branch doesn't exist yet and gets created off the repo's default branch first
         // (the same starting point issue branch creation uses). Never writes to the default

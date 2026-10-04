@@ -16,7 +16,8 @@ import type {
   EventType,
   FieldDefinition,
   FieldValue,
-  GitRepoLinkPublic,
+  GitRepoLink,
+  UserGitConnectionPublic,
   Issue,
   IssueLink,
   IssueLinkType,
@@ -127,6 +128,9 @@ function post<T>(path: string, body: unknown): Promise<T> {
 }
 function patch<T>(path: string, body: unknown): Promise<T> {
   return fetch(`${BASE}${path}`, { method: 'PATCH', headers: { 'content-type': 'application/json', ...authHeaders() }, body: JSON.stringify(body, undefinedToNull) }).then((r) => json<T>(r));
+}
+function put<T>(path: string, body: unknown): Promise<T> {
+  return fetch(`${BASE}${path}`, { method: 'PUT', headers: { 'content-type': 'application/json', ...authHeaders() }, body: JSON.stringify(body, undefinedToNull) }).then((r) => json<T>(r));
 }
 function del<T>(path: string): Promise<T> {
   return fetch(`${BASE}${path}`, { method: 'DELETE', headers: { ...authHeaders() } }).then((r) => json<T>(r));
@@ -422,11 +426,26 @@ export function updateProject(id: string, changes: Partial<Pick<Project, 'name' 
 export function listGitProviders(): Promise<string[]> {
   return get('/git-providers');
 }
-export function getGitRepoLink(projectId: string): Promise<GitRepoLinkPublic | null> {
+export function getGitRepoLink(projectId: string): Promise<GitRepoLink | null> {
   return get(`/projects/${projectId}/git-repo-link`);
 }
-export function linkGitRepo(projectId: string, body: { provider: string; owner: string; repo: string; defaultBranch?: string; token: string }): Promise<GitRepoLinkPublic> {
+/** No credential: the server uses the caller's own connection (see listGitConnections) to verify access. */
+export function linkGitRepo(projectId: string, body: { provider: string; owner: string; repo: string; defaultBranch?: string }): Promise<GitRepoLink> {
   return post(`/projects/${projectId}/git-repo-link`, body);
+}
+/** The caller's own git-host connections, and whether the server can offer "Connect GitHub" (OAuth App configured). */
+export function listGitConnections(): Promise<{ connections: UserGitConnectionPublic[]; githubOAuth: boolean }> {
+  return get('/git-connections');
+}
+export function connectGitWithToken(provider: string, token: string): Promise<UserGitConnectionPublic> {
+  return put(`/git-connections/${provider}`, { token });
+}
+export function disconnectGit(provider: string): Promise<{ ok: true }> {
+  return del(`/git-connections/${provider}`);
+}
+/** Returns GitHub's authorize URL; the caller navigates to it. The server saves the connection in its own callback. */
+export function startGitHubConnect(returnTo: string): Promise<{ url: string }> {
+  return post('/git-connections/github/oauth/start', { returnTo });
 }
 export function unlinkGitRepo(projectId: string): Promise<{ ok: true }> {
   return del(`/projects/${projectId}/git-repo-link`);

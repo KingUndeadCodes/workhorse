@@ -17,7 +17,7 @@
   import TermsOfUse from './lib/components/TermsOfUse.svelte';
   import AccessibilityStatement from './lib/components/AccessibilityStatement.svelte';
   import { currentUser } from './lib/stores/auth';
-  import { currentView, initWorkspace, loaded, loadError, selectedIssueId } from './lib/stores/workspace';
+  import { currentView, initWorkspace, loaded, loadError, selectedIssueId, settingsJumpTab } from './lib/stores/workspace';
   import { initNotifications, resetNotifications } from './lib/stores/notifications';
   import { connectWebSocket, disconnectWebSocket } from './lib/ws';
   import { isMobile } from './lib/stores/viewport';
@@ -35,6 +35,11 @@
   $: if ($currentUser && $currentUser.id !== initializedForUserId) {
     initializedForUserId = $currentUser.id;
     loadError.set(null);
+    // Returning from GitHub's authorize page (see GitConnectionsSettings) — land back on the Git settings tab.
+    if (new URLSearchParams(window.location.search).has('gitConnect')) {
+      currentView.set('settings');
+      settingsJumpTab.set('Git');
+    }
     initWorkspace();
     initNotifications();
     connectWebSocket();

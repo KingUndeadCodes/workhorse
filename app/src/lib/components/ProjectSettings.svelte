@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { components as componentsStore, currentProject, currentProjectId, featureFlags, gitRepoLink, settingsJumpTab, versions, linkGitRepo, unlinkGitRepo, setFeatureFlag, updateCurrentProject } from '../stores/workspace';
+  import { components as componentsStore, currentProject, currentProjectId, currentView, featureFlags, gitRepoLink, settingsJumpTab, versions, linkGitRepo, unlinkGitRepo, setFeatureFlag, updateCurrentProject } from '../stores/workspace';
   import * as api from '../api';
   import { PROJECT_COLORS, type ProjectFeatureFlags } from '$domain';
   import { t } from '../i18n';
@@ -96,26 +96,31 @@
   let availableGitProviders: string[] = [];
   api.listGitProviders().then((p) => (availableGitProviders = p));
 
+  let linkRepoError = '';
+  // Linking verifies access with *your* connected account (Settings → Git), so say so up front
+  // instead of letting the first submit 400. Only 'github' has a connection to check; 'local' needs none.
+  let connections: { provider: string; accountLogin?: string }[] = [];
+  api.listGitConnections().then((r) => (connections = r.connections)).catch(() => {});
+  $: myConnection = connections.find((c) => c.provider === newRepoProvider);
+  $: needsConnection = newRepoProvider !== '' && newRepoProvider !== 'local' && !myConnection;
+
   let newRepoProvider = '';
   let newRepoOwner = '';
   let newRepoName = '';
   let newRepoDefaultBranch = '';
-  let newRepoToken = '';
   let linkingRepo = false;
-  let linkRepoError = '';
   // With exactly one registered provider, there's no real choice — lock to it, same treatment AgentForm gives Runtime.
   $: if (availableGitProviders.length === 1 && newRepoProvider !== availableGitProviders[0]) newRepoProvider = availableGitProviders[0];
   async function submitGitRepoLink() {
-    if (!$currentProjectId || !newRepoProvider.trim() || !newRepoOwner.trim() || !newRepoName.trim() || !newRepoToken.trim()) return;
+    if (!$currentProjectId || !newRepoProvider.trim() || !newRepoOwner.trim() || !newRepoName.trim() || needsConnection) return;
     linkingRepo = true;
     linkRepoError = '';
     try {
-      await linkGitRepo($currentProjectId, { provider: newRepoProvider.trim(), owner: newRepoOwner.trim(), repo: newRepoName.trim(), defaultBranch: newRepoDefaultBranch.trim() || undefined, token: newRepoToken.trim() });
+      await linkGitRepo($currentProjectId, { provider: newRepoProvider.trim(), owner: newRepoOwner.trim(), repo: newRepoName.trim(), defaultBranch: newRepoDefaultBranch.trim() || undefined });
       newRepoProvider = '';
       newRepoOwner = '';
       newRepoName = '';
       newRepoDefaultBranch = '';
-      newRepoToken = '';
     } catch (err) {
       linkRepoError = err instanceof Error ? err.message : $t('projectSettings.failedLinkRepo');
     } finally {
@@ -222,8 +227,13 @@
           <input type="text" placeholder={$t('projectSettings.ownerPlaceholder')} bind:value={newRepoOwner} />
           <input type="text" placeholder={$t('projectSettings.repoPlaceholder')} bind:value={newRepoName} />
           <input type="text" placeholder={$t('projectSettings.defaultBranchPlaceholder')} bind:value={newRepoDefaultBranch} />
-          <input type="password" placeholder={$t('projectSettings.accessTokenPlaceholder')} bind:value={newRepoToken} autocomplete="off" />
-          <button type="submit" disabled={linkingRepo}>{linkingRepo ? $t('projectSettings.linkingRepoButton') : $t('projectSettings.linkRepoButton')}</button>
+          {#if needsConnection}
+            <p class="field-hint">{$t('projectSettings.connectAccountHint')}</p>
+            <button type="button" class="text-btn" on:click={() => ($currentView = 'settings', settingsJumpTab.set('Git'))}>{$t('projectSettings.connectAccountButton')}</button>
+          {:else if myConnection?.accountLogin}
+            <p class="field-hint">{$t('projectSettings.linkingAsHint', { login: myConnection.accountLogin })}</p>
+          {/if}
+          <button type="submit" disabled={linkingRepo || needsConnection}>{linkingRepo ? $t('projectSettings.linkingRepoButton') : $t('projectSettings.linkRepoButton')}</button>
         </form>
         {#if linkRepoError}<p class="error">{linkRepoError}</p>{/if}
       {/if}
@@ -261,6 +271,7 @@
     .toggle input[type="checkbox"] { width: 18px; height: 18px; }
   }
   .section-hint { font-size: 12px; line-height: 1.5; color: var(--text-3); margin: 0 0 12px; max-width: 520px; }
+  .field-hint { font-size: 11px; line-height: 1.4; color: var(--text-3); margin: -4px 0 0; }
   .subsection-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin: 18px 0 8px; }
   .feature-list { display: grid; grid-template-columns: repeat(2, minmax(0, 200px)); gap: 8px 20px; margin-bottom: 18px; }
   .toggle { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text); white-space: nowrap; }

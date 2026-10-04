@@ -11,6 +11,16 @@ set -e
 
 cd "$(dirname "$0")"
 
+# Loads KEY=value pairs from .env (gitignored; see .env.example) into the environment so both
+# child processes inherit them. Shell-set variables are overridden by the file — remove the
+# line from .env to pass one on the command line instead.
+if [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . ./.env
+  set +a
+fi
+
 SERVER_PORT=8787
 APP_PORT=5173
 KILL_EXISTING=1

@@ -4,7 +4,10 @@ import { persistState } from '../db/core';
 import { rowToGitRepoLink } from '../db/mappers';
 import type { GitRepoLink } from '../domain';
 
-/** CRUD for per-project git repo link definitions. One per project — "latest wins": {@link create} replaces any existing link for that project. */
+/**
+ * CRUD for per-project git repo link definitions. One per project — "latest wins": {@link create}
+ * replaces any existing link for that project. Holds no credential — see UserGitConnectionRepository.
+ */
 export class GitRepoLinkRepository {
   constructor(private readonly db: Kysely<DB>) {}
 
@@ -28,7 +31,6 @@ export class GitRepoLinkRepository {
           owner: link.owner,
           repo: link.repo,
           default_branch: link.defaultBranch,
-          token: link.token,
           created_at: link.createdAt,
           created_by: link.createdBy,
         })

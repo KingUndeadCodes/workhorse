@@ -145,6 +145,27 @@ export function migrateStateDb(): void {
       id TEXT PRIMARY KEY, project_id TEXT, provider TEXT, owner TEXT, repo TEXT, default_branch TEXT, token TEXT, created_at TEXT, created_by TEXT
     )`,
   );
+  // Credentials belong to people, not projects: one row per (user, provider). `token` holds the
+  // encrypted secret of whichever GitAuth variant `auth_kind` names. See UserGitConnectionRepository.
+  run(
+    stateDb,
+    `CREATE TABLE IF NOT EXISTS user_git_connections (
+      user_id TEXT NOT NULL, provider TEXT NOT NULL, auth_kind TEXT, token TEXT, account_login TEXT, created_at TEXT,
+      PRIMARY KEY (user_id, provider)
+    )`,
+  );
+  // git_repo_links.token / .auth_kind are legacy: links used to carry their creator's credential.
+  // Move any such credential onto its creator's own connection (idempotent — INSERT OR IGNORE, and
+  // the legacy column is nulled so a later boot finds nothing to move). The value is still the
+  // original ciphertext, so no re-encryption happens here. 'local' rows held a throwaway value.
+  addColumnIfMissing('git_repo_links', 'auth_kind', 'TEXT');
+  run(
+    stateDb,
+    `INSERT OR IGNORE INTO user_git_connections (user_id, provider, auth_kind, token, account_login, created_at)
+     SELECT created_by, provider, COALESCE(auth_kind, 'token'), token, NULL, created_at FROM git_repo_links
+     WHERE token IS NOT NULL AND token != '' AND provider != 'local' AND created_by IS NOT NULL`,
+  );
+  run(stateDb, `UPDATE git_repo_links SET token = NULL, auth_kind = NULL WHERE token IS NOT NULL`);
   run(
     stateDb,
     `CREATE TABLE IF NOT EXISTS branches (id TEXT PRIMARY KEY, issue_id TEXT, git_repo_link_id TEXT, name TEXT, url TEXT, created_at TEXT, created_by TEXT)`,

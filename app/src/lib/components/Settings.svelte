@@ -2,6 +2,7 @@
   import Icon from './Icon.svelte';
   import WorkflowDiagram from './WorkflowDiagram.svelte';
   import AgentsSettings from './AgentsSettings.svelte';
+  import GitConnectionsSettings from './GitConnectionsSettings.svelte';
   import {
     automationRules,
     fieldDefinitions,
@@ -25,7 +26,7 @@
   import { describeAutomationAction, formatRelativeDate, splitHumansAndAgents } from '../util';
   import type { AutomationAction, AutomationCondition, EventType, FilterOp, WebhookDelivery } from '$domain';
 
-  const tabs = ['Appearance', 'Accessibility', 'Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Webhooks'] as const;
+  const tabs = ['Appearance', 'Accessibility', 'Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Git', 'Webhooks'] as const;
   const TAB_LABEL_KEYS: Record<(typeof tabs)[number], string> = {
     Appearance: 'settings.tabs.appearance',
     Accessibility: 'settings.tabs.accessibility',
@@ -34,6 +35,7 @@
     Workflow: 'settings.tabs.workflow',
     Automations: 'settings.tabs.automations',
     Agents: 'settings.tabs.agents',
+    Git: 'settings.tabs.git',
     Webhooks: 'settings.tabs.webhooks',
   };
   let activeTab: (typeof tabs)[number] = 'Labels';
@@ -467,6 +469,8 @@
       </form>
     {:else if activeTab === 'Agents'}
       <AgentsSettings />
+    {:else if activeTab === 'Git'}
+      <GitConnectionsSettings />
     {:else if activeTab === 'Webhooks'}
       <div class="list">
         {#each $webhookSubscriptions as hook (hook.id)}

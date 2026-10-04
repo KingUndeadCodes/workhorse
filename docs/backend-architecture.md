@@ -330,12 +330,26 @@ small, independent register/resolve `Map` behind its own interface.
 
 ### 6.1 `GitProvider` (git hosting)
 
-`services/GitProvider.ts` defines `GitProvider` (`{ id: string; verifyAccess(); createBranch()
-}`) and `GitProviderRegistry` — its own ~25-line class wrapping a private `Map<string,
-GitProvider>`, with no relationship to `AgentRuntimeRegistry` beyond both existing. **Zero
-implementations are registered** in `container.ts` — this app ships the interface and the empty
-registry only. `GitRepoLink.provider` (domain/integrations.ts) is a plain `string`, not a
-literal union, specifically so it isn't coupled to any specific host.
+`services/GitProvider.ts` defines `GitProvider` (`{ id: string; verifyAccess(); createBranch();
+readFile(); writeFile() }`) and `GitProviderRegistry` — its own ~25-line class wrapping a
+private `Map<string, GitProvider>`, with no relationship to `AgentRuntimeRegistry` beyond both
+existing. Two implementations are registered in `container.ts`: `'local'`
+(services/LocalGitProvider.ts, shells out to the server's own `git` binary — no network, no
+token needed) and `'github'` (services/GitHubProvider.ts, the GitHub REST API). GitLab support
+existed briefly and was deliberately removed — GitHub-only by decision, see
+plans/GIT_OAUTH_PLAN.md §6. A further hosted host is added the same way — a new `GitProvider`
+implementation registered alongside these two, no route changes required. `GitRepoLink.provider`
+(domain/integrations.ts) is a plain `string`, not a literal union, specifically so it isn't
+coupled to any specific host. A `GitRepoLink` holds no credential — only which repo. Credentials
+belong to people: each user connects their own host account (`UserGitConnection`, one per
+user+provider, via Settings → Git; a pasted token or a GitHub OAuth App flow), encrypted at rest
+(crypto/tokenCipher.ts, AES-256-GCM) — `UserGitConnectionRepository` is the only place a plaintext
+secret crosses the database boundary. Commits are made by proxy: `GitAuthResolver` picks the
+credential of whoever the action is on behalf of (the run's approver, else the person whose event
+triggered it, else the link's creator), so an agent never has a git identity of its own and a
+commit is always attributable to a real person. Which of those credentials a `GitProvider` method
+receives is a `GitAuth` (`{kind:'token'}` or `{kind:'oauth'}`); `GitHubProvider` treats both as a
+bearer token.
 
 The route/DB/frontend surface around this (git-repo-link CRUD, the `Branch` domain model, the
 Project Settings "Git" tab) predates this harness and works end-to-end at the storage layer
@@ -365,13 +379,15 @@ third-party registration, not as part of this codebase.
 
 ### 6.3 Asymmetry between the two extension points
 
-Git ships nothing; agents ship one working implementation. This is an intentional, and now
-consistently-supported, asymmetry rather than an inconsistency in a shared mechanism — both
-sides expose the same discovery endpoint shape (`GET /api/{git-providers,agent-runtimes}`) and
-both frontends gate their forms on it identically (auto-hide the choice with exactly one option,
-show an honest empty/locked state with zero, offer a real dropdown with more than one). What
-differs is only which one ships a default — a product decision (agents need to work out of the
-box; git integration is optional and host-specific), not a structural gap between the two.
+Both now ship real, working implementations by default — git ships two (`local`, `github`),
+agents ship one (`ollama`) — so this is no longer "ships nothing vs. ships one," just a
+difference in *how many*. Both sides still expose the same discovery endpoint shape (`GET
+/api/{git-providers,agent-runtimes}`) and both frontends gate their forms on it identically
+(auto-hide the choice with exactly one option, show an honest empty/locked state with zero,
+offer a real dropdown with more than one) — git briefly had three providers (a `gitlab`
+implementation existed and was removed, GitHub-only by decision, see
+plans/GIT_OAUTH_PLAN.md §6), so `ProjectSettings.svelte`'s ">1 provider" dropdown branch is
+currently dead code again with exactly two providers registered.
 
 ---
 
@@ -423,13 +439,11 @@ for:
    and the write path itself are all one 463-line file. Whether that's cohesion (they're all
    "react to an event") or a god-object depends on how independently each has changed/will
    change.
-4. **Git harness ships nothing usable** (§6.1) — a fully-built route/DB/frontend surface gated on
-   an extension that doesn't exist, vs. Agents shipping a real default. The frontend/route-level
-   harm (a form that always fails with no warning) was fixed post-review via a discovery
-   endpoint (§0, §6.1) — but the deeper question stands: is shipping this surface at all ahead of
-   any implementation the right MVP shape, or should Git have gotten the same "ship one honest
-   default" treatment Agents did, with the route/UI arriving alongside the first real provider
-   instead of before it?
+4. **(Resolved) Git harness used to ship no provider** (§6.1) — flagged here when the
+   route/DB/frontend surface was built ahead of any real `GitProvider`. Now stale: `local` and
+   `github` both ship and are registered in `container.ts`, so git is past the "form that always
+   fails" state this entry originally warned about. Kept only as a pointer to §6.1/§6.3 for
+   whoever's tracking why the discovery-endpoint pattern (§0) exists in the first place.
 5. **No migration versioning** (§2.3) — idempotent `CREATE TABLE IF NOT EXISTS` +
    `addColumnIfMissing` + four hand-written one-shot backfill functions is a lot of bespoke
    machinery in place of a single migrations table with a version counter.

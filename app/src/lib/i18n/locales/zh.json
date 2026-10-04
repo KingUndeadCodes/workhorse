@@ -152,6 +152,7 @@
       "workflow": "工作流",
       "automations": "自动化",
       "agents": "代理",
+      "git": "Git",
       "webhooks": "Webhook",
       "accessibility": "辅助功能"
     },
@@ -211,6 +212,21 @@
       "keyboardNavHint": "每个看板、待办列表和工作流编辑器都可以不用鼠标操作:方向键移动焦点,空格键拾取和放下项目,回车键打开它,Esc 键取消操作。此功能始终处于开启状态。"
     }
   },
+  "gitConnections": {
+    "hint": "代理通过代理方式提交，使用其所代表之人的 GitHub 账号 — 因此请在此连接一次你自己的账号。它不与任何项目绑定。",
+    "connectedAs": "已连接为 {login}",
+    "connected": "已连接",
+    "disconnect": "断开连接",
+    "oauthHint": "在 GitHub 上授权 Workhorse。完成后会返回此处。",
+    "connectGithub": "连接 GitHub",
+    "usePatInstead": "改用个人访问令牌",
+    "tokenPlaceholder": "个人访问令牌",
+    "tokenHint": "具有 repo 权限的 GitHub 个人访问令牌 — 加密存储，不会再次显示。",
+    "connecting": "连接中…",
+    "connectToken": "使用令牌连接",
+    "useOauthInstead": "改用 GitHub 连接",
+    "failedConnect": "无法连接 GitHub"
+  },
   "projectSettings": {
     "tabs": {
       "project": "项目",
@@ -250,9 +266,9 @@
     "ownerPlaceholder": "所有者",
     "repoPlaceholder": "仓库",
     "defaultBranchPlaceholder": "默认分支（main）",
-    "accessTokenPlaceholder": "访问令牌",
-    "tokenHintGithub": "具有 repo 权限的 GitHub 个人访问令牌 — 加密存储，不会再次显示。",
-    "tokenHintLocal": "本地仓库会忽略此项 — 随便输入。",
+    "connectAccountHint": "你还没有连接 GitHub 账号。连接属于你个人，而不是项目 — 请在 设置 → Git 中设置一次。",
+    "connectAccountButton": "打开 Git 设置",
+    "linkingAsHint": "访问权限通过你的 GitHub 账号 ({login}) 验证。连接以账号为单位 — 请在 设置 → Git 中管理。",
     "linkRepoButton": "关联仓库",
     "linkingRepoButton": "关联中…",
     "failedLinkRepo": "关联仓库失败",

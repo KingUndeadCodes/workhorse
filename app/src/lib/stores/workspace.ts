@@ -9,7 +9,7 @@ import type {
   Component,
   FieldDefinition,
   FieldValue,
-  GitRepoLinkPublic,
+  GitRepoLink,
   Issue,
   IssueLink,
   IssueLinkType,
@@ -117,7 +117,7 @@ export const comments = writable<Comment[]>([]);
 export const worklogs = writable<Worklog[]>([]);
 export const attachments = writable<Attachment[]>([]);
 /** The current project's linked git repo, if any — set/cleared from Settings' Git tab, never bootstrapped (scoped, lazily-loaded, and it must never carry the PAT). */
-export const gitRepoLink = writable<GitRepoLinkPublic | null>(null);
+export const gitRepoLink = writable<GitRepoLink | null>(null);
 
 /** Which issue the drawer is showing, if any. */
 export const selectedIssueId = writable<string | null>(null);
@@ -268,7 +268,7 @@ export async function unassignAgent(issueId: string, agentUserId: string): Promi
 }
 
 /** Links (or replaces) the current project's git repo, from Settings' Git tab. */
-export async function linkGitRepo(projectId: string, body: { provider: string; owner: string; repo: string; defaultBranch?: string; token: string }): Promise<void> {
+export async function linkGitRepo(projectId: string, body: { provider: string; owner: string; repo: string; defaultBranch?: string }): Promise<void> {
   gitRepoLink.set(await apiLinkGitRepo(projectId, body));
 }
 

@@ -12,17 +12,22 @@
  * it again only when an implementation and a caller both need a new method; don't pre-build
  * methods (repo listing, PR status, webhooks) nothing calls yet.
  */
+import type { GitAuth } from '../domain';
+
 export interface GitProvider {
   readonly id: string;
 
-  /** Confirms a token can see the given repo and branch. Throws a message safe to show the user directly. */
-  verifyAccess(opts: { owner: string; repo: string; token: string; branch: string }): Promise<void>;
+  /** Looks up whose account `auth` belongs to — used when a person connects, both to reject a bad credential up front and to show "connected as ...". Omit if the host has no such notion (`local`). */
+  identify?(auth: GitAuth): Promise<{ login: string }>;
+
+  /** Confirms `auth` can see the given repo and branch. Throws a message safe to show the user directly. */
+  verifyAccess(opts: { owner: string; repo: string; auth: GitAuth; branch: string }): Promise<void>;
 
   /** Creates `newBranchName` on `repo`, branched off the head of `fromBranch`. Throws on any provider-side failure. */
-  createBranch(opts: { owner: string; repo: string; token: string; fromBranch: string; newBranchName: string }): Promise<{ url: string }>;
+  createBranch(opts: { owner: string; repo: string; auth: GitAuth; fromBranch: string; newBranchName: string }): Promise<{ url: string }>;
 
   /** Reads one file's content from `branch`. Throws if the path doesn't exist there. */
-  readFile(opts: { owner: string; repo: string; token: string; branch: string; path: string }): Promise<{ content: string }>;
+  readFile(opts: { owner: string; repo: string; auth: GitAuth; branch: string; path: string }): Promise<{ content: string }>;
 
   /**
    * Creates or overwrites one file, committed directly to `branch` — never to a local working
@@ -32,12 +37,17 @@ export interface GitProvider {
   writeFile(opts: {
     owner: string;
     repo: string;
-    token: string;
+    auth: GitAuth;
     branch: string;
     path: string;
     content: string;
     commitMessage: string;
   }): Promise<{ url: string }>;
+}
+
+/** Both `GitAuth` variants ultimately resolve to one bearer-token string — a PAT and an OAuth App access token are used identically by GitHub's API. Implementations call this once per method rather than branching on `auth.kind` themselves. */
+export function authToken(auth: GitAuth): string {
+  return auth.kind === 'oauth' ? auth.accessToken : auth.token;
 }
 
 /**

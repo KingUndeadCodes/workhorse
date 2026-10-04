@@ -268,9 +268,19 @@ export interface DB {
     owner: string | null;
     repo: string | null;
     default_branch: string | null;
+    /** Legacy — credentials moved to user_git_connections; always null now. */
     token: string | null;
+    auth_kind: string | null;
     created_at: string | null;
     created_by: string | null;
+  };
+  user_git_connections: {
+    user_id: string;
+    provider: string;
+    auth_kind: string | null;
+    token: string | null;
+    account_login: string | null;
+    created_at: string | null;
   };
   branches: {
     id: string;

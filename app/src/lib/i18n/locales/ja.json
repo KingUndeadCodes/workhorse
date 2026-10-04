@@ -152,6 +152,7 @@
       "workflow": "ワークフロー",
       "automations": "自動化",
       "agents": "エージェント",
+      "git": "Git",
       "webhooks": "Webhook",
       "accessibility": "アクセシビリティ"
     },
@@ -211,6 +212,21 @@
       "keyboardNavHint": "ボード、バックログ、ワークフローエディタはすべてマウスなしで操作できます。矢印キーでフォーカスを移動し、スペースキーで項目を持ち上げたり置いたりし、Enter キーで開き、Esc キーでキャンセルします。これは常に有効です。"
     }
   },
+  "gitConnections": {
+    "hint": "エージェントは代理でコミットします。その際、操作している本人の GitHub アカウントが使われるため、ここで一度だけ自分のアカウントを接続してください。プロジェクトには紐づきません。",
+    "connectedAs": "{login} として接続済み",
+    "connected": "接続済み",
+    "disconnect": "接続を解除",
+    "oauthHint": "GitHub で Workhorse を承認します。完了後にここへ戻ります。",
+    "connectGithub": "GitHub に接続",
+    "usePatInstead": "代わりに個人アクセストークンを使う",
+    "tokenPlaceholder": "個人アクセストークン",
+    "tokenHint": "repo スコープを持つ GitHub の個人アクセストークン — 暗号化して保存され、二度と表示されません。",
+    "connecting": "接続中…",
+    "connectToken": "トークンで接続",
+    "useOauthInstead": "代わりに GitHub で接続する",
+    "failedConnect": "GitHub に接続できませんでした"
+  },
   "projectSettings": {
     "tabs": {
       "project": "プロジェクト",
@@ -250,9 +266,9 @@
     "ownerPlaceholder": "オーナー",
     "repoPlaceholder": "リポジトリ",
     "defaultBranchPlaceholder": "デフォルトブランチ（main）",
-    "accessTokenPlaceholder": "アクセストークン",
-    "tokenHintGithub": "repo スコープを持つ GitHub の個人アクセストークン — 暗号化して保存され、二度と表示されません。",
-    "tokenHintLocal": "ローカルリポジトリでは無視されます — 何でも入力してください。",
+    "connectAccountHint": "GitHub アカウントがまだ接続されていません。接続はプロジェクトではなくあなた個人のものです — 設定 → Git で一度設定してください。",
+    "connectAccountButton": "Git 設定を開く",
+    "linkingAsHint": "アクセスはあなたの GitHub アカウント ({login}) で確認されます。接続はアカウント単位です — 設定 → Git で管理できます。",
     "linkRepoButton": "リポジトリをリンク",
     "linkingRepoButton": "リンク中…",
     "failedLinkRepo": "リポジトリのリンクに失敗しました",

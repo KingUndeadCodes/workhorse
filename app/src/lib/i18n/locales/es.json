@@ -153,6 +153,7 @@
       "workflow": "Flujo de trabajo",
       "automations": "Automatizaciones",
       "agents": "Agentes",
+      "git": "Git",
       "webhooks": "Webhooks",
       "accessibility": "Accesibilidad"
     },
@@ -212,6 +213,21 @@
       "keyboardNavHint": "Cada tablero, backlog y el editor de flujo de trabajo se pueden usar sin ratón: las flechas mueven el foco, Espacio recoge y suelta un elemento, Enter lo abre y Escape cancela. Esto siempre está activado."
     }
   },
+  "gitConnections": {
+    "hint": "Los agentes hacen commits por delegación, con la cuenta de GitHub de la persona en cuyo nombre actúan — conecta la tuya una vez aquí. No está ligada a ningún proyecto.",
+    "connectedAs": "Conectado como {login}",
+    "connected": "Conectado",
+    "disconnect": "Desconectar",
+    "oauthHint": "Autoriza Workhorse en GitHub. Volverás aquí después.",
+    "connectGithub": "Conectar GitHub",
+    "usePatInstead": "Usar un token de acceso personal",
+    "tokenPlaceholder": "Token de acceso personal",
+    "tokenHint": "Un token de acceso personal de GitHub con permiso repo — se guarda cifrado, no se vuelve a mostrar.",
+    "connecting": "Conectando…",
+    "connectToken": "Conectar con token",
+    "useOauthInstead": "Conectar con GitHub",
+    "failedConnect": "No se pudo conectar GitHub"
+  },
   "projectSettings": {
     "tabs": {
       "project": "Proyecto",
@@ -251,9 +267,9 @@
     "ownerPlaceholder": "Propietario",
     "repoPlaceholder": "Repositorio",
     "defaultBranchPlaceholder": "Rama predeterminada (main)",
-    "accessTokenPlaceholder": "Token de acceso",
-    "tokenHintGithub": "Un token de acceso personal de GitHub con permiso repo — se guarda cifrado, no se vuelve a mostrar.",
-    "tokenHintLocal": "Se ignora para un repositorio local — escribe lo que quieras.",
+    "connectAccountHint": "Aún no has conectado una cuenta de GitHub. Las conexiones son tuyas, no del proyecto — configura la tuya una vez en Ajustes → Git.",
+    "connectAccountButton": "Abrir ajustes de Git",
+    "linkingAsHint": "El acceso se comprueba con tu cuenta de GitHub ({login}). Las conexiones son por cuenta — gestiona la tuya en Ajustes → Git.",
     "linkRepoButton": "Vincular repositorio",
     "linkingRepoButton": "Vinculando…",
     "failedLinkRepo": "No se pudo vincular el repositorio",

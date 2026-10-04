@@ -6,6 +6,7 @@ import { AgentRunRepository } from '../src/repositories/AgentRunRepository';
 import { AutomationRepository } from '../src/repositories/AutomationRepository';
 import { CatalogRepository } from '../src/repositories/CatalogRepository';
 import { GitRepoLinkRepository } from '../src/repositories/GitRepoLinkRepository';
+import { UserGitConnectionRepository } from '../src/repositories/UserGitConnectionRepository';
 import { IssueRepository } from '../src/repositories/IssueRepository';
 import { NotificationRepository } from '../src/repositories/NotificationRepository';
 import { PlanningRepository } from '../src/repositories/PlanningRepository';
@@ -19,6 +20,7 @@ import { AgentRuntimeRegistry } from '../src/services/AgentRuntime';
 import { EventEngine } from '../src/services/EventEngine';
 import { EventProjector } from '../src/services/EventProjector';
 import type { AgentRuntime, AgentRuntimeDecision } from '../src/services/AgentRuntime';
+import { GitAuthResolver } from '../src/services/GitAuthResolver';
 import { GitProviderRegistry } from '../src/services/GitProvider';
 import type { GitProvider } from '../src/services/GitProvider';
 import type { Agent, AgentApprovalPolicy, AutomationAction, AutomationCondition, AutomationRule, EventType, Issue, User } from '../src/domain';
@@ -43,6 +45,8 @@ export function createTestEngine(db: Kysely<DB>) {
   const planningRepo = new PlanningRepository(db);
   const projectRepo = new ProjectRepository(db);
   const gitRepoLinkRepo = new GitRepoLinkRepository(db);
+  const userGitConnectionRepo = new UserGitConnectionRepository(db);
+  const gitAuthResolver = new GitAuthResolver(userGitConnectionRepo);
   const notificationRepo = new NotificationRepository(db);
   const webhookDeliveryRepo = new WebhookDeliveryRepository(db);
 
@@ -52,12 +56,12 @@ export function createTestEngine(db: Kysely<DB>) {
 
   const engine = new EventEngine(
     workspaceRepo, issueRepo, agentRepo, agentRunRepo, automationRepo, webhookRepo, catalogRepo, workflowRepo, userRepo,
-    projector, projectRepo, agentRuntimes, gitRepoLinkRepo, gitProviders, notificationRepo, webhookDeliveryRepo,
+    projector, projectRepo, agentRuntimes, gitRepoLinkRepo, gitProviders, notificationRepo, webhookDeliveryRepo, gitAuthResolver,
   );
 
   return {
     engine, workspaceRepo, issueRepo, userRepo, workflowRepo, notificationRepo, webhookRepo, webhookDeliveryRepo,
-    agentRepo, agentRunRepo, automationRepo, projectRepo, catalogRepo, gitRepoLinkRepo, agentRuntimes, gitProviders,
+    agentRepo, agentRunRepo, automationRepo, projectRepo, catalogRepo, gitRepoLinkRepo, userGitConnectionRepo, agentRuntimes, gitProviders,
   };
 }
 

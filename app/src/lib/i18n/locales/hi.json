@@ -153,6 +153,7 @@
       "workflow": "वर्कफ़्लो",
       "automations": "ऑटोमेशन",
       "agents": "एजेंट",
+      "git": "Git",
       "webhooks": "वेबहुक",
       "accessibility": "सुगम्यता"
     },
@@ -212,6 +213,21 @@
       "keyboardNavHint": "हर बोर्ड, बैकलॉग, और वर्कफ़्लो एडिटर को बिना माउस के इस्तेमाल किया जा सकता है: एरो कीज़ फोकस बदलती हैं, Space किसी आइटम को उठाती और छोड़ती है, Enter उसे खोलता है, और Escape रद्द करता है। यह हमेशा चालू रहता है।"
     }
   },
+  "gitConnections": {
+    "hint": "एजेंट प्रॉक्सी के रूप में कमिट करते हैं, उस व्यक्ति के GitHub खाते से जिसकी ओर से वे काम करते हैं — इसलिए अपना खाता यहाँ एक बार कनेक्ट करें। यह किसी प्रोजेक्ट से बंधा नहीं है।",
+    "connectedAs": "{login} के रूप में कनेक्टेड",
+    "connected": "कनेक्टेड",
+    "disconnect": "डिस्कनेक्ट करें",
+    "oauthHint": "GitHub पर Workhorse को अधिकृत करें। बाद में आप यहीं लौट आएँगे।",
+    "connectGithub": "GitHub कनेक्ट करें",
+    "usePatInstead": "इसके बजाय व्यक्तिगत एक्सेस टोकन उपयोग करें",
+    "tokenPlaceholder": "व्यक्तिगत एक्सेस टोकन",
+    "tokenHint": "repo scope वाला GitHub व्यक्तिगत एक्सेस टोकन — एन्क्रिप्ट करके सहेजा जाता है, दोबारा नहीं दिखाया जाता।",
+    "connecting": "कनेक्ट हो रहा है…",
+    "connectToken": "टोकन से कनेक्ट करें",
+    "useOauthInstead": "इसके बजाय GitHub से कनेक्ट करें",
+    "failedConnect": "GitHub कनेक्ट नहीं हो सका"
+  },
   "projectSettings": {
     "tabs": {
       "project": "प्रोजेक्ट",
@@ -251,9 +267,9 @@
     "ownerPlaceholder": "मालिक",
     "repoPlaceholder": "रिपॉज़िटरी",
     "defaultBranchPlaceholder": "डिफ़ॉल्ट ब्रांच (main)",
-    "accessTokenPlaceholder": "एक्सेस टोकन",
-    "tokenHintGithub": "repo scope वाला GitHub व्यक्तिगत एक्सेस टोकन — एन्क्रिप्ट करके सहेजा जाता है, दोबारा नहीं दिखाया जाता।",
-    "tokenHintLocal": "लोकल रिपॉज़िटरी के लिए अनदेखा किया जाता है — कुछ भी लिखें।",
+    "connectAccountHint": "आपने अभी तक GitHub खाता कनेक्ट नहीं किया है। कनेक्शन आपके होते हैं, प्रोजेक्ट के नहीं — सेटिंग्स → Git में एक बार अपना सेट करें।",
+    "connectAccountButton": "Git सेटिंग्स खोलें",
+    "linkingAsHint": "एक्सेस आपके GitHub खाते ({login}) से जाँचा जाता है। कनेक्शन खाते के अनुसार होते हैं — सेटिंग्स → Git में अपना प्रबंधित करें।",
     "linkRepoButton": "रिपॉज़िटरी लिंक करें",
     "linkingRepoButton": "लिंक किया जा रहा है…",
     "failedLinkRepo": "रिपॉज़िटरी लिंक करने में विफल",

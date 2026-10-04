@@ -1,0 +1,78 @@
+/**
+ * A real hosted `GitProvider` (see GitProvider.ts) backed by the GitHub REST API — the first
+ * concrete git host this app ships, alongside `local-git` (LocalGitProvider.ts). Registered
+ * directly in container.ts the same way. Uses only `fetch`, no extra SDK dependency.
+ */
+import { authToken, type GitProvider } from './GitProvider';
+
+const GITHUB_API = 'https://api.github.com';
+
+function headers(token: string): HeadersInit {
+  return { authorization: `Bearer ${token}`, accept: 'application/vnd.github+json' };
+}
+
+export const githubProvider: GitProvider = {
+  id: 'github',
+
+  async identify(auth) {
+    const res = await fetch(`${GITHUB_API}/user`, { headers: headers(authToken(auth)) });
+    if (res.status === 401) throw new Error('GitHub rejected this token — check that it is valid and not expired');
+    if (!res.ok) throw new Error(`Could not look up the GitHub account: ${res.status}`);
+    return { login: ((await res.json()) as { login: string }).login };
+  },
+
+  async verifyAccess({ owner, repo, auth, branch }) {
+    const token = authToken(auth);
+    const repoRes = await fetch(`${GITHUB_API}/repos/${owner}/${repo}`, { headers: headers(token) });
+    if (repoRes.status === 404) throw new Error(`Repository "${owner}/${repo}" not found, or this token can't see it`);
+    if (repoRes.status === 401) throw new Error('GitHub rejected this token — check that it is valid and not expired');
+    if (!repoRes.ok) throw new Error(`Could not verify repository access: ${repoRes.status}`);
+
+    const refRes = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/git/ref/heads/${branch}`, { headers: headers(token) });
+    if (refRes.status === 404) throw new Error(`Branch "${branch}" not found in ${owner}/${repo}`);
+    if (!refRes.ok) throw new Error(`Could not verify branch: ${refRes.status}`);
+  },
+
+  async createBranch({ owner, repo, auth, fromBranch, newBranchName }) {
+    const token = authToken(auth);
+    const refRes = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/git/ref/heads/${fromBranch}`, { headers: headers(token) });
+    if (!refRes.ok) throw new Error(`Could not look up "${fromBranch}": ${refRes.status}`);
+    const { object } = (await refRes.json()) as { object: { sha: string } };
+
+    const createRes = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/git/refs`, {
+      method: 'POST',
+      headers: { ...headers(token), 'content-type': 'application/json' },
+      body: JSON.stringify({ ref: `refs/heads/${newBranchName}`, sha: object.sha }),
+    });
+    if (!createRes.ok) throw new Error(`Could not create branch: ${createRes.status}`);
+    return { url: `https://github.com/${owner}/${repo}/tree/${encodeURIComponent(newBranchName)}` };
+  },
+
+  async readFile({ owner, repo, auth, branch, path }) {
+    const token = authToken(auth);
+    const res = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`, { headers: headers(token) });
+    if (res.status === 404) throw new Error(`"${path}" not found on branch "${branch}"`);
+    if (!res.ok) throw new Error(`Could not read "${path}": ${res.status}`);
+    const { content } = (await res.json()) as { content: string };
+    return { content: Buffer.from(content, 'base64').toString('utf8') };
+  },
+
+  // The contents API upserts in one call, but needs the current file's blob sha to update an
+  // existing file (omit it and GitHub 409s instead of overwriting) — so this always checks first.
+  // Only a 404 means "doesn't exist yet"; any other failure (401/403/5xx) is the check itself
+  // failing and must not be silently treated as "create a new file".
+  async writeFile({ owner, repo, auth, branch, path, content, commitMessage }) {
+    const token = authToken(auth);
+    const existing = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`, { headers: headers(token) });
+    if (!existing.ok && existing.status !== 404) throw new Error(`Could not check whether "${path}" already exists: ${existing.status}`);
+    const sha = existing.ok ? ((await existing.json()) as { sha: string }).sha : undefined;
+
+    const res = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`, {
+      method: 'PUT',
+      headers: { ...headers(token), 'content-type': 'application/json' },
+      body: JSON.stringify({ message: commitMessage, content: Buffer.from(content, 'utf8').toString('base64'), branch, sha }),
+    });
+    if (!res.ok) throw new Error(`Could not write "${path}": ${res.status}`);
+    return { url: `https://github.com/${owner}/${repo}/blob/${encodeURIComponent(branch)}/${path}` };
+  },
+};

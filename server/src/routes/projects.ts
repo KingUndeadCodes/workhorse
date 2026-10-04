@@ -3,8 +3,7 @@ import { Hono } from 'hono';
 import type { ActorRef, GitRepoLink, Project, User } from '../domain';
 import { DEFAULT_FEATURE_FLAGS, PROJECT_COLORS } from '../domain';
 import { requireNonGuest, type AuthVariables } from '../auth/middleware';
-import { engine, gitProviders, gitRepoLinkRepo, planningRepo, projectRepo, workflowRepo, workspaceRepo } from '../container';
-import { toGitRepoLinkPublic } from '../db/mappers';
+import { engine, gitAuthResolver, gitProviders, gitRepoLinkRepo, planningRepo, projectRepo, workflowRepo, workspaceRepo } from '../container';
 
 /** CRUD for projects, plus a project's linked git repo definition. Branch creation lives in issues.ts, via a registered GitProvider. */
 export const projectsRouter = new Hono<{ Variables: AuthVariables }>();
@@ -91,62 +90,54 @@ projectsRouter.patch('/projects/:id', async (c) => {
   return c.json(updated);
 });
 
-/** GET /api/projects/:id/git-repo-link -> GitRepoLinkPublic | null. Never includes the token. */
+/** GET /api/projects/:id/git-repo-link -> GitRepoLink | null. */
 projectsRouter.get('/projects/:id/git-repo-link', async (c) => {
   const link = await gitRepoLinkRepo.getForProject(c.req.param('id'));
-  return c.json(link ? toGitRepoLinkPublic(link) : null);
+  return c.json(link ?? null);
 });
 
 /**
  * POST /api/projects/:id/git-repo-link — links (or replaces) the project's git repo.
- * Body: `{ provider, owner, repo, defaultBranch?, token }`. `provider` must match the `id` of
- * a `GitProvider` registered in container.ts — this app ships no provider by default (see
- * services/GitProvider.ts), so until a deployment registers one, this always 400s with "No
- * GitProvider registered for ...". Once one is registered, this verifies the token can see the
- * repo and that `defaultBranch` exists before storing anything — 400 with the provider's
- * reason if not, so a typo or under-scoped token is caught here rather than surfacing later as
- * a 502 on first branch creation. Emits `project.gitRepoLinked` (never carrying the token).
- * Response is always the token-free `GitRepoLinkPublic`, even here.
+ * Body: `{ provider, owner, repo, defaultBranch? }` — no credential: the link only says *which*
+ * repo. `provider` must match the `id` of a `GitProvider` registered in container.ts. The caller's
+ * own connection for that provider (Settings → Git) is used to verify they can see the repo and
+ * that `defaultBranch` exists before storing anything — 400 with the reason if not (including
+ * "you haven't connected an account"). Emits `project.gitRepoLinked`.
  */
 projectsRouter.post('/projects/:id/git-repo-link', async (c) => {
   const forbidden = await requireNonGuest(c, 'manage git repo links');
   if (forbidden) return c.json({ error: forbidden }, 403);
   const projectId = c.req.param('id');
-  const body = await c.req.json<{ provider: string; owner: string; repo: string; defaultBranch?: string; token: string }>();
-  if (!body.provider?.trim() || !body.owner?.trim() || !body.repo?.trim() || !body.token?.trim()) {
-    return c.json({ error: 'provider, owner, repo, and token are required' }, 400);
-  }
-
-  const provider = body.provider.trim();
-  const owner = body.owner.trim();
-  const repo = body.repo.trim();
-  const defaultBranch = body.defaultBranch?.trim() || 'main';
-  const token = body.token.trim();
-
-  try {
-    await gitProviders.resolve(provider).verifyAccess({ owner, repo, token, branch: defaultBranch });
-  } catch (err) {
-    return c.json({ error: err instanceof Error ? err.message : String(err) }, 400);
+  const body = await c.req.json<{ provider: string; owner: string; repo: string; defaultBranch?: string }>();
+  if (!body.provider?.trim() || !body.owner?.trim() || !body.repo?.trim()) {
+    return c.json({ error: 'provider, owner, and repo are required' }, 400);
   }
 
   const link: GitRepoLink = {
     id: `gitlink_${randomUUID()}`,
     projectId,
-    provider,
-    owner,
-    repo,
-    defaultBranch,
-    token,
+    provider: body.provider.trim(),
+    owner: body.owner.trim(),
+    repo: body.repo.trim(),
+    defaultBranch: body.defaultBranch?.trim() || 'main',
     createdAt: new Date().toISOString(),
     createdBy: c.get('user').id,
   };
+
+  try {
+    const auth = await gitAuthResolver.resolve(link, [link.createdBy]);
+    await gitProviders.resolve(link.provider).verifyAccess({ owner: link.owner, repo: link.repo, auth, branch: link.defaultBranch });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 400);
+  }
+
   const created = await gitRepoLinkRepo.create(link);
   await engine.emitEvent({
     actor: actorFrom(c.get('user')),
     subject: { type: 'project', id: projectId },
     payload: { type: 'project.gitRepoLinked', projectId, gitRepoLinkId: created.id, owner: created.owner, repo: created.repo },
   });
-  return c.json(toGitRepoLinkPublic(created), 201);
+  return c.json(created, 201);
 });
 
 /** DELETE /api/projects/:id/git-repo-link — 404 if none exists, else unlinks and emits `project.gitRepoUnlinked`. */

@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import type { ActorRef, FieldValue, Issue, IssueLinkType, IssuePriority, User } from '../domain';
 import { parseMentionedUserIds, slugifyBranchName, STORY_POINT_VALUES } from '../domain';
 import type { AuthVariables } from '../auth/middleware';
-import { agentRepo, engine, gitProviders, gitRepoLinkRepo, issueRepo, projectRepo, userRepo, workflowRepo, workspaceRepo } from '../container';
+import { agentRepo, engine, gitAuthResolver, gitProviders, gitRepoLinkRepo, issueRepo, projectRepo, userRepo, workflowRepo, workspaceRepo } from '../container';
 import { getEventsForIssue } from '../eventLog';
 import { setsEqual } from '../util';
 
@@ -475,9 +475,16 @@ issuesRouter.post('/issues/:id/branch', async (c) => {
   const body = await c.req.json<{ name?: string }>().catch(() => ({}) as { name?: string });
   const name = body.name?.trim() || slugifyBranchName(issue.key, issue.title);
 
+  let auth;
+  try {
+    auth = await gitAuthResolver.resolve(link, [c.get('user').id]);
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 400);
+  }
+
   let result: { url: string };
   try {
-    result = await gitProviders.resolve(link.provider).createBranch({ owner: link.owner, repo: link.repo, token: link.token, fromBranch: link.defaultBranch, newBranchName: name });
+    result = await gitProviders.resolve(link.provider).createBranch({ owner: link.owner, repo: link.repo, auth, fromBranch: link.defaultBranch, newBranchName: name });
   } catch (err) {
     return c.json({ error: `Branch creation failed: ${err instanceof Error ? err.message : String(err)}` }, 502);
   }
