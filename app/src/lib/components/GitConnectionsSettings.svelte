@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Icon from './Icon.svelte';
   import * as api from '../api';
   import { t } from '../i18n';
   import type { UserGitConnectionPublic } from '$domain';
@@ -76,7 +75,7 @@
 {#if loaded}
   {#if github}
     <div class="row">
-      <Icon name="branch" size={13} />
+      <span class="gh-mark" style="--s: 14px" aria-hidden="true"></span>
       <span class="row-name">GitHub</span>
       <span class="row-tag">{github.accountLogin ? $t('gitConnections.connectedAs', { login: github.accountLogin }) : $t('gitConnections.connected')}</span>
       <button class="text-btn danger" on:click={disconnect}>{$t('gitConnections.disconnect')}</button>
@@ -85,7 +84,7 @@
     {#if githubOAuth && !showTokenForm}
       <div class="add-form column">
         <p class="field-hint">{$t('gitConnections.oauthHint')}</p>
-        <button type="button" disabled={busy} on:click={connectWithGithub}>{$t('gitConnections.connectGithub')}</button>
+        <button type="button" disabled={busy} on:click={connectWithGithub}><span class="gh-mark" style="--s: 16px" aria-hidden="true"></span>{$t('gitConnections.connectGithub')}</button>
         <button type="button" class="text-btn" on:click={() => (showTokenForm = true)}>{$t('gitConnections.usePatInstead')}</button>
       </div>
     {:else}
@@ -103,6 +102,8 @@
 {#if error}<p class="error">{error}</p>{/if}
 
 <style>
+  /* public/github.svg as a mask, so the mark takes the surrounding text color in every theme instead of staying black. */
+  .gh-mark { flex: none; display: inline-block; width: var(--s, 16px); height: var(--s, 16px); background-color: currentColor; -webkit-mask: url('/github.svg') center / contain no-repeat; mask: url('/github.svg') center / contain no-repeat; }
   .section-hint { font-size: 12px; line-height: 1.5; color: var(--text-3); margin: 0 0 12px; max-width: 520px; }
   .field-hint { font-size: 11px; line-height: 1.4; color: var(--text-3); margin: 0; }
   .row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; font-size: 12.5px; max-width: 520px; }
@@ -115,6 +116,7 @@
   .add-form.column { flex-direction: column; align-items: stretch; max-width: 360px; }
   .add-form input { font: inherit; font-size: 12.5px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px; }
   .add-form button:not(.text-btn) { font-size: 12px; font-weight: 600; color: var(--accent-on); background: var(--accent); padding: 7px 12px; border-radius: 7px; white-space: nowrap; }
+  .add-form button:not(.text-btn) { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
   .add-form button:disabled { opacity: .5; cursor: default; }
   @media (max-width: 767px) {
     .add-form input { padding: 9px 11px; }

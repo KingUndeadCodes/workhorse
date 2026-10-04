@@ -44,6 +44,21 @@ gitConnectionsRouter.put('/git-connections/:provider', async (c) => {
   }
 });
 
+/** GET /api/git-connections/:provider/repos -> GitRepoSummary[] — the repos the caller's own connected account can reach (the repo picker's source). 400 if they haven't connected one. */
+gitConnectionsRouter.get('/git-connections/:provider/repos', async (c) => {
+  const provider = c.req.param('provider');
+  const p = gitProviders.list().find((g) => g.id === provider);
+  if (!p) return c.json({ error: `No git provider registered for "${provider}"` }, 404);
+  if (!p.listRepos) return c.json({ error: `"${provider}" cannot list repositories` }, 400);
+  const connection = await userGitConnectionRepo.get(c.get('user').id, provider);
+  if (!connection) return c.json({ error: `Connect your ${provider} account first (Settings → Git)` }, 400);
+  try {
+    return c.json(await p.listRepos(connection.auth));
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 502);
+  }
+});
+
 /** DELETE /api/git-connections/:provider — disconnects the caller's account. */
 gitConnectionsRouter.delete('/git-connections/:provider', async (c) => {
   await userGitConnectionRepo.delete(c.get('user').id, c.req.param('provider'));

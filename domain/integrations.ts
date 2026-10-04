@@ -22,6 +22,14 @@ export interface UserGitConnection {
   createdAt: string;
 }
 
+/** One repo a connected account can reach — what the repo picker lists. */
+export interface GitRepoSummary {
+  owner: string;
+  repo: string;
+  defaultBranch: string;
+  private: boolean;
+}
+
 export type UserGitConnectionPublic = Omit<UserGitConnection, 'auth'> & { authKind: GitAuth['kind'] };
 
 /**

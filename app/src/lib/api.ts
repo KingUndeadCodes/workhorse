@@ -17,6 +17,7 @@ import type {
   FieldDefinition,
   FieldValue,
   GitRepoLink,
+  GitRepoSummary,
   UserGitConnectionPublic,
   Issue,
   IssueLink,
@@ -436,6 +437,10 @@ export function linkGitRepo(projectId: string, body: { provider: string; owner: 
 /** The caller's own git-host connections, and whether the server can offer "Connect GitHub" (OAuth App configured). */
 export function listGitConnections(): Promise<{ connections: UserGitConnectionPublic[]; githubOAuth: boolean }> {
   return get('/git-connections');
+}
+/** Repos the caller's own connected account can reach — the repo picker's options. */
+export function listGitRepos(provider: string): Promise<GitRepoSummary[]> {
+  return get(`/git-connections/${provider}/repos`);
 }
 export function connectGitWithToken(provider: string, token: string): Promise<UserGitConnectionPublic> {
   return put(`/git-connections/${provider}`, { token });

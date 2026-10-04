@@ -58,15 +58,17 @@ concrete examples from this codebase's own history:
 - Every GitHub-specific reference (branding, a hardcoded provider literal, a bundled SDK
   dependency) was removed in a single deliberate pass when the git integration was generalized
   into the `GitProvider` harness (§6.1), rather than generalized-in-name-only with GitHub still
-  secretly the only thing that worked.
+  secretly the only thing that worked. (GitHub later returned as an ordinary registered
+  provider behind that harness, not as a special case — see `docs/github-integration.md`.)
 - Dead code is flagged as dead, not left ambiguous — `agentParams()` (§3, §9) is called out by
   name specifically because nothing calls it, not smoothed over as "probably used somewhere."
 
-This extends to how features are allowed to *not* exist yet: the git harness ships zero
-implementations rather than a half-working stub (§6.1) — an honest "this doesn't work until you
-register a provider" was chosen over a fake default that would work in a demo and fail
-unpredictably in practice. §0's correction above covers where this reasoning was later found to
-be only half-consistent, and what changed as a result.
+This extends to how features are allowed to *not* exist yet: the git harness originally shipped
+zero implementations rather than a half-working stub (§6.1) — an honest "this doesn't work until
+you register a provider" was chosen over a fake default that would work in a demo and fail
+unpredictably in practice. It now ships two real ones (`local`, `github`). §0's correction above
+covers where this reasoning was later found to be only half-consistent, and what changed as a
+result.
 
 ### Harnesses over hardcoding — and a correction on "earned by a second case"
 
@@ -139,7 +141,8 @@ server/src/
 
   repositories/              One class per entity family. Thin wrappers over Kysely queries.
                               (Agent, AgentRun, Automation, Catalog, GitRepoLink, Issue,
-                               Planning, Project, User, Webhook, Workflow, Workspace)
+                               Planning, Project, User, UserGitConnection, Webhook,
+                               Workflow, Workspace)
 
   services/
     EventEngine.ts             The core reactor: automations, agents, webhooks all fan out from here.
@@ -147,7 +150,10 @@ server/src/
     AuditService.ts             Replays events.db and diffs against state.db; read-only.
     AgentRuntime.ts             Interface + registry for pluggable LLM backends.
     OllamaAgentRuntime.ts        The one shipped AgentRuntime implementation.
-    GitProvider.ts               Interface + registry for pluggable git hosts. Zero implementations shipped.
+    GitProvider.ts               Interface + registry for pluggable git hosts.
+    GitHubProvider.ts            GitHub REST API implementation. LocalGitProvider.ts: the server's own git binary.
+    GitAuthResolver.ts           Picks whose git credential an action uses (proxy attribution, §6.1).
+    githubOAuth.ts               GitHub OAuth App config, signed state, authorize URL, code exchange.
 
   routes/                     One Hono sub-router per resource area, mounted in app.ts.
 ```
@@ -291,7 +297,7 @@ pattern here, in explicit contrast to §6's `GitProvider`/`AgentRuntime`, which 
 
 ## 5. Routes layer
 
-Ten Hono sub-routers (`routes/*.ts`), each mounted at `/api` in `app.ts`. Route handlers are
+Twelve Hono sub-routers (`routes/*.ts`), each mounted at `/api` in `app.ts`. Route handlers are
 generally thin: parse/validate the body, call one or two repository/service methods, call
 `engine.emitEvent()` for anything that should be logged, return JSON. `issues.ts` (408 lines) is
 the largest, covering issue CRUD, comments (incl. mention detection, see below), links, worklogs,
@@ -352,12 +358,20 @@ receives is a `GitAuth` (`{kind:'token'}` or `{kind:'oauth'}`); `GitHubProvider`
 bearer token.
 
 The route/DB/frontend surface around this (git-repo-link CRUD, the `Branch` domain model, the
-Project Settings "Git" tab) predates this harness and works end-to-end at the storage layer
-regardless of whether a provider is registered — only the parts that need to actually reach a
-git host (`verifyAccess` on linking, `createBranch` on issue branch creation) depend on one
-existing. `GET /api/git-providers` (routes/projects.ts) returns the registered ids so the
-frontend knows upfront whether linking can possibly succeed; with none registered, the Git tab
-shows an explicit "no provider is configured" state instead of a form that would always 400.
+Project Settings "Git" tab) works at the storage layer regardless of whether a provider is
+registered — only the parts that actually reach a git host (`verifyAccess` on linking,
+`createBranch` on issue branch creation) need one. `GET /api/git-providers` (routes/projects.ts)
+returns the registered ids so the frontend knows upfront whether linking can possibly succeed;
+with none registered, the Git tab shows an explicit "no provider is configured" state.
+
+Per-account connections live in `routes/gitConnections.ts` (`GET/PUT/DELETE /api/git-connections`,
+the repo-picker source `GET /api/git-connections/:provider/repos`, and the GitHub OAuth
+start/callback pair). The callback is the one git route mounted *before* `requireAuth` in
+`app.ts` — GitHub redirects the browser to it, so it can't carry a bearer token; the HMAC-signed
+`state` (githubOAuth.ts) is its authorization. Two optional `GitProvider` methods exist only for
+this surface: `identify` (reject a bad credential and show "connected as @login") and `listRepos`
+(the picker). Setup, attribution rules, security notes, and troubleshooting:
+`docs/github-integration.md`.
 
 ### 6.2 `AgentRuntime` (LLM backend)
 
@@ -398,7 +412,7 @@ filled in by one `initContainer()` function called once at boot, after `initData
 build-order dependency enforced only by comment/convention, not the type system). Every route
 file imports the singletons it needs directly from `./container` — there is no request-scoped
 container, no interface-based injection at the route layer (routes depend on concrete repository
-classes, not interfaces), and no test-time override mechanism visible in this codebase.
+classes, not interfaces), and no override mechanism in the container itself. Tests get isolation another way: `server/test/setup.ts` swaps `db/core`'s database bindings for in-memory sql.js instances (one per test file), `test/helpers.ts`'s `createTestEngine` builds an `EventEngine` from fresh repositories directly, and route tests call `initContainer()` against the mocked database and drive the app with `app.request()` (see `test/gitRoutes.test.ts`).
 
 `server/src/domain.ts` is a re-export shim with a specific, documented gotcha: a plain `export *`
 chain from `domain/index.ts` silently drops runtime function values (not types) when loaded
@@ -449,8 +463,9 @@ for:
    machinery in place of a single migrations table with a version counter.
 6. **`GET /api/bootstrap` is monolithic** (§5) — every list for the active project, unpaginated,
    in one response. Fine at prototype data volumes; worth asking where it stops being fine.
-7. **DI has no seams for testing** (§7) — module-level singletons with no override path mean any
-   future test suite either instantiates the whole container or doesn't test through it.
+7. **DI has no seams for testing** (§7) — module-level singletons with no override path. The test
+   suite works around it (mocked `db/core`, `initContainer()` per route test) rather than fixing
+   it, so route tests share one container per test file.
 
 ---
 

@@ -39,6 +39,23 @@ cd server && npm run dev   # API on http://localhost:8787
 cd app && npm run dev      # Vite dev server, proxies /api and /ws to the server above
 ```
 
+## GitHub integration (optional)
+
+Each person can connect their own GitHub account (Settings → Git) so projects can link a repo,
+tickets can create branches, and agents can commit by proxy under a real person's credential. A
+one-click **Connect GitHub** needs a GitHub OAuth App; without one, users paste a personal access
+token. `./dev.sh` loads a gitignored `.env`:
+
+```bash
+GITHUB_OAUTH_CLIENT_ID=your-client-id
+GITHUB_OAUTH_CLIENT_SECRET=your-client-secret
+PUBLIC_URL=http://localhost:8787
+```
+
+The OAuth App's callback URL is `<PUBLIC_URL>/api/git-connections/github/oauth/callback`. Full
+setup, the attribution rules, security notes, and troubleshooting are in
+[`docs/github-integration.md`](docs/github-integration.md).
+
 ## UI configuration
 
 `app/ui.config.json` controls the active font and light/dark color scheme. See
@@ -48,16 +65,19 @@ cd app && npm run dev      # Vite dev server, proxies /api and /ws to the server
 
 ```bash
 cd server && npx tsc --noEmit
+cd server && npx vitest run
 cd app && npm run check
+cd app && npm test
 ```
 
 ## Project docs
 
 - [`docs/backend-architecture.md`](docs/backend-architecture.md) — backend architecture reference
+- [`docs/github-integration.md`](docs/github-integration.md) — GitHub setup, how commits are attributed, API, troubleshooting
 - [`docs/ui-style-guide.md`](docs/ui-style-guide.md) — UI color/style conventions
 - [`docs/project-plan.md`](docs/project-plan.md) — whole-project roadmap and subsystem status
 - [`plans/AGENTS_PLAN.md`](plans/AGENTS_PLAN.md) — detailed spec for the agent/automation subsystem
-- [`plans/GIT_OAUTH_PLAN.md`](plans/GIT_OAUTH_PLAN.md) — plan for OAuth-based GitHub git linking (GitHub only; GitLab support has been dropped)
+- [`plans/GIT_OAUTH_PLAN.md`](plans/GIT_OAUTH_PLAN.md) — design record for GitHub OAuth linking (implemented; GitHub only, GitLab dropped)
 
 ## License
 

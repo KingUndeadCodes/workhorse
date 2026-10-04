@@ -2,7 +2,7 @@
   import Icon from './Icon.svelte';
   import { components as componentsStore, currentProject, currentProjectId, currentView, featureFlags, gitRepoLink, settingsJumpTab, versions, linkGitRepo, unlinkGitRepo, setFeatureFlag, updateCurrentProject } from '../stores/workspace';
   import * as api from '../api';
-  import { PROJECT_COLORS, type ProjectFeatureFlags } from '$domain';
+  import { PROJECT_COLORS, type GitRepoSummary, type ProjectFeatureFlags } from '$domain';
   import { t } from '../i18n';
 
   const allTabs = ['Project', 'Components', 'Versions', 'Git'] as const;
@@ -102,6 +102,31 @@
   let connections: { provider: string; accountLogin?: string }[] = [];
   api.listGitConnections().then((r) => (connections = r.connections)).catch(() => {});
   $: myConnection = connections.find((c) => c.provider === newRepoProvider);
+  // Repo picker: once the caller's own account is connected, list the repos it can reach so they
+  // choose one instead of typing owner/repo/branch. Falls back to the manual fields if the list fails or is empty.
+  let repos: GitRepoSummary[] = [];
+  let reposState: 'idle' | 'loading' | 'ready' | 'error' = 'idle';
+  let repoFilter = '';
+  let selectedRepo = '';
+  $: if (newRepoProvider !== '' && myConnection && reposState === 'idle') loadRepos(newRepoProvider);
+  async function loadRepos(provider: string) {
+    reposState = 'loading';
+    try {
+      repos = await api.listGitRepos(provider);
+      reposState = 'ready';
+    } catch {
+      reposState = 'error';
+    }
+  }
+  $: usePicker = reposState === 'ready' && repos.length > 0;
+  $: filteredRepos = repos.filter((r) => `${r.owner}/${r.repo}`.toLowerCase().includes(repoFilter.trim().toLowerCase())).slice(0, 100);
+  function pickRepo() {
+    const r = repos.find((x) => `${x.owner}/${x.repo}` === selectedRepo);
+    if (!r) return;
+    newRepoOwner = r.owner;
+    newRepoName = r.repo;
+    newRepoDefaultBranch = r.defaultBranch;
+  }
   $: needsConnection = newRepoProvider !== '' && newRepoProvider !== 'local' && !myConnection;
 
   let newRepoProvider = '';
@@ -121,6 +146,8 @@
       newRepoOwner = '';
       newRepoName = '';
       newRepoDefaultBranch = '';
+      selectedRepo = '';
+      repoFilter = '';
     } catch (err) {
       linkRepoError = err instanceof Error ? err.message : $t('projectSettings.failedLinkRepo');
     } finally {
@@ -224,8 +251,19 @@
               {#each availableGitProviders as p}<option value={p}>{p}</option>{/each}
             </select>
           {/if}
-          <input type="text" placeholder={$t('projectSettings.ownerPlaceholder')} bind:value={newRepoOwner} />
-          <input type="text" placeholder={$t('projectSettings.repoPlaceholder')} bind:value={newRepoName} />
+          {#if usePicker}
+            <input type="search" placeholder={$t('projectSettings.repoSearchPlaceholder')} bind:value={repoFilter} aria-label={$t('projectSettings.repoSearchPlaceholder')} />
+            <select bind:value={selectedRepo} on:change={pickRepo} aria-label={$t('projectSettings.repoSelectPlaceholder')}>
+              <option value="">{$t('projectSettings.repoSelectPlaceholder')}</option>
+              {#each filteredRepos as r (`${r.owner}/${r.repo}`)}
+                <option value={`${r.owner}/${r.repo}`}>{r.owner}/{r.repo}{r.private ? ` · ${$t('projectSettings.privateTag')}` : ''}</option>
+              {/each}
+            </select>
+          {:else}
+            {#if reposState === 'loading'}<p class="field-hint">{$t('projectSettings.reposLoading')}</p>{/if}
+            <input type="text" placeholder={$t('projectSettings.ownerPlaceholder')} bind:value={newRepoOwner} />
+            <input type="text" placeholder={$t('projectSettings.repoPlaceholder')} bind:value={newRepoName} />
+          {/if}
           <input type="text" placeholder={$t('projectSettings.defaultBranchPlaceholder')} bind:value={newRepoDefaultBranch} />
           {#if needsConnection}
             <p class="field-hint">{$t('projectSettings.connectAccountHint')}</p>
@@ -233,7 +271,7 @@
           {:else if myConnection?.accountLogin}
             <p class="field-hint">{$t('projectSettings.linkingAsHint', { login: myConnection.accountLogin })}</p>
           {/if}
-          <button type="submit" disabled={linkingRepo || needsConnection}>{linkingRepo ? $t('projectSettings.linkingRepoButton') : $t('projectSettings.linkRepoButton')}</button>
+          <button type="submit" disabled={linkingRepo || needsConnection || (usePicker && !selectedRepo)}>{linkingRepo ? $t('projectSettings.linkingRepoButton') : $t('projectSettings.linkRepoButton')}</button>
         </form>
         {#if linkRepoError}<p class="error">{linkRepoError}</p>{/if}
       {/if}
@@ -264,7 +302,7 @@
     .field-row input[type='text'] { padding: 9px 11px; max-width: none; }
     .swatch { width: 30px; height: 30px; }
     .add-form { flex-wrap: wrap; }
-    .add-form input { padding: 9px 11px; }
+    .add-form input, .add-form select { padding: 9px 11px; }
     .add-form button { padding: 10px 14px; }
     .feature-list { grid-template-columns: 1fr; }
     .toggle { font-size: 13.5px; }
@@ -293,7 +331,7 @@
   .error { color: var(--critical); font-size: 12px; margin: 0 0 8px; }
   .add-form { display: flex; gap: 8px; }
   .add-form.column { flex-direction: column; align-items: stretch; max-width: 360px; }
-  .add-form input { font: inherit; font-size: 12.5px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px; flex: 1; }
+  .add-form input, .add-form select { font: inherit; font-size: 12.5px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px; flex: 1; }
   .add-form button { font-size: 12px; font-weight: 600; color: var(--accent-on); background: var(--accent); padding: 7px 12px; border-radius: 7px; white-space: nowrap; }
   .add-form button:disabled { opacity: .5; cursor: default; }
   .swatch-row { display: flex; gap: 7px; flex-wrap: wrap; }

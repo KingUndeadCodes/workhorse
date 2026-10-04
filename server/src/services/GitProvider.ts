@@ -12,13 +12,16 @@
  * it again only when an implementation and a caller both need a new method; don't pre-build
  * methods (repo listing, PR status, webhooks) nothing calls yet.
  */
-import type { GitAuth } from '../domain';
+import type { GitAuth, GitRepoSummary } from '../domain';
 
 export interface GitProvider {
   readonly id: string;
 
   /** Looks up whose account `auth` belongs to — used when a person connects, both to reject a bad credential up front and to show "connected as ...". Omit if the host has no such notion (`local`). */
   identify?(auth: GitAuth): Promise<{ login: string }>;
+
+  /** Repos `auth`'s account can reach, most recently pushed first — feeds the repo picker. Omit if the host can't enumerate them (`local`). */
+  listRepos?(auth: GitAuth): Promise<GitRepoSummary[]>;
 
   /** Confirms `auth` can see the given repo and branch. Throws a message safe to show the user directly. */
   verifyAccess(opts: { owner: string; repo: string; auth: GitAuth; branch: string }): Promise<void>;

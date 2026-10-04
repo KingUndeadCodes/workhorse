@@ -3,6 +3,7 @@
  * concrete git host this app ships, alongside `local-git` (LocalGitProvider.ts). Registered
  * directly in container.ts the same way. Uses only `fetch`, no extra SDK dependency.
  */
+import type { GitRepoSummary } from '../domain';
 import { authToken, type GitProvider } from './GitProvider';
 
 const GITHUB_API = 'https://api.github.com';
@@ -19,6 +20,21 @@ export const githubProvider: GitProvider = {
     if (res.status === 401) throw new Error('GitHub rejected this token — check that it is valid and not expired');
     if (!res.ok) throw new Error(`Could not look up the GitHub account: ${res.status}`);
     return { login: ((await res.json()) as { login: string }).login };
+  },
+
+  // Capped at 3 pages (300 repos) — enough for a picker; anything beyond that is still linkable by typing.
+  async listRepos(auth) {
+    const token = authToken(auth);
+    const repos: GitRepoSummary[] = [];
+    for (let page = 1; page <= 3; page++) {
+      const res = await fetch(`${GITHUB_API}/user/repos?per_page=100&sort=pushed&page=${page}`, { headers: headers(token) });
+      if (res.status === 401) throw new Error('GitHub rejected this token — reconnect your account');
+      if (!res.ok) throw new Error(`Could not list repositories: ${res.status}`);
+      const batch = (await res.json()) as { name: string; owner: { login: string }; default_branch: string; private: boolean }[];
+      repos.push(...batch.map((r) => ({ owner: r.owner.login, repo: r.name, defaultBranch: r.default_branch, private: r.private })));
+      if (batch.length < 100) break;
+    }
+    return repos;
   },
 
   async verifyAccess({ owner, repo, auth, branch }) {

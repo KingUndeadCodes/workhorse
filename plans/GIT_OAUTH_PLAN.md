@@ -1,8 +1,9 @@
 # GitHub OAuth — Long-Term Plan
 
-Status: **draft for review**. This is the spec we build against once you sign off — treat it as
-"set in stone" until you tell me otherwise, same convention as `AGENTS_PLAN.md`. Section numbers
-are stable references for feedback ("change 4.2", "cut 7").
+Status: **implemented** — this is now the design record; the working reference for setup, behavior,
+API, and troubleshooting is [`docs/github-integration.md`](../docs/github-integration.md). Section
+numbers are stable references. Where §2–§4 describe a per-project credential (`GitRepoLink.auth`)
+or a connect button on the project's Git tab, "Revision note 2" below supersedes them.
 
 **Revision note:** this plan previously covered both GitHub and GitLab, and chose a GitHub App
 over a GitHub OAuth App for better token scoping. Both calls are reversed here: GitLab support is
@@ -166,7 +167,7 @@ after — something like reframing the line around *what kind* of integration th
 hosting, opt-in per deployment, not a marketplace of arbitrary third-party services) rather than
 claiming there are none.
 
-## 8. Rollout order
+## 8. Rollout order (all done, plus the repo picker — project Git tab lists the connected account's repos)
 
 1. `GitRepoLinkAuth` domain type + `GitRepoLink.auth` replacing `token`, migration for existing
    rows (`{ kind: 'token', token: <existing decrypted value> }`), `GitProvider` signature change

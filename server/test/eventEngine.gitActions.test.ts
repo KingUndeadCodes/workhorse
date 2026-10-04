@@ -1,17 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { GitRepoLink } from '../src/domain';
 import { UserGitConnectionRepository } from '../src/repositories/UserGitConnectionRepository';
-import { createTestEngine, fakeGitProvider, seedAutomationRule, seedHumanUser, seedIssue, seedWorkflow, seedWorkspace } from './helpers';
+import { approvalPolicy, createTestEngine, fakeGitProvider, fixedDecisionRuntime, seedAgent, seedAutomationRule, seedHumanUser, seedIssue, seedWorkflow, seedWorkspace } from './helpers';
 
 describe('EventEngine readRepoFile/writeRepoFile actions', () => {
   async function setup() {
     const { db } = await import('../src/db/core');
     await seedWorkspace(db);
     await seedWorkflow(db);
-    const { engine, workspaceRepo, userRepo, issueRepo, automationRepo, gitRepoLinkRepo, userGitConnectionRepo, gitProviders } = createTestEngine(db);
+    const { engine, workspaceRepo, userRepo, issueRepo, automationRepo, agentRepo, agentRunRepo, agentRuntimes, gitRepoLinkRepo, userGitConnectionRepo, gitProviders } = createTestEngine(db);
     const reporter = await seedHumanUser(userRepo, 'reporter@example.com', 'Reporter');
     const issue = await seedIssue(issueRepo, { reporterId: reporter.id });
-    return { engine, workspaceRepo, automationRepo, issueRepo, gitRepoLinkRepo, userGitConnectionRepo, gitProviders, reporter, issue };
+    return { engine, workspaceRepo, userRepo, automationRepo, issueRepo, agentRepo, agentRunRepo, agentRuntimes, gitRepoLinkRepo, userGitConnectionRepo, gitProviders, reporter, issue };
   }
 
   /** Links the project's repo as 'u_test' and — unless told otherwise — gives that creator a connection, the last-resort credential. */
@@ -181,5 +181,79 @@ describe('EventEngine readRepoFile/writeRepoFile actions', () => {
     await linkRepo(ctx.gitRepoLinkRepo, ctx.issue.projectId, null);
 
     await expect(fireReadRule(ctx)).rejects.toThrow(/No fake account is connected/);
+  });
+
+  describe('when an agent acts (commits by proxy — an agent has no git identity of its own)', () => {
+    async function agentSetup() {
+      const ctx = await setup();
+      const readFile = vi.fn(async () => ({ content: 'x' }));
+      ctx.gitProviders.register(fakeGitProvider({ id: 'fake', readFile }));
+      ctx.agentRuntimes.register(fixedDecisionRuntime([{ name: 'readRepoFile', input: { path: 'README.md' } }]));
+      // No default creator connection here — each test says exactly who has connected.
+      await linkRepo(ctx.gitRepoLinkRepo, ctx.issue.projectId, null);
+      const agent = await seedAgent(ctx.userRepo, ctx.agentRepo, { eventFilter: ['comment.created'], allowedActionTypes: ['readRepoFile'], approvalPolicy: approvalPolicy('requireApprovalForAll') });
+      await ctx.issueRepo.assignAgent(ctx.issue.id, agent.userId, new Date().toISOString());
+      const approver = await seedHumanUser(ctx.userRepo, 'approver@example.com', 'Approver');
+      const connect = (userId: string, token: string) =>
+        ctx.userGitConnectionRepo.upsert({ userId, provider: 'fake', auth: { kind: 'token', token }, createdAt: new Date().toISOString() });
+
+      // The asker's comment makes the agent propose a read, then holds the run for approval.
+      const askAndHold = async () => {
+        await ctx.engine.emitEvent({
+          actor: { kind: 'user', userId: ctx.reporter.id },
+          subject: { type: 'comment', id: 'c1' },
+          payload: { type: 'comment.created', commentId: 'c1', issueId: ctx.issue.id, authorId: ctx.reporter.id, body: 'please read the readme' },
+        });
+        const [run] = await ctx.agentRunRepo.listForAgent(agent.userId);
+        expect(run.status).toBe('awaitingApproval');
+        return run;
+      };
+      return { ...ctx, agent, approver, readFile, connect, askAndHold };
+    }
+
+    it("uses the approver's credential first", async () => {
+      const { engine, approver, reporter, readFile, connect, askAndHold } = await agentSetup();
+      await connect('u_test', 'creator-token');
+      await connect(reporter.id, 'asker-token');
+      await connect(approver.id, 'approver-token');
+      const run = await askAndHold();
+
+      await engine.resolveAgentRun(run.id, 'approved', approver.id);
+
+      expect(readFile).toHaveBeenCalledWith(expect.objectContaining({ auth: { kind: 'token', token: 'approver-token' } }));
+    });
+
+    it('falls back to whoever triggered the run when the approver has not connected an account', async () => {
+      const { engine, approver, reporter, readFile, connect, askAndHold } = await agentSetup();
+      await connect('u_test', 'creator-token');
+      await connect(reporter.id, 'asker-token');
+      const run = await askAndHold();
+
+      await engine.resolveAgentRun(run.id, 'approved', approver.id);
+
+      expect(readFile).toHaveBeenCalledWith(expect.objectContaining({ auth: { kind: 'token', token: 'asker-token' } }));
+    });
+
+    it('falls back to the link creator last', async () => {
+      const { engine, approver, readFile, connect, askAndHold } = await agentSetup();
+      await connect('u_test', 'creator-token');
+      const run = await askAndHold();
+
+      await engine.resolveAgentRun(run.id, 'approved', approver.id);
+
+      expect(readFile).toHaveBeenCalledWith(expect.objectContaining({ auth: { kind: 'token', token: 'creator-token' } }));
+    });
+
+    it('fails the run (not the request) with a clear reason when nobody involved has connected', async () => {
+      const { engine, approver, agent, agentRunRepo, readFile, askAndHold } = await agentSetup();
+      const run = await askAndHold();
+
+      const resolved = await engine.resolveAgentRun(run.id, 'approved', approver.id);
+
+      expect(resolved?.status).toBe('failed');
+      expect(resolved?.failureReason).toMatch(/No fake account is connected/);
+      expect(readFile).not.toHaveBeenCalled();
+      expect((await agentRunRepo.listForAgent(agent.userId))[0].status).toBe('failed');
+    });
   });
 });

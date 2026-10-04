@@ -43,9 +43,17 @@ don't need this at all.
 
 ## Verifying a locale file
 
-There's no automated CI check for this yet — before committing a new or edited locale file,
-sanity-check it by hand or with a throwaway script:
+`cd app && npm test` runs `test/locales.test.ts`, which checks every locale against `en.json`:
 
-- Every key in `en.json` exists at the same path in the file you're checking.
+- Every key in `en.json` exists at the same path (no missing keys), and no key exists that
+  `en.json` lacks (no orphans left behind by a renamed or removed string).
+- A plain string stays a plain string and a plural entry stays a plural entry.
 - Every `{placeholder}` in an English string appears in the translated string too (same names).
-- Plural entries include at least `other`, plus whichever other categories that language uses.
+  For plural entries, `{count}` is exempt since `tn()` always supplies it.
+- Plural entries use only categories that language actually has
+  (`Intl.PluralRules(locale).resolvedOptions().pluralCategories`) and include `other`.
+- Every `locales/*.json` file is registered in `SUPPORTED_LOCALES`, and vice versa.
+
+Empty strings pass on purpose — they are the "not translated yet" scaffold described above, so a
+half-translated locale is still valid. `vite.config.ts` additionally prints a warning at
+dev/build time for any locale with untranslated (empty or missing) strings.
