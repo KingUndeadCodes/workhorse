@@ -5,6 +5,8 @@
   /** Set false once a page's content is real, not a stand-in — showing the placeholder warning
    * over real content would be actively misleading rather than just unnecessary. */
   export let showPlaceholderNotice = true;
+
+  $: document.title = `${title} — Workhorse`;
 </script>
 
 <!-- Same rationale as LandingPage.svelte: an unauthenticated page, so no dependency on the
@@ -56,6 +58,7 @@
     background: var(--lp-bg);
     display: flex;
     justify-content: center;
+    align-items: flex-start;
     padding: 64px 24px 80px;
     box-sizing: border-box;
   }
@@ -70,9 +73,9 @@
     background: none;
     border: none;
     color: var(--lp-text-2);
-    font-size: 12.5px;
+    font-size: 14px;
     cursor: pointer;
-    padding: 0;
+    padding: 10px 0;
     align-self: flex-start;
   }
   .link:hover { color: var(--lp-accent); }

@@ -10,7 +10,7 @@
     },
     {
       heading: 'Known Limitations',
-      body: "A few real gaps remain open. Moving a ticket between board columns, and connecting workflow transitions, has no keyboard alternative to drag-and-drop at desktop widths. Some destructive actions — deleting labels, fields, automation rules, webhooks, components, and versions — execute immediately with no confirmation step. A handful of multi-field forms don't warn before you navigate away with unsaved changes, and one error path (attaching an AI agent to a ticket) still uses a blocking browser alert instead of inline, screen-reader-friendly error text. We're working through these in rough priority order.",
+      body: "A few real gaps remain open. Some destructive actions — deleting labels, fields, automation rules, webhooks, components, and versions — execute immediately with no confirmation step. A handful of multi-field forms don't warn before you navigate away with unsaved changes, and one error path (attaching an AI agent to a ticket) still uses a blocking browser alert instead of inline, screen-reader-friendly error text. We're working through these in rough priority order.",
     },
     {
       heading: 'Feedback',

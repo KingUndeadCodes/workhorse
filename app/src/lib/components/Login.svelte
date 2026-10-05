@@ -5,12 +5,16 @@
    * it without a full reload. Unset when Login is the only unauthenticated screen. */
   export let onBack: (() => void) | undefined = undefined;
 
-  let mode: 'login' | 'signup' = 'login';
+  /** Which form to open on: the landing page's "Get started" lands on signup, "Log in" on login. */
+  export let initialMode: 'login' | 'signup' = 'login';
+  let mode: 'login' | 'signup' = initialMode;
   let email = '';
   let password = '';
   let displayName = '';
   let error = '';
   let busy = false;
+
+  $: document.title = mode === 'login' ? 'Log in — Workhorse' : 'Create an account — Workhorse';
 
   async function submit() {
     error = '';
@@ -98,32 +102,32 @@
     background: var(--lp-bg);
   }
   .auth-card {
-    width: min(320px, calc(100vw - 32px));
+    width: min(440px, calc(100vw - 32px));
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 20px;
     background: var(--lp-surface);
     border: 1px solid var(--lp-border);
-    border-radius: 12px;
-    padding: 28px;
+    border-radius: 16px;
+    padding: 40px;
   }
   h1 {
-    font-size: 16px;
+    font-size: 22px;
     font-weight: 700;
     color: var(--lp-text);
-    margin: 0 0 4px;
+    margin: 0 0 6px;
   }
   label {
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    font-size: 12px;
+    gap: 7px;
+    font-size: 14px;
     color: var(--lp-text-2);
   }
   input {
-    font-size: 13px;
-    padding: 8px 10px;
-    border-radius: 7px;
+    font-size: 15px;
+    padding: 12px 14px;
+    border-radius: 9px;
     border: 1px solid var(--lp-border);
     background: var(--lp-surface-2);
     color: var(--lp-text);
@@ -133,18 +137,18 @@
     outline-offset: 1px;
   }
   .error {
-    font-size: 12px;
+    font-size: 13.5px;
     color: var(--lp-critical);
     margin: 0;
   }
   button.primary {
-    margin-top: 4px;
-    padding: 9px 0;
-    border-radius: 7px;
+    margin-top: 6px;
+    padding: 13px 0;
+    border-radius: 9px;
     border: none;
     background: var(--lp-accent);
     color: var(--lp-accent-on);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
   }
@@ -156,7 +160,7 @@
     background: none;
     border: none;
     color: var(--lp-text-2);
-    font-size: 12px;
+    font-size: 14px;
     cursor: pointer;
     padding: 0;
   }
@@ -174,6 +178,6 @@
     label { font-size: 13px; }
     input { padding: 11px 12px; }
     button.primary { padding: 12px 0; font-size: 14px; }
-    button.link { padding: 6px 0; font-size: 12.5px; }
+    button.link { padding: 12px 0; font-size: 14px; }
   }
 </style>

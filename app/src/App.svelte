@@ -25,7 +25,23 @@
 
   /** Which unauthenticated screen is showing — local, not persisted, so a fresh visit always
    * starts back at the landing page. */
-  let unauthView: 'landing' | 'login' | 'privacy' | 'terms' | 'accessibility' = 'landing';
+  type UnauthView = 'landing' | 'login' | 'privacy' | 'terms' | 'accessibility';
+  /** The legal pages have real URLs (shareable, bookmarkable, back-button friendly); landing and login stay on "/". */
+  const VIEW_PATHS: Partial<Record<UnauthView, string>> = { privacy: '/privacy', terms: '/terms', accessibility: '/accessibility' };
+  function viewForPath(path: string): UnauthView {
+    return (Object.keys(VIEW_PATHS) as UnauthView[]).find((v) => VIEW_PATHS[v] === path.replace(/\/+$/, '')) ?? 'landing';
+  }
+  let unauthView: UnauthView = viewForPath(window.location.pathname);
+
+  function showUnauthView(view: UnauthView) {
+    unauthView = view;
+    const path = VIEW_PATHS[view] ?? '/';
+    if (window.location.pathname !== path) window.history.pushState(null, '', path);
+  }
+  function syncViewToPath() {
+    unauthView = viewForPath(window.location.pathname);
+  }
+  let loginMode: 'login' | 'signup' = 'login';
 
   // Kicks off the one API call that populates every store in workspace.ts, once there's a
   // logged-in user to make it as; $loaded and $loadError below gate what renders until it
@@ -33,6 +49,8 @@
   // attempt actually retries instead of being permanently blocked by the stale error.
   let initializedForUserId: string | null = null;
   $: if ($currentUser && $currentUser.id !== initializedForUserId) {
+    // The unauthenticated screens each set their own tab title; this is the app's own.
+    document.title = 'Workhorse — Board';
     initializedForUserId = $currentUser.id;
     loadError.set(null);
     // Returning from GitHub's authorize page (see GitConnectionsSettings) — land back on the Git settings tab.
@@ -50,21 +68,24 @@
   }
 </script>
 
+<svelte:window on:popstate={syncViewToPath} />
+
 {#if !$currentUser}
   {#if unauthView === 'login'}
-    <Login onBack={() => (unauthView = 'landing')} />
+    <Login initialMode={loginMode} onBack={() => showUnauthView('landing')} />
   {:else if unauthView === 'privacy'}
-    <PrivacyPolicy onBack={() => (unauthView = 'landing')} />
+    <PrivacyPolicy onBack={() => showUnauthView('landing')} />
   {:else if unauthView === 'terms'}
-    <TermsOfUse onBack={() => (unauthView = 'landing')} />
+    <TermsOfUse onBack={() => showUnauthView('landing')} />
   {:else if unauthView === 'accessibility'}
-    <AccessibilityStatement onBack={() => (unauthView = 'landing')} />
+    <AccessibilityStatement onBack={() => showUnauthView('landing')} />
   {:else}
     <LandingPage
-      onGetStarted={() => (unauthView = 'login')}
-      onPrivacy={() => (unauthView = 'privacy')}
-      onTerms={() => (unauthView = 'terms')}
-      onAccessibility={() => (unauthView = 'accessibility')}
+      onGetStarted={() => { loginMode = 'signup'; showUnauthView('login'); }}
+      onLogin={() => { loginMode = 'login'; showUnauthView('login'); }}
+      onPrivacy={() => showUnauthView('privacy')}
+      onTerms={() => showUnauthView('terms')}
+      onAccessibility={() => showUnauthView('accessibility')}
     />
   {/if}
 {:else if $loadError}
