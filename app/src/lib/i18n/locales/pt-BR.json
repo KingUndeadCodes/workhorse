@@ -1,0 +1,647 @@
+{
+  "common": {
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "saving": "Salvando…",
+    "create": "Criar",
+    "creating": "Criando…",
+    "add": "Adicionar",
+    "delete": "Excluir",
+    "deleting": "Excluindo…",
+    "edit": "Editar",
+    "remove": "Remover",
+    "removeNamed": "Remover {name}",
+    "deleteNamed": "Excluir {name}",
+    "close": "Fechar",
+    "members": {
+      "one": "{count} membro",
+      "other": "{count} membros"
+    },
+    "priority": {
+      "highest": "máxima",
+      "high": "alta",
+      "medium": "média",
+      "low": "baixa",
+      "lowest": "mínima"
+    },
+    "on": "Ativado",
+    "off": "Desativado"
+  },
+  "nav": {
+    "board": "Quadro",
+    "backlog": "Backlog"
+  },
+  "topBar": {
+    "workhorseBrand": "Workhorse",
+    "noActiveSprint": "Nenhuma sprint ativa",
+    "newButton": "Novo…",
+    "newIssue": "Tarefa",
+    "newSprint": "Sprint",
+    "newLabel": "Etiqueta",
+    "newComponent": "Componente",
+    "newVersion": "Versão",
+    "statsTitle": "Estatísticas",
+    "projectSettingsTitle": "Configurações do projeto",
+    "workspaceSettingsTitle": "Configurações do espaço de trabalho",
+    "accountSettings": "Configurações da conta",
+    "logOut": "Sair"
+  },
+  "sidebar": {
+    "myIssuesLabel": "Minhas tarefas",
+    "newProjectPlaceholder": "Nome do projeto",
+    "newProjectKeyPlaceholder": "Chave (ex.: MOB)",
+    "newProjectButton": "Novo projeto",
+    "projectsLabel": "Projetos",
+    "failedCreateProject": "Falha ao criar o projeto"
+  },
+  "myIssues": {
+    "title": "Minhas tarefas",
+    "loading": "Carregando…",
+    "empty": "Nenhuma tarefa aberta atribuída a você"
+  },
+  "mobileNav": {
+    "newTab": "Novo",
+    "projectsTab": "Projetos",
+    "moreTab": "Mais",
+    "newProjectRow": "Novo projeto",
+    "statsRow": "Estatísticas",
+    "projectSettingsRow": "Configurações do projeto",
+    "workspaceSettingsRow": "Configurações do espaço de trabalho",
+    "accountSettingsRow": "Configurações da conta",
+    "logOutRow": "Sair"
+  },
+  "board": {
+    "moveNotAllowed": "Esse fluxo de trabalho não permite essa movimentação.",
+    "moveFailed": "Não foi possível mover a tarefa: {reason}",
+    "noEpic": "Sem épico",
+    "noIssues": "Nenhuma tarefa",
+    "keyboardNav": {
+      "pickedUp": "Você pegou {title}. Escolha uma coluna e pressione Espaço para soltar, ou Esc para cancelar.",
+      "dropped": "{title} movida para {column}.",
+      "cancelled": "Movimentação cancelada.",
+      "hint": "As setas movem o foco, Espaço pega ou solta um cartão e Enter o abre."
+    }
+  },
+  "filters": {
+    "searchPlaceholder": "Pesquisar tarefas…",
+    "title": "Filtros",
+    "button": "Filtros",
+    "clear": "Limpar filtros",
+    "sectionAssignee": "Responsável",
+    "sectionLabel": "Etiqueta",
+    "sectionPriority": "Prioridade",
+    "sectionType": "Tipo",
+    "sectionStatus": "Status"
+  },
+  "issueCard": {
+    "moveToTitle": "Mover para…",
+    "overdueLabel": "ATRASADA",
+    "dueSoonLabel": "VENCE EM BREVE",
+    "pickedUpLabel": "Selecionada"
+  },
+  "issueDrawer": {
+    "descriptionLabel": "Descrição",
+    "descriptionPlaceholder": "Adicione uma descrição… (markdown compatível)",
+    "assigneesLabel": "Responsáveis",
+    "addChip": "+ Adicionar",
+    "reporterLabel": "Relator",
+    "unassigned": "Sem responsável",
+    "priorityLabel": "Prioridade",
+    "storyPointsLabel": "Pontos de história",
+    "sprintLabel": "Sprint",
+    "noSprint": "Sem sprint",
+    "dueDateLabel": "Prazo",
+    "aiAgentsLabel": "Agentes de IA",
+    "agentsHint": "Anexe um agente para que ele trabalhe nesta tarefa.",
+    "runNowTitle": "Executar agora",
+    "runNowButton": "Executar",
+    "runningButton": "…",
+    "noMoreAgents": "Não há mais agentes para anexar",
+    "branchLabel": "Branch",
+    "createBranchButton": "+ Criar branch",
+    "removeBranchLabel": "Remover branch {name}",
+    "advancedToggle": "Avançado",
+    "linkedIssuesLabel": "Tarefas vinculadas",
+    "removeLinkLabel": "Remover vínculo com {key}",
+    "relationRelatesTo": "relaciona-se a",
+    "relationBlocks": "bloqueia",
+    "relationDuplicates": "duplica",
+    "relationClones": "clona",
+    "relationCauses": "causa",
+    "relationInverse": "{type} (inverso)",
+    "issueKeyPlaceholder": "Chave da tarefa (ex.: ATL-131)",
+    "linkButton": "Vincular",
+    "timeTrackingLabel": "Controle de tempo",
+    "loggedSuffix": "{hours} h registradas",
+    "estimateSuffix": "{hours} h est.",
+    "hoursPlaceholder": "Horas",
+    "workNotePlaceholder": "No que você trabalhou? (opcional)",
+    "logButton": "Registrar",
+    "commentsTab": "Comentários",
+    "activityTab": "Atividade",
+    "nothingLoggedYet": "Nada registrado ainda.",
+    "loadingDetails": "Carregando detalhes…",
+    "couldntLoadDetails": "Não foi possível carregar os detalhes deste evento.",
+    "runAgentConfirm": "Executar \"{name}\" nesta tarefa agora?",
+    "failedAttachAgent": "Falha ao anexar o agente",
+    "failedLoadBranch": "Falha ao carregar o branch",
+    "failedCreateBranch": "Falha ao criar o branch",
+    "actorSomeone": "Alguém",
+    "actorAutomationRule": "Uma regra de automação",
+    "actorSystem": "O sistema",
+    "commentPlaceholder": "Adicione um comentário… (markdown compatível)",
+    "commentSubmitLabel": "Comentar"
+  },
+  "settings": {
+    "tabs": {
+      "appearance": "Aparência",
+      "labels": "Etiquetas",
+      "fields": "Campos",
+      "workflow": "Fluxo de trabalho",
+      "automations": "Automações",
+      "agents": "Agentes",
+      "git": "Git",
+      "webhooks": "Webhooks",
+      "accessibility": "Acessibilidade"
+    },
+    "appearance": {
+      "themeLabel": "Tema",
+      "themeHint": "Alterna entre claro e escuro neste navegador ou acompanha o navegador em tempo real se você escolher Seguir o navegador.",
+      "themeLight": "Claro",
+      "themeDark": "Escuro",
+      "themeSystem": "Seguir o navegador",
+      "languageLabel": "Idioma",
+      "languageHint": "Escolha o idioma em que o Workhorse é exibido.",
+      "nonEnglishDisclaimer": "Isso traduz apenas a interface do próprio aplicativo — mantenha títulos de tarefas, descrições, comentários, etiquetas e outros conteúdos em inglês para que toda a equipe possa lê-los."
+    },
+    "labelNamePlaceholder": "Nome da etiqueta",
+    "addLabelButton": "Adicionar etiqueta",
+    "fieldNamePlaceholder": "Nome do campo (ex.: Gravidade)",
+    "fieldKeyPlaceholder": "Chave interna (ex.: gravidade)",
+    "fieldOptionsPlaceholder": "Opções, separadas por vírgula (ex.: Baixa, Média, Alta)",
+    "addFieldButton": "Adicionar campo",
+    "statusCategoriesLabel": "Categorias de status",
+    "categoryNamePlaceholder": "Nome da categoria (ex.: Resolvendo divergências)",
+    "addCategoryButton": "Adicionar categoria",
+    "workflowLabel": "Fluxo de trabalho",
+    "workflowDesktopOnly": "O diagrama do fluxo de trabalho é uma tela de edição de arrastar e soltar feita para o mouse — abra as Configurações em um navegador de computador para editar status e transições.",
+    "ruleNamePlaceholder": "Nome da regra",
+    "triggerLabel": "Gatilho",
+    "conditionsLabel": "Condições (opcional — executa sempre se não houver nenhuma)",
+    "ruleConditionsPrefix": "se",
+    "conditionJoiner": "e",
+    "valuePlaceholder": "valor",
+    "addConditionButton": "+ Adicionar condição",
+    "removeConditionLabel": "Remover condição",
+    "actionsLabel": "Ações",
+    "addActionButton": "+ Adicionar ação",
+    "removeActionLabel": "Remover ação",
+    "addRuleButton": "Adicionar regra",
+    "commentBodyPlaceholder": "Texto do comentário",
+    "pathPlaceholder": "caminho/para/arquivo.ts",
+    "branchNamePlaceholder": "nome do branch",
+    "fileContentPlaceholder": "conteúdo do arquivo",
+    "commitMessagePlaceholder": "mensagem do commit (opcional)",
+    "statusPlaceholder": "status…",
+    "userPlaceholder": "usuário…",
+    "fieldPlaceholder": "campo…",
+    "enabledLabel": "ativo",
+    "webhookUrlPlaceholder": "https://seu-servico.exemplo/webhook",
+    "addWebhookButton": "Adicionar webhook",
+    "webhookHistoryButton": "Histórico de entregas de {url}",
+    "webhookDeliveriesEmpty": "Nenhuma entrega ainda",
+    "webhookDeliveriesLoading": "Carregando…",
+    "webhookDeliveriesLoadMore": "Carregar mais",
+    "webhookStatusSuccess": "Sucesso",
+    "webhookStatusFailure": "Falhou",
+    "failedDeleteCategory": "Falha ao excluir a categoria",
+    "accessibility": {
+      "keyboardNavLabel": "Navegação pelo teclado",
+      "keyboardNavHint": "Todo quadro, backlog e o editor de fluxo de trabalho podem ser usados sem mouse: as setas movem o foco, Espaço pega e solta um item, Enter o abre e Esc cancela. Isso está sempre ativado."
+    }
+  },
+  "gitConnections": {
+    "hint": "Os agentes fazem commits por procuração, usando a conta do GitHub da pessoa em nome de quem agem — por isso conecte a sua uma vez aqui. Ela não está vinculada a nenhum projeto.",
+    "connectedAs": "Conectado como {login}",
+    "connected": "Conectado",
+    "disconnect": "Desconectar",
+    "oauthHint": "Autorize o Workhorse no GitHub. Você voltará para cá em seguida.",
+    "connectGithub": "Conectar ao GitHub",
+    "usePatInstead": "Usar um token de acesso pessoal",
+    "tokenPlaceholder": "Token de acesso pessoal",
+    "tokenHint": "Um token de acesso pessoal do GitHub com escopo repo — armazenado criptografado e nunca exibido novamente.",
+    "connecting": "Conectando…",
+    "connectToken": "Conectar com token",
+    "useOauthInstead": "Conectar com o GitHub",
+    "failedConnect": "Falha ao conectar ao GitHub",
+    "failedDisconnect": "Falha ao desconectar"
+  },
+  "projectSettings": {
+    "tabs": {
+      "project": "Projeto",
+      "components": "Componentes",
+      "versions": "Versões",
+      "git": "Git"
+    },
+    "nameLabel": "Nome",
+    "keyLabel": "Chave",
+    "keyHint": "A chave é permanente — ela faz parte da chave de cada tarefa (ex.: \"{key}-142\").",
+    "colorLabel": "Cor",
+    "colorSwatchLabel": "Definir a cor como {color}",
+    "featuresLabel": "Recursos",
+    "featuresHint": "Desative os processos de que este projeto não precisa — nada é excluído e, ao reativar, tudo volta como estava.",
+    "features": {
+      "reporters": "Relatores",
+      "storyPoints": "Pontos de história",
+      "dueDates": "Prazos",
+      "timeTracking": "Controle de tempo",
+      "priority": "Prioridade",
+      "componentsAndVersions": "Componentes e versões",
+      "sprints": "Sprints",
+      "labels": "Etiquetas"
+    },
+    "archiveButton": "Arquivar este projeto",
+    "archiveConfirm": "Arquivar \"{name}\"? Ele continuará no espaço de trabalho, mas ficará oculto no seletor de projetos.",
+    "componentNamePlaceholder": "Nome do componente",
+    "addComponentButton": "Adicionar componente",
+    "versionNamePlaceholder": "Nome da versão (ex.: v3.5.0)",
+    "addVersionButton": "Adicionar versão",
+    "released": "Lançada",
+    "unreleased": "Não lançada",
+    "releaseButton": "Lançar",
+    "gitHint": "Vincule este projeto a um repositório git para criar um branch de verdade para qualquer tarefa, direto do painel dela.",
+    "unlinkRepoLabel": "Desvincular repositório",
+    "noGitProviderHint": "Nenhum provedor git está configurado neste servidor, então ainda não há nada para vincular — veja server/src/services/GitProvider.ts.",
+    "ownerPlaceholder": "Proprietário",
+    "repoPlaceholder": "Repositório",
+    "defaultBranchPlaceholder": "Branch padrão (main)",
+    "connectAccountHint": "Você ainda não conectou uma conta do GitHub. As conexões pertencem a você, não a este projeto — configure a sua uma vez em Configurações → Git.",
+    "connectAccountButton": "Abrir configurações do Git",
+    "linkingAsHint": "O acesso é verificado com a sua conta do GitHub ({login}). As conexões são por conta — gerencie a sua em Configurações → Git.",
+    "repoSearchPlaceholder": "Pesquisar seus repositórios",
+    "repoSelectPlaceholder": "Escolha um repositório",
+    "reposLoading": "Carregando seus repositórios…",
+    "privateTag": "privado",
+    "linkRepoButton": "Vincular repositório",
+    "linkingRepoButton": "Vinculando…",
+    "failedLinkRepo": "Falha ao vincular o repositório",
+    "defaultBranchSuffix": "branch padrão: {branch}"
+  },
+  "workspaceView": {
+    "youBadge": "você",
+    "canManageRoles": "você pode gerenciar os papéis",
+    "roles": {
+      "owner": "proprietário",
+      "admin": "administrador",
+      "member": "membro",
+      "guest": "convidado"
+    },
+    "removeConfirm": "Remover {name} deste espaço de trabalho? A pessoa perderá o acesso imediatamente.",
+    "invitesLabel": "Convites pendentes",
+    "invitesHint": "Pré-aprove um e-mail para que a pessoa entre com um papel específico ao se cadastrar. Nenhum e-mail é enviado — compartilhe você mesmo o link de cadastro.",
+    "revokeLabel": "Revogar convite de {email}",
+    "inviteEmailPlaceholder": "Endereço de e-mail",
+    "inviteButton": "Convidar",
+    "invitingButton": "Convidando…",
+    "failedInvite": "Falha ao convidar"
+  },
+  "stats": {
+    "title": "Estatísticas",
+    "window24h": "24 h",
+    "window1w": "1 semana",
+    "window30d": "30 dias",
+    "timeSpentLabel": "Tempo gasto",
+    "mostActiveLabel": "Tarefas mais ativas",
+    "noActivity": "Nenhuma atividade ainda.",
+    "loading": "Carregando estatísticas…"
+  },
+  "newIssueModal": {
+    "title": "Nova tarefa",
+    "titleFieldLabel": "Título",
+    "titlePlaceholder": "O que precisa ser feito?",
+    "typeLabel": "Tipo",
+    "priorityLabel": "Prioridade",
+    "assigneesLabel": "Responsáveis",
+    "failedCreate": "Falha ao criar a tarefa",
+    "createButton": "Criar tarefa",
+    "creatingButton": "Criando…"
+  },
+  "accountSettingsModal": {
+    "title": "Configurações da conta",
+    "uploadPicture": "Enviar foto",
+    "removePicture": "Remover",
+    "nameLabel": "Nome",
+    "namePlaceholder": "Seu nome",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "voce@exemplo.com",
+    "invalidImage": "Escolha um arquivo de imagem",
+    "failedUpdate": "Falha ao atualizar a conta",
+    "saveButton": "Salvar alterações",
+    "savingButton": "Salvando…",
+    "youFallback": "Você"
+  },
+  "commentThread": {
+    "reply": "Responder",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "deleting": "Excluindo…",
+    "deleteConfirm": "Excluir este comentário? Esta ação não pode ser desfeita.",
+    "deleteConfirmWithReplies": "Excluir este comentário e todas as respostas dele? Esta ação não pode ser desfeita.",
+    "edited": "(editado)",
+    "repliesHidden": {
+      "one": "{count} resposta oculta",
+      "other": "{count} respostas ocultas"
+    },
+    "continueThread": {
+      "one": "Continuar conversa (mais {count} resposta)",
+      "other": "Continuar conversa (mais {count} respostas)"
+    },
+    "showReplies": {
+      "one": "Mostrar {count} resposta",
+      "other": "Mostrar {count} respostas"
+    },
+    "replyPlaceholder": "Escreva uma resposta… (markdown compatível)",
+    "replyButton": "Responder"
+  },
+  "markdownEditor": {
+    "boldTitle": "Negrito",
+    "italicTitle": "Itálico",
+    "codeTitle": "Código",
+    "linkTitle": "Link",
+    "listTitle": "Lista com marcadores",
+    "quoteTitle": "Citação",
+    "boldPlaceholder": "texto em negrito",
+    "italicPlaceholder": "texto em itálico",
+    "codePlaceholder": "código",
+    "linkPlaceholder": "texto do link",
+    "markdownSupported": "Markdown compatível",
+    "wordCount": {
+      "one": "{count} palavra",
+      "other": "{count} palavras"
+    }
+  },
+  "app": {
+    "apiErrorTitle": "Não foi possível acessar a API do Workhorse",
+    "serverRunningHint": "O servidor está em execução?",
+    "loadingWorkspace": "Carregando espaço de trabalho…",
+    "skipToContent": "Pular para o conteúdo principal"
+  },
+  "backlog": {
+    "startSprintButton": "Iniciar sprint",
+    "completeSprintButton": "Concluir sprint",
+    "noIssuesInSprint": "Ainda não há tarefas nesta sprint.",
+    "nothingUnscheduled": "Nada sem planejamento — tudo está em uma sprint.",
+    "newSprintPlaceholder": "Nome da nova sprint…",
+    "createSprintButton": "Criar sprint",
+    "backlogLabel": "Backlog",
+    "pointsSuffix": "{done}/{total} pts",
+    "issuesCount": {
+      "one": "{count} tarefa",
+      "other": "{count} tarefas"
+    },
+    "sprintStates": {
+      "future": "futura",
+      "active": "ativa",
+      "closed": "encerrada"
+    },
+    "keyboardNav": {
+      "pickedUp": "Você pegou {title}. Escolha uma sprint e pressione Espaço para soltar, ou Esc para cancelar.",
+      "dropped": "{title} movida para {section}.",
+      "cancelled": "Movimentação cancelada.",
+      "hint": "As setas movem o foco, Espaço pega ou solta um cartão e Enter o abre."
+    }
+  },
+  "agentForm": {
+    "namePlaceholder": "Nome do agente",
+    "instructionsPlaceholder": "Instruções — o que este agente deve fazer com uma tarefa?",
+    "runtimeLabel": "Ambiente de execução",
+    "modelLabel": "Modelo",
+    "contextScopeLabel": "Escopo de contexto",
+    "contextScopes": {
+      "thread": {
+        "label": "Conversa",
+        "hint": "Somente esta conversa de comentários"
+      },
+      "ticket": {
+        "label": "Tarefa",
+        "hint": "Conversa + os detalhes desta tarefa (padrão)"
+      },
+      "project": {
+        "label": "Projeto",
+        "hint": "Tarefa + outras tarefas abertas deste projeto"
+      },
+      "workspace": {
+        "label": "Espaço de trabalho",
+        "hint": "Projeto + o restante do espaço de trabalho"
+      }
+    },
+    "reactsToLabel": "Reage a",
+    "eventTypes": {
+      "issue": {
+        "created": "Tarefa criada",
+        "statusChanged": "Status alterado",
+        "resolved": "Resolvida",
+        "reopened": "Reaberta",
+        "assigneesChanged": "Responsáveis alterados",
+        "priorityChanged": "Prioridade alterada",
+        "labelsChanged": "Etiquetas alteradas",
+        "dueDateChanged": "Prazo alterado",
+        "updated": "Qualquer atualização"
+      },
+      "comment": {
+        "created": "Novo comentário",
+        "mentioned": "Mencionado em comentário"
+      }
+    },
+    "eventGroupComments": "Comentários",
+    "allowedActionsLabel": "Ações permitidas",
+    "actionGroupRepo": "Repositório",
+    "actionTypes": {
+      "transitionStatus": "Alterar status",
+      "assignTo": "Reatribuir",
+      "addComment": "Adicionar comentário",
+      "setField": "Definir campo",
+      "readRepoFile": "Ler arquivo",
+      "writeRepoFile": "Gravar arquivo"
+    },
+    "approvalLabel": "Aprovação",
+    "autoApplyAll": "Aplicar tudo automaticamente",
+    "requireApprovalForAll": "Exigir aprovação para tudo",
+    "requireApprovalFor": "Exigir aprovação apenas para…",
+    "budgetLabel": "Orçamento (opcional — em branco = ilimitado)",
+    "maxRunsPerHour": "Máx. de execuções / hora",
+    "maxRunsPerDay": "Máx. de execuções / dia",
+    "maxActionsPerRun": "Máx. de ações / execução",
+    "maxSpendPerDay": "Gasto máx. / dia",
+    "ignoreSelfEvents": "Ignorar os eventos do próprio agente (recomendado — evita que ele se acione novamente)"
+  },
+  "agentsSettings": {
+    "runtimeStatusLabel": "Status do ambiente de execução",
+    "refreshRuntimeStatus": "Atualizar",
+    "checkingRuntimeStatus": "Verificando…",
+    "runtimeHealthy": "Acessível",
+    "runtimeUnreachable": "Inacessível — {detail}",
+    "awaitingApproval": "Aguardando sua aprovação",
+    "agentsLabel": "Agentes",
+    "hint": "Os agentes trabalham nas tarefas em nome de um colega — anexe um a uma tarefa (na seção Agentes de IA dela) e ele poderá comentar, alterar o status, reatribuir ou atualizar campos conforme avança, sempre atribuído à pessoa em nome de quem age. As Instruções dele é que realmente orientam as decisões a cada vez que é acionado.",
+    "noAgentsYet": "Ainda não há agentes — crie um abaixo para começar a automatizar o trabalho nas tarefas.",
+    "approveButton": "Aprovar",
+    "rejectButton": "Rejeitar",
+    "newAgentSectionLabel": "Novo agente",
+    "newAgentHint": "Configure um novo agente e depois adicione-o para começar a automatizar o trabalho nas tarefas.",
+    "addAgentLabel": "Adicionar agente",
+    "addAgentButton": "Adicionar agente",
+    "saveButton": "Salvar",
+    "statusLabels": {
+      "pending": "Pendente",
+      "awaitingApproval": "Aguardando aprovação",
+      "applied": "Aplicada",
+      "rejected": "Rejeitada",
+      "failed": "Falhou"
+    },
+    "recentActivity": "Atividade recente",
+    "totalTokensTitle": "Total de tokens usados em todas as execuções",
+    "aiBadge": "IA"
+  },
+  "agentOverview": {
+    "capabilitiesLabel": "Capacidades",
+    "usageLabel": "Uso",
+    "tokensSuffix": "tokens no total",
+    "budgetLabel": "Orçamento",
+    "noActivityYet": "Nenhuma atividade ainda.",
+    "manageButton": "Gerenciar configurações do agente"
+  },
+  "workflowDiagram": {
+    "newStatusPlaceholder": "Nome do novo status",
+    "addStatusButton": "Adicionar status",
+    "dragHint": "Arraste da borda de um status até outro para conectá-los. Selecione um status ou uma transição e pressione Delete/Backspace para removê-lo — os status To Do e Done não podem ser excluídos.",
+    "editStatusTitle": "Editar status",
+    "nameLabel": "Nome",
+    "colorLabel": "Cor (hex, opcional)",
+    "savingButton": "Salvando…",
+    "transitionsFromAnyLabel": "Transições a partir de qualquer status",
+    "transitionNamePlaceholder": "Nome da transição (ex.: Reabrir)",
+    "addGlobalTransitionButton": "Adicionar transição global",
+    "removeTransitionLabel": "Remover transição para {status}",
+    "pathErrorTransition": "Excluir esta transição removeria o único caminho de To Do para Done",
+    "pathErrorStatus": "Excluir este status removeria o único caminho de To Do para Done",
+    "failedDeleteTransition": "Falha ao excluir a transição",
+    "failedDeleteStatus": "Falha ao excluir o status",
+    "keyboardNav": {
+      "pickedUp": "Você pegou {title}. Escolha um status de destino e pressione Espaço para conectar, ou Esc para cancelar.",
+      "connected": "Transição criada de {from} para {to}.",
+      "cancelled": "Cancelado.",
+      "hint": "As setas alternam entre os status, Espaço desenha uma transição e Enter renomeia um status. Pressione [ ou ] para selecionar uma das transições de um status e depois Delete para removê-la."
+    },
+    "failedCreateTransition": "Falha ao criar a transição"
+  },
+  "statusNode": {
+    "lockedTitle": "Os status To Do e Done não podem ser excluídos",
+    "editTitle": "Editar status",
+    "heldLabel": "Selecionado"
+  },
+  "relativeDate": {
+    "today": "hoje",
+    "daysAgo": {
+      "one": "há {count} dia",
+      "other": "há {count} dias"
+    }
+  },
+  "storyPointWarning": {
+    "pastDue": "Este prazo já passou, mas a tarefa ainda está estimada em {points} pontos.",
+    "tooSoon": "{points} pontos normalmente levam até {maxDuration}, mas o prazo é de apenas {daysUntilDue}.",
+    "hoursDuration": "{hours} h",
+    "daysDuration": {
+      "one": "{count} dia",
+      "other": "{count} dias"
+    }
+  },
+  "activity": {
+    "eventType": {
+      "issueCreated": "criou esta tarefa",
+      "issueStatusChanged": "alterou o status",
+      "issueResolved": "resolveu esta tarefa",
+      "issueReopened": "reabriu esta tarefa",
+      "issueAssigneesChanged": "alterou os responsáveis",
+      "issueAgentAssigned": "anexou um agente de IA",
+      "issueAgentUnassigned": "removeu um agente de IA",
+      "issuePriorityChanged": "alterou a prioridade",
+      "issueLabelsChanged": "alterou as etiquetas",
+      "issueDueDateChanged": "alterou o prazo",
+      "issueSprintChanged": "alterou a sprint",
+      "issueUpdated": "atualizou esta tarefa",
+      "issueLinked": "vinculou outra tarefa",
+      "issueUnlinked": "removeu uma tarefa vinculada",
+      "issueDeleted": "excluiu esta tarefa",
+      "issueWorklogAdded": "registrou trabalho",
+      "issueAttachmentAdded": "adicionou um anexo",
+      "issueAttachmentRemoved": "removeu um anexo",
+      "issueBranchCreated": "criou um branch",
+      "issueBranchDeleted": "excluiu o branch",
+      "commentCreated": "adicionou um comentário",
+      "commentEdited": "editou um comentário",
+      "commentDeleted": "excluiu um comentário",
+      "commentMentioned": "mencionou alguém em um comentário"
+    },
+    "event": {
+      "issueCreated": "criou esta tarefa",
+      "issueStatusChanged": "alterou o status de {from} para {to}",
+      "issueResolved": "resolveu esta tarefa ({status})",
+      "issueReopened": "reabriu esta tarefa ({status})",
+      "assigneesChangedTo": "alterou os responsáveis de {from} para {to}",
+      "assigneesUnassignedAll": "removeu todos os responsáveis (era {from})",
+      "noOne": "ninguém",
+      "issueAgentAssigned": "anexou um agente de IA",
+      "issueAgentUnassigned": "removeu um agente de IA",
+      "issuePriorityChanged": "alterou a prioridade de {from} para {to}",
+      "issueLabelsChanged": "alterou as etiquetas de {from} para {to}",
+      "labelsNone": "nenhuma",
+      "dueDateSet": "definiu o prazo como {date}",
+      "dueDateCleared": "removeu o prazo",
+      "sprintSet": "moveu esta tarefa para uma sprint",
+      "sprintCleared": "tirou esta tarefa da sprint",
+      "issueUpdated": "atualizou {fields}",
+      "issueUpdatedFallback": "esta tarefa",
+      "issueLinked": "vinculou outra tarefa",
+      "issueUnlinked": "removeu uma tarefa vinculada",
+      "issueDeleted": "excluiu esta tarefa",
+      "worklogAdded": "registrou {duration} de trabalho",
+      "attachmentAdded": "anexou {fileName}",
+      "attachmentRemoved": "removeu um anexo",
+      "branchCreated": "criou o branch {name}",
+      "branchDeleted": "excluiu o branch",
+      "commentReplied": "respondeu a um comentário",
+      "commentCreated": "adicionou um comentário",
+      "commentEdited": "editou um comentário",
+      "commentDeleted": "excluiu um comentário",
+      "commentMentioned": "mencionou alguém em um comentário"
+    }
+  },
+  "automation": {
+    "action": {
+      "transitionStatus": "→ {status}",
+      "assignTo": "atribuir {name}",
+      "addComment": "comentar \"{body}\"",
+      "setField": "definir {field} = {value}",
+      "readRepoFile": "ler {path}",
+      "writeRepoFile": "gravar {path} → branch \"{branch}\""
+    }
+  },
+  "notifications": {
+    "bellTitle": "Notificações",
+    "bellTitleUnread": "Notificações ({count} não lidas)",
+    "markAllRead": "Marcar todas como lidas",
+    "empty": "Ainda não há notificações",
+    "loading": "Carregando…",
+    "loadMore": "Carregar mais",
+    "unknownActor": "Alguém",
+    "deletedIssue": "uma tarefa excluída",
+    "kinds": {
+      "assigned": "{actor} atribuiu {issue} a você",
+      "statusChanged": "{actor} moveu {issue} para {status}",
+      "resolved": "{actor} resolveu {issue}",
+      "commented": "{actor} comentou em {issue}",
+      "mentioned": "{actor} mencionou você em {issue}"
+    }
+  }
+}

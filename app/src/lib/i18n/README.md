@@ -10,6 +10,13 @@ source of truth; every other locale must mirror its exact key shape.
    or just copy `en.json` and blank the values, keeping the same keys.
 3. Import it in `index.ts` and add it to `DICTS`.
 
+A locale id is a BCP 47 language tag and is passed straight to `Intl` (dates, numbers, plural
+rules), so use the real tag — `pt-BR`, not `pt` — when a regional variant matters. The file is named
+after the id (`locales/pt-BR.json`), and since a hyphenated id isn't a valid JS identifier, import it
+under a camelCase name and quote the key in `DICTS` (`'pt-BR': ptBR`). Plural entries only need the
+categories the language uses: Brazilian Portuguese has `one`/`other` (0 and 1 are both "one"; its
+`many` category, for round millions, falls back to `other`).
+
 A locale file with empty strings is a fully valid, shippable state: `t()`/`tn()` (below) treat
 an empty value as "not translated yet" and silently render the English text instead, so the app
 stays fully usable while a translation is filled in incrementally.

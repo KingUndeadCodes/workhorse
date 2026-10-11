@@ -6,12 +6,13 @@ import uk from './locales/uk.json';
 import hi from './locales/hi.json';
 import zh from './locales/zh.json';
 import ja from './locales/ja.json';
+import ptBR from './locales/pt-BR.json';
 
 /** Add a new language by adding its id here, adding a matching entry to `SUPPORTED_LOCALES`
  * below, and creating `./locales/{id}.json` with the same nested key shape as `en.json` (start
  * from a copy of `es.json` with every value emptied out — see `README.md` in this directory for
  * the full scaffold/plural/fallback conventions). */
-export type Locale = 'en' | 'ru' | 'es' | 'uk' | 'hi' | 'zh' | 'ja';
+export type Locale = 'en' | 'ru' | 'es' | 'uk' | 'hi' | 'zh' | 'ja' | 'pt-BR';
 
 export const SUPPORTED_LOCALES: { id: Locale; label: string }[] = [
   { id: 'en', label: 'English' },
@@ -21,6 +22,7 @@ export const SUPPORTED_LOCALES: { id: Locale; label: string }[] = [
   { id: 'hi', label: 'हिन्दी' },
   { id: 'zh', label: '中文' },
   { id: 'ja', label: '日本語' },
+  { id: 'pt-BR', label: 'Português (Brasil)' },
 ];
 
 /** A leaf translation is either a plain string or, for anything consumed through `tn()`, a set
@@ -34,7 +36,7 @@ export interface TranslationDict {
   [key: string]: TranslationValue | TranslationDict;
 }
 
-const DICTS: Record<Locale, TranslationDict> = { en, ru, es, uk, hi, zh, ja };
+const DICTS: Record<Locale, TranslationDict> = { en, ru, es, uk, hi, zh, ja, 'pt-BR': ptBR };
 const PLURAL_CATEGORIES = ['zero', 'one', 'two', 'few', 'many', 'other'] as const;
 
 const STORAGE_KEY = 'workhorse-locale';

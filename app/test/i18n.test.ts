@@ -58,3 +58,38 @@ describe('tn()', () => {
     expect(get(tn)('common.cancel', 2)).toBe('common.cancel');
   });
 });
+
+describe('Brazilian Portuguese (pt-BR)', () => {
+  it('is registered, translates, and fills {placeholders}', () => {
+    locale.set('pt-BR');
+    expect(get(t)('common.cancel')).toBe('Cancelar');
+    expect(get(t)('gitConnections.connectedAs', { login: 'octocat' })).toBe('Conectado como octocat');
+    expect(get(t)('board.moveFailed', { reason: 'sem permissão' })).toBe('Não foi possível mover a tarefa: sem permissão');
+  });
+
+  it('persists the choice under its full id', () => {
+    locale.set('pt-BR');
+    expect(localStorage.getItem('workhorse-locale')).toBe('pt-BR');
+  });
+
+  it('uses Portuguese plural rules: 0 and 1 are singular (unlike English, where 0 is plural), 2+ plural', () => {
+    locale.set('pt-BR');
+    expect(get(tn)('common.members', 0)).toBe('0 membro');
+    expect(get(tn)('common.members', 1)).toBe('1 membro');
+    expect(get(tn)('common.members', 2)).toBe('2 membros');
+    locale.set('en');
+    expect(get(tn)('common.members', 0)).toBe('0 members');
+  });
+
+  it('falls back to "other" for the "many" category Portuguese defines for large round numbers', () => {
+    locale.set('pt-BR');
+    expect(new Intl.PluralRules('pt-BR').select(1_000_000)).toBe('many');
+    expect(get(tn)('common.members', 1_000_000)).toBe('1000000 membros');
+  });
+
+  it('formats dates and decimals for Brazil', () => {
+    expect(new Date('2026-03-04T12:00:00Z').toLocaleDateString('pt-BR', { timeZone: 'UTC' })).toBe('04/03/2026');
+    expect(new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(6.5)).toBe('6,5');
+  });
+});
+
