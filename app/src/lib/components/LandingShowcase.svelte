@@ -69,7 +69,7 @@
   // ---- scenes 1-5: demo state. Each scene mirrors a real screen (see the header note); the flags below are
   // the little bit of "someone is using it" that plays when the scene appears. ----
   const SETTINGS_TABS = ['Appearance', 'Accessibility', 'Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Git', 'Webhooks'];
-  const PROJECT_TABS = ['Project', 'Components', 'Versions', 'Git'];
+  const PROJECT_TABS = ['Project', 'Git'];
   // Scene 1: IssueDrawer
   let agentAttached = false;
   let agentRunning = false;
