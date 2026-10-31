@@ -20,6 +20,7 @@ import {
 } from './container';
 import { getEventById, getEventsSince } from './eventLog';
 import { toWebhookPublic } from './db/mappers';
+import { registerFeatureGates } from './features';
 import { agentsRouter } from './routes/agents';
 import { automationsRouter } from './routes/automations';
 import { catalogRouter } from './routes/catalog';
@@ -61,6 +62,7 @@ app.route('/api', publicAuthRouter); // signup, login — public, no token requi
 app.route('/api', gitConnectionsCallbackRouter); // GitHub redirects the browser here — authorized by its signed `state`, not a bearer token
 
 app.use('/api/*', requireAuth); // everything below this line requires a valid bearer token
+registerFeatureGates(app); // switched-off modules answer 403 — see features.ts
 
 app.route('/api', meRouter); // /api/auth/me
 
@@ -81,13 +83,13 @@ app.get('/api/bootstrap', async (c) => {
   const [
     workspace, users, workspaceMembers, agents, agentRuns, statusCategories, workflow,
     labels, fieldDefinitions, automationRules, webhookSubscriptions,
-    components, versions, issueTypes, sprints, board, savedViews,
+    issueTypes, sprints, board, savedViews,
     issues, issueLinks, comments, worklogs, attachments,
   ] = await Promise.all([
     workspaceRepo.getWorkspace(), userRepo.list(), workspaceRepo.listMembers(), agentRepo.list(), agentRunRepo.list(),
     workflowRepo.listStatusCategories(), workflowRepo.getWorkflow(),
     catalogRepo.listLabels(), catalogRepo.listFieldDefinitions(), automationRepo.list(), webhookRepo.list(),
-    catalogRepo.listComponents(activeProject.id), catalogRepo.listVersions(activeProject.id), catalogRepo.listIssueTypes(),
+    catalogRepo.listIssueTypes(),
     planningRepo.listSprints(activeProject.id), planningRepo.getBoard(activeProject.id), planningRepo.listSavedViews(),
     issueRepo.list(activeProject.id), issueRepo.listLinks(activeProject.id), issueRepo.listComments(activeProject.id),
     issueRepo.listWorklogs(activeProject.id), issueRepo.listAttachments(activeProject.id),
@@ -96,7 +98,7 @@ app.get('/api/bootstrap', async (c) => {
     workspace, users, workspaceMembers, agents, agentRuns, statusCategories, workflow,
     labels, fieldDefinitions, automationRules, webhookSubscriptions: webhookSubscriptions.map(toWebhookPublic),
     projects, currentProjectId: activeProject.id,
-    components, versions, issueTypes, sprints, board, savedViews,
+    issueTypes, sprints, board, savedViews,
     issues, issueLinks, comments, worklogs, attachments,
   });
 });

@@ -1,4 +1,4 @@
-import type { ComponentId, ProjectId, UserId, VersionId, WorkflowId, WorkspaceId } from './ids';
+import type { ProjectId, UserId, WorkflowId, WorkspaceId } from './ids';
 
 /**
  * Fixed palette every project's color is drawn from — assigned automatically at creation
@@ -29,7 +29,6 @@ export interface ProjectFeatureFlags {
   dueDates: boolean;
   timeTracking: boolean;
   priority: boolean;
-  componentsAndVersions: boolean;
   sprints: boolean;
   labels: boolean;
 }
@@ -40,7 +39,6 @@ export const DEFAULT_FEATURE_FLAGS: ProjectFeatureFlags = {
   dueDates: true,
   timeTracking: true,
   priority: true,
-  componentsAndVersions: true,
   sprints: true,
   labels: true,
 };
@@ -63,28 +61,3 @@ export interface Project {
   createdAt: string;
 }
 
-/** A sub-team ownership grouping within a project (e.g. "Checkout", "Infra"). */
-export interface Component {
-  id: ComponentId;
-  projectId: ProjectId;
-  name: string;
-  description?: string;
-  leadId?: UserId;
-}
-
-/** A release/fix-version an issue can be targeted at. */
-export interface ProjectVersion {
-  id: VersionId;
-  projectId: ProjectId;
-  /** e.g. "v3.4.0". */
-  name: string;
-  description?: string;
-  /** Planned ship date. */
-  releaseDate?: string;
-  /**
-   * Set once actually shipped — kept distinct from {@link releaseDate} so a slipped
-   * version still shows its original plan alongside what really happened, in reports.
-   */
-  releasedAt?: string;
-  archivedAt?: string;
-}

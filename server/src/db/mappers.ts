@@ -6,7 +6,6 @@ import type {
   Board,
   Branch,
   Comment,
-  Component,
   EventType,
   FieldDefinition,
   GitRepoLink,
@@ -17,7 +16,6 @@ import type {
   Notification,
   NotificationKind,
   Project,
-  ProjectVersion,
   SavedView,
   Sprint,
   StatusCategory,
@@ -32,9 +30,10 @@ import type {
   Worklog,
   Workspace,
   WorkspaceInvite,
+  WorkspaceFeatureFlags,
   WorkspaceMember,
 } from '../domain';
-import { DEFAULT_FEATURE_FLAGS } from '../domain';
+import { DEFAULT_FEATURE_FLAGS, DEFAULT_WORKSPACE_FEATURE_FLAGS } from '../domain';
 
 const j = (v: unknown) => JSON.stringify(v ?? null);
 const parse = <T>(v: unknown, fallback: T): T => (v === null || v === undefined || v === '' ? fallback : (JSON.parse(v as string) as T));
@@ -42,7 +41,14 @@ const bool = (v: unknown): boolean => v === 1 || v === true;
 const nullish = (v: unknown): string | undefined => (v === null || v === undefined ? undefined : (v as string));
 
 export function rowToWorkspace(r: Record<string, unknown>): Workspace {
-  return { id: r.id as string, name: r.name as string, slug: r.slug as string, createdAt: r.created_at as string };
+  return {
+    id: r.id as string,
+    name: r.name as string,
+    slug: r.slug as string,
+    createdAt: r.created_at as string,
+    // Merged over the defaults so a flag added later reads as "on" for workspaces saved before it existed.
+    featureFlags: { ...DEFAULT_WORKSPACE_FEATURE_FLAGS, ...parse<Partial<WorkspaceFeatureFlags>>(r.feature_flags, {}) },
+  };
 }
 
 export function rowToProject(r: Record<string, unknown>): Project {
@@ -174,22 +180,6 @@ export function assembleWorkflow(workflowRow: Record<string, unknown>, statuses:
   return { id: workflowRow.id as string, name: workflowRow.name as string, initialStatusId: workflowRow.initial_status_id as string, statuses, transitions };
 }
 
-export function rowToComponent(r: Record<string, unknown>): Component {
-  return { id: r.id as string, projectId: r.project_id as string, name: r.name as string, description: nullish(r.description), leadId: nullish(r.lead_id) };
-}
-
-export function rowToVersion(r: Record<string, unknown>): ProjectVersion {
-  return {
-    id: r.id as string,
-    projectId: r.project_id as string,
-    name: r.name as string,
-    description: nullish(r.description),
-    releaseDate: nullish(r.release_date),
-    releasedAt: nullish(r.released_at),
-    archivedAt: nullish(r.archived_at),
-  };
-}
-
 export function rowToIssueType(r: Record<string, unknown>): IssueType {
   return {
     id: r.id as string,
@@ -304,8 +294,6 @@ export function rowToIssue(r: Record<string, unknown>): Issue {
     parentId: nullish(r.parent_id),
     additionalParentIds: parse(r.additional_parent_ids, undefined),
     labelIds: parse(r.label_ids, []),
-    componentIds: parse(r.component_ids, []),
-    fixVersionIds: parse(r.fix_version_ids, []),
     sprintId: nullish(r.sprint_id),
     storyPoints: r.story_points === null || r.story_points === undefined ? undefined : (r.story_points as number),
     originalEstimateSeconds: r.original_estimate_seconds === null || r.original_estimate_seconds === undefined ? undefined : (r.original_estimate_seconds as number),
@@ -322,7 +310,7 @@ export function rowToIssue(r: Record<string, unknown>): Issue {
 /** Full column list for `issues`, in the order every INSERT/SELECT below uses. */
 export const ISSUE_COLUMNS = [
   'id', 'key', 'project_id', 'issue_type_id', 'status_id', 'title', 'description', 'priority', 'reporter_id', 'assignee_ids', 'agent_assignments',
-  'parent_id', 'additional_parent_ids', 'label_ids', 'component_ids', 'fix_version_ids', 'sprint_id', 'story_points',
+  'parent_id', 'additional_parent_ids', 'label_ids', 'sprint_id', 'story_points',
   'original_estimate_seconds', 'remaining_estimate_seconds', 'logged_seconds', 'field_values', 'due_date', 'created_at', 'updated_at', 'resolved_at',
 ] as const;
 
@@ -342,8 +330,6 @@ export function issueParams(issue: Issue): unknown[] {
     issue.parentId ?? null,
     j(issue.additionalParentIds ?? null),
     j(issue.labelIds),
-    j(issue.componentIds),
-    j(issue.fixVersionIds),
     issue.sprintId ?? null,
     issue.storyPoints ?? null,
     issue.originalEstimateSeconds ?? null,

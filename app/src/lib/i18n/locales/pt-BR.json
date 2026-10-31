@@ -162,7 +162,8 @@
       "agents": "Agentes",
       "git": "Git",
       "webhooks": "Webhooks",
-      "accessibility": "Acessibilidade"
+      "accessibility": "Acessibilidade",
+      "features": "Recursos"
     },
     "appearance": {
       "themeLabel": "Tema",
@@ -502,6 +503,31 @@
     "recentActivity": "Atividade recente",
     "totalTokensTitle": "Total de tokens usados em todas as execuções",
     "aiBadge": "IA"
+  },
+  "featuresSettings": {
+    "hint": "Desative os módulos opcionais que seu espaço de trabalho não usa. Um módulo desativado fica oculto em todo lugar e para de funcionar: os agentes não executam e as automações e os webhooks não disparam. Nada é excluído, então ao reativá-lo tudo volta.",
+    "failed": "Não foi possível atualizar o recurso",
+    "coreNote": "Quadros, backlog, tarefas e comentários estão sempre ativos.",
+    "agents": {
+      "label": "Agentes de IA",
+      "description": "Agentes que podem ser anexados a tarefas para comentar, mudar o status e mais."
+    },
+    "automations": {
+      "label": "Automações",
+      "description": "Regras que reagem a eventos e alteram as tarefas automaticamente."
+    },
+    "webhooks": {
+      "label": "Webhooks",
+      "description": "Envie eventos do espaço de trabalho para outros serviços."
+    },
+    "insights": {
+      "label": "Insights",
+      "description": "Os gráficos de tempo gasto e o ranking das tarefas mais ativas."
+    },
+    "git": {
+      "label": "GitHub e git",
+      "description": "Conecte o GitHub, vincule um repositório a um projeto e crie branches a partir das tarefas."
+    }
   },
   "agentOverview": {
     "capabilitiesLabel": "Capacidades",

@@ -15,7 +15,6 @@
     agents,
     assignAgent,
     comments,
-    components,
     featureFlags,
     fieldDefinitions,
     gitRepoLink,
@@ -34,6 +33,7 @@
     updateIssue,
     users,
     workflow,
+    workspaceFeatures,
   } from '../stores/workspace';
   import { createBranch as apiCreateBranch, deleteBranch as apiDeleteBranch, fetchEventDetail, fetchIssueEvents, getBranch, triggerAgent, type ActivityEventSummary } from '../api';
   import { describeEvent, describeEventType, displayName, formatHours, formatRelativeDate, legalTargetStatusIds, priorityIcon, renderMarkdown, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
@@ -295,7 +295,7 @@
 
   // Reloads the issue's branch whenever the drawer switches to a different issue — there's no
   // global branches store (see gitRepoLink's doc comment), so this is fetched per issue-open.
-  $: if (issue && issue.id !== branchLoadedForIssueId) {
+  $: if ($workspaceFeatures.git && issue && issue.id !== branchLoadedForIssueId) {
     branchLoadedForIssueId = issue.id;
     branch = null;
     showBranchForm = false;
@@ -568,6 +568,7 @@
         <p class="points-warning"><Icon name="clock" size={13} />{pointsDueDateWarning}</p>
       {/if}
 
+      {#if $workspaceFeatures.agents}
       <div class="section agents-section" use:closeOnClickOutside={closeAgentPickerOutside}>
         <div class="section-label">{$t('issueDrawer.aiAgentsLabel')}</div>
         {#if attachedAgents.length === 0}
@@ -625,8 +626,9 @@
           </div>
         {/if}
       </BottomSheet>
+      {/if}
 
-      {#if $gitRepoLink}
+      {#if $gitRepoLink && $workspaceFeatures.git}
         <div class="section">
           <div class="section-label">{$t('issueDrawer.branchLabel')}</div>
           {#if branch}

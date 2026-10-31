@@ -1,23 +1,20 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { components as componentsStore, currentProject, currentProjectId, currentView, featureFlags, gitRepoLink, settingsJumpTab, versions, linkGitRepo, unlinkGitRepo, setFeatureFlag, updateCurrentProject } from '../stores/workspace';
+  import { currentProject, currentProjectId, currentView, featureFlags, gitRepoLink, settingsJumpTab, workspaceFeatures, linkGitRepo, unlinkGitRepo, setFeatureFlag, updateCurrentProject } from '../stores/workspace';
   import * as api from '../api';
   import { PROJECT_COLORS, type GitRepoSummary, type ProjectFeatureFlags } from '$domain';
   import { t } from '../i18n';
 
-  const allTabs = ['Project', 'Components', 'Versions', 'Git'] as const;
+  const allTabs = ['Project', 'Git'] as const;
   const TAB_LABEL_KEYS: Record<(typeof allTabs)[number], string> = {
     Project: 'projectSettings.tabs.project',
-    Components: 'projectSettings.tabs.components',
-    Versions: 'projectSettings.tabs.versions',
     Git: 'projectSettings.tabs.git',
   };
-  $: tabs = $featureFlags.componentsAndVersions ? allTabs : (allTabs.filter((t) => t !== 'Components' && t !== 'Versions') as unknown as typeof allTabs);
+  // The Git tab disappears when an owner/admin switches the git module off.
+  $: tabs = allTabs.filter((tab) => tab !== 'Git' || $workspaceFeatures.git);
   let activeTab: (typeof allTabs)[number] = 'Project';
-  // If Components/Versions get turned off while one of those tabs is active, fall back to Project.
   $: if (!tabs.includes(activeTab)) activeTab = 'Project';
-
-  // Lets the TopBar "New…" menu open this view already on the relevant tab (e.g. "New Component").
+  // Lets other screens open this view already on the relevant tab.
   // Reactive, not a one-time check: this component stays mounted across jumps whenever the
   // view is already 'projectSettings' (no {#key} in App.svelte), so a plain top-level `if`
   // would only ever fire once, at first mount.
@@ -32,7 +29,6 @@
     dueDates: 'projectSettings.features.dueDates',
     timeTracking: 'projectSettings.features.timeTracking',
     priority: 'projectSettings.features.priority',
-    componentsAndVersions: 'projectSettings.features.componentsAndVersions',
     sprints: 'projectSettings.features.sprints',
     labels: 'projectSettings.features.labels',
   };
@@ -59,48 +55,18 @@
     await updateCurrentProject({ color });
   }
 
-  // ---- Components ----
-  let newComponentName = '';
-  async function addComponent() {
-    if (!newComponentName.trim() || !$currentProjectId) return;
-    const component = await api.createComponent($currentProjectId, newComponentName.trim());
-    componentsStore.update((l) => [...l, component]);
-    newComponentName = '';
-  }
-  async function removeComponent(id: string) {
-    await api.deleteComponent(id);
-    componentsStore.update((l) => l.filter((x) => x.id !== id));
-  }
-
-  // ---- Versions ----
-  let newVersionName = '';
-  async function addVersion() {
-    if (!newVersionName.trim() || !$currentProjectId) return;
-    const version = await api.createVersion($currentProjectId, newVersionName.trim());
-    versions.update((l) => [...l, version]);
-    newVersionName = '';
-  }
-  async function releaseVersion(id: string) {
-    const version = await api.releaseVersion(id);
-    versions.update((l) => l.map((v) => (v.id === id ? version : v)));
-  }
-  async function removeVersion(id: string) {
-    await api.deleteVersion(id);
-    versions.update((l) => l.filter((x) => x.id !== id));
-  }
-
   // ---- Git ----
   // No provider ships built-in — see server/src/services/GitProvider.ts. The link form below
   // only renders once availableGitProviders confirms at least one is actually registered on
   // the server, instead of always showing a form that would 400 no matter what's typed into it.
   let availableGitProviders: string[] = [];
-  api.listGitProviders().then((p) => (availableGitProviders = p));
+  if ($workspaceFeatures.git) api.listGitProviders().then((p) => (availableGitProviders = p)).catch(() => {});
 
   let linkRepoError = '';
   // Linking verifies access with *your* connected account (Settings → Git), so say so up front
   // instead of letting the first submit 400. Only 'github' has a connection to check; 'local' needs none.
   let connections: { provider: string; accountLogin?: string }[] = [];
-  api.listGitConnections().then((r) => (connections = r.connections)).catch(() => {});
+  if ($workspaceFeatures.git) api.listGitConnections().then((r) => (connections = r.connections)).catch(() => {});
   $: myConnection = connections.find((c) => c.provider === newRepoProvider);
   // Repo picker: once the caller's own account is connected, list the repos it can reach so they
   // choose one instead of typing owner/repo/branch. Falls back to the manual fields if the list fails or is empty.
@@ -215,31 +181,6 @@
 
         <button type="button" class="text-btn danger" on:click={archiveProject}>{$t('projectSettings.archiveButton')}</button>
       {/if}
-    {:else if activeTab === 'Components'}
-      <div class="list">
-        {#each $componentsStore as c (c.id)}
-          <div class="row"><span class="row-name">{c.name}</span><button class="icon-btn" aria-label={$t('common.deleteNamed', { name: c.name })} on:click={() => removeComponent(c.id)}><Icon name="trash" size={13} /></button></div>
-        {/each}
-      </div>
-      <form class="add-form" on:submit|preventDefault={addComponent}>
-        <input type="text" placeholder={$t('projectSettings.componentNamePlaceholder')} bind:value={newComponentName} />
-        <button type="submit">{$t('projectSettings.addComponentButton')}</button>
-      </form>
-    {:else if activeTab === 'Versions'}
-      <div class="list">
-        {#each $versions as v (v.id)}
-          <div class="row">
-            <span class="row-name">{v.name}</span>
-            <span class="row-tag" class:released={!!v.releasedAt}>{v.releasedAt ? $t('projectSettings.released') : $t('projectSettings.unreleased')}</span>
-            {#if !v.releasedAt}<button class="text-btn" on:click={() => releaseVersion(v.id)}>{$t('projectSettings.releaseButton')}</button>{/if}
-            <button class="icon-btn" aria-label={$t('common.deleteNamed', { name: v.name })} on:click={() => removeVersion(v.id)}><Icon name="trash" size={13} /></button>
-          </div>
-        {/each}
-      </div>
-      <form class="add-form" on:submit|preventDefault={addVersion}>
-        <input type="text" placeholder={$t('projectSettings.versionNamePlaceholder')} bind:value={newVersionName} />
-        <button type="submit">{$t('projectSettings.addVersionButton')}</button>
-      </form>
     {:else if activeTab === 'Git'}
       <p class="section-hint">{$t('projectSettings.gitHint')}</p>
       {#if $gitRepoLink}
@@ -326,11 +267,9 @@
     font: inherit; font-size: 12.5px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border);
     border-radius: 7px; padding: 6px 10px; max-width: 320px; width: 100%;
   }
-  .list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
   .row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; font-size: 12.5px; }
   .row-name { color: var(--text); font-weight: 500; }
   .row-tag { color: var(--text-3); font-size: 11.5px; flex: 1; }
-  .row-tag.released { color: var(--success); }
   .icon-btn { color: var(--text-3); padding: 4px; border-radius: 6px; margin-left: auto; }
   .icon-btn:hover { background: var(--surface); color: var(--critical); }
   .text-btn { font-size: 12px; font-weight: 600; color: var(--accent-strong); }

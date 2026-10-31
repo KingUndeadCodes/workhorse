@@ -3,7 +3,7 @@
   import Icon from './Icon.svelte';
   import Avatar from './Avatar.svelte';
   import BottomSheet from './BottomSheet.svelte';
-  import { draggedIssueId, issueTypes, users, labels, featureFlags, workflow } from '../stores/workspace';
+  import { draggedIssueId, issueTypes, users, labels, featureFlags, workflow, workspaceFeatures } from '../stores/workspace';
   import { displayName, legalColumnTarget, priorityIcon, storyPointColor, typeIcon } from '../util';
   import { t } from '../i18n';
 
@@ -49,7 +49,7 @@
 
   $: issueType = $issueTypes.find((t) => t.id === issue.issueTypeId);
   $: assignees = issue.assigneeIds.map((id) => $users.find((u) => u.id === id)).filter((u): u is (typeof $users)[number] => !!u);
-  $: attachedAgents = (issue.agentAssignments ?? [])
+  $: attachedAgents = ($workspaceFeatures.agents ? (issue.agentAssignments ?? []) : [])
     .map((id) => $users.find((u) => u.id === id))
     .filter((u): u is (typeof $users)[number] => !!u);
   // Due dates have no time of day, so "due" means by the end of that day — gives real

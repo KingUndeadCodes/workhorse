@@ -10,7 +10,6 @@ import type {
   AutomationRule,
   Board,
   Comment,
-  Component,
   Branch,
   EventEnvelope,
   EventType,
@@ -26,7 +25,6 @@ import type {
   Label,
   Notification,
   Project,
-  ProjectVersion,
   SavedView,
   Sprint,
   StatusCategory,
@@ -39,6 +37,7 @@ import type {
   WorkflowTransition,
   Worklog,
   Workspace,
+  WorkspaceFeatureFlags,
   WorkspaceInvite,
   WorkspaceMember,
   WorkspaceRole,
@@ -61,8 +60,6 @@ export interface Bootstrap {
   workflow: Workflow;
   projects: Project[];
   currentProjectId: string;
-  components: Component[];
-  versions: ProjectVersion[];
   issueTypes: IssueType[];
   labels: Label[];
   fieldDefinitions: FieldDefinition[];
@@ -249,30 +246,13 @@ export function removeAttachment(attachmentId: string): Promise<{ ok: true }> {
   return del(`/attachments/${attachmentId}`);
 }
 
-// ---- Catalog: labels, components, versions, fields ----------------------------
+// ---- Catalog: labels, fields ----------------------------
 
 export function createLabel(name: string, color?: string): Promise<Label> {
   return post('/labels', { name, color });
 }
 export function deleteLabel(id: string): Promise<{ ok: true }> {
   return del(`/labels/${id}`);
-}
-
-export function createComponent(projectId: string, name: string, description?: string): Promise<Component> {
-  return post('/components', { projectId, name, description });
-}
-export function deleteComponent(id: string): Promise<{ ok: true }> {
-  return del(`/components/${id}`);
-}
-
-export function createVersion(projectId: string, name: string, description?: string, releaseDate?: string): Promise<ProjectVersion> {
-  return post('/versions', { projectId, name, description, releaseDate });
-}
-export function releaseVersion(id: string): Promise<ProjectVersion> {
-  return post(`/versions/${id}/release`, {});
-}
-export function deleteVersion(id: string): Promise<{ ok: true }> {
-  return del(`/versions/${id}`);
 }
 
 export function createField(field: Omit<FieldDefinition, 'id' | 'workspaceId'>): Promise<FieldDefinition> {
@@ -478,6 +458,9 @@ export function deleteBranch(issueId: string): Promise<{ ok: true }> {
 
 export function listWorkspaceMembers(): Promise<WorkspaceMember[]> {
   return get('/workspace-members');
+}
+export function updateWorkspaceFeatures(changes: Partial<WorkspaceFeatureFlags>): Promise<Workspace> {
+  return patch('/workspace/features', changes);
 }
 export function updateWorkspaceMemberRole(userId: string, role: WorkspaceRole): Promise<WorkspaceMember> {
   return patch(`/workspace-members/${userId}`, { role });

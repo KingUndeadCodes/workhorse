@@ -46,8 +46,6 @@ describe('PATCH /api/issues/:id validates what it is given', () => {
     ['an unknown assignee', { assigneeIds: ['u_ghost'] }, /Unknown assignee/],
     ['an unknown label', { labelIds: ['lbl_ghost'] }, /Unknown label/],
     ['labels of the wrong type', { labelIds: [1, 2] }, /labelIds must be an array/],
-    ['an unknown component', { componentIds: ['c_ghost'] }, /Unknown component/],
-    ['an unknown version', { fixVersionIds: ['v_ghost'] }, /Unknown version/],
     ['an unknown sprint', { sprintId: 'sprint_ghost' }, /sprintId/],
     ['an empty title', { title: '   ' }, /title/],
     ['a numeric title', { title: 123 }, /title/],

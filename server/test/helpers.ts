@@ -91,8 +91,6 @@ export async function seedIssue(issueRepo: IssueRepository, overrides: Partial<I
     priority: 'medium',
     assigneeIds: [],
     labelIds: [],
-    componentIds: [],
-    fixVersionIds: [],
     loggedSeconds: 0,
     fieldValues: [],
     createdAt: now,

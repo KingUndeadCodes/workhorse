@@ -320,7 +320,7 @@ attachments, and git-branch creation — arguably a candidate for splitting give
 relative to every other router.
 
 **Issue edits are validated and workflow-gated** (`routes/issues.ts`). Create and edit check field types
-and that every reference exists (status, assignees, labels, components, versions, sprint of the same
+and that every reference exists (status, assignees, labels, sprint of the same
 project, parent, due-date format, non-negative estimates) before anything is written. A status change must
 also be a *legal move*: a workflow transition from the issue's current status (or from `'*'`, "anywhere")
 to the target must exist, and that transition's `requiredFieldIds` must be filled in

@@ -69,7 +69,7 @@ async function validateIssueFields(body: Record<string, unknown>, projectId: str
   for (const field of ['originalEstimateSeconds', 'remainingEstimateSeconds'] as const) {
     if (field in body && !isNonNegativeNumber(body[field])) return `${field} must be a non-negative number`;
   }
-  for (const field of ['assigneeIds', 'labelIds', 'componentIds', 'fixVersionIds'] as const) {
+  for (const field of ['assigneeIds', 'labelIds'] as const) {
     if (field in body && body[field] != null && !isStringArray(body[field])) return `${field} must be an array of ids`;
   }
 
@@ -86,16 +86,6 @@ async function validateIssueFields(body: Record<string, unknown>, projectId: str
     const known = new Set((await catalogRepo.listLabels()).map((l) => l.id));
     const missing = body.labelIds.find((id) => !known.has(id));
     if (missing) return `Unknown label "${missing}"`;
-  }
-  if (isStringArray(body.componentIds) && body.componentIds.length > 0) {
-    const known = new Set((await catalogRepo.listComponents(projectId)).map((x) => x.id));
-    const missing = body.componentIds.find((id) => !known.has(id));
-    if (missing) return `Unknown component "${missing}" for this project`;
-  }
-  if (isStringArray(body.fixVersionIds) && body.fixVersionIds.length > 0) {
-    const known = new Set((await catalogRepo.listVersions(projectId)).map((x) => x.id));
-    const missing = body.fixVersionIds.find((id) => !known.has(id));
-    if (missing) return `Unknown version "${missing}" for this project`;
   }
   if ('sprintId' in body && body.sprintId != null) {
     const sprint = typeof body.sprintId === 'string' ? await planningRepo.getSprint(body.sprintId) : undefined;
@@ -166,8 +156,6 @@ issuesRouter.post('/issues', async (c) => {
     assigneeIds: (body.assigneeIds as string[]) ?? [],
     parentId: body.parentId as string | undefined,
     labelIds: (body.labelIds as string[]) ?? [],
-    componentIds: (body.componentIds as string[]) ?? [],
-    fixVersionIds: (body.fixVersionIds as string[]) ?? [],
     sprintId: body.sprintId as string | undefined,
     storyPoints: body.storyPoints as number | undefined,
     dueDate: body.dueDate as string | undefined,
@@ -187,7 +175,7 @@ issuesRouter.post('/issues', async (c) => {
  * see EventEngine.classifyStatusTransition), `assigneeIds` -> `issue.assigneesChanged`,
  * `sprintId` -> `issue.sprintChanged`, `priority` -> `issue.priorityChanged`, `labelIds` ->
  * `issue.labelsChanged`, `dueDate` -> `issue.dueDateChanged`, everything else (title,
- * description, components, fix versions, points, estimates) -> a single `issue.updated` with a
+ * description, points, estimates) -> a single `issue.updated` with a
  * `changes` map — those stay lumped together since nothing has needed to filter on them
  * individually yet; pull one out the same way priority/labels/dueDate were if that changes.
  * Custom field values are handled by PATCH /api/issues/:id/fields/:fieldId instead.
@@ -260,7 +248,7 @@ issuesRouter.patch('/issues/:id', async (c) => {
     });
   }
 
-  const genericFields = ['title', 'description', 'componentIds', 'fixVersionIds', 'storyPoints', 'originalEstimateSeconds', 'remainingEstimateSeconds'] as const;
+  const genericFields = ['title', 'description', 'storyPoints', 'originalEstimateSeconds', 'remainingEstimateSeconds'] as const;
   const changes: Record<string, unknown> = {};
   for (const field of genericFields) {
     if (!(field in body)) continue;

@@ -156,7 +156,8 @@
       "agents": "代理",
       "git": "Git",
       "webhooks": "Webhook",
-      "accessibility": "辅助功能"
+      "accessibility": "辅助功能",
+      "features": "功能"
     },
     "appearance": {
       "themeLabel": "主题",
@@ -491,6 +492,31 @@
     "recentActivity": "最近活动",
     "totalTokensTitle": "所有运行累计使用的 token 数",
     "aiBadge": "AI"
+  },
+  "featuresSettings": {
+    "hint": "关闭你的工作区不使用的可选模块。关闭的模块会在所有地方隐藏并停止工作——代理不会运行，自动化和 Webhook 不会触发。不会删除任何内容，重新开启后一切都会恢复。",
+    "failed": "无法更新该功能",
+    "coreNote": "看板、待办列表、事项和评论始终开启。",
+    "agents": {
+      "label": "AI 代理",
+      "description": "可添加到工单上的代理，可发表评论、更改状态等。"
+    },
+    "automations": {
+      "label": "自动化",
+      "description": "响应事件并自动修改工单的规则。"
+    },
+    "webhooks": {
+      "label": "Webhook",
+      "description": "将工作区事件发送到其他服务。"
+    },
+    "insights": {
+      "label": "洞察",
+      "description": "耗时图表和最活跃工单排行。"
+    },
+    "git": {
+      "label": "GitHub 与 git",
+      "description": "连接 GitHub、将仓库关联到项目，并从工单创建分支。"
+    }
   },
   "agentOverview": {
     "capabilitiesLabel": "能力",

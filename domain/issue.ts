@@ -1,6 +1,5 @@
 import type { FieldValue } from './field';
 import type {
-  ComponentId,
   IssueId,
   IssueTypeId,
   LabelId,
@@ -9,7 +8,6 @@ import type {
   SprintId,
   StatusId,
   UserId,
-  VersionId,
   WorkflowId,
 } from './ids';
 
@@ -96,8 +94,6 @@ export interface Issue {
   additionalParentIds?: IssueId[];
 
   labelIds: LabelId[];
-  componentIds: ComponentId[];
-  fixVersionIds: VersionId[];
   sprintId?: SprintId;
 
   /** Must be one of {@link STORY_POINT_VALUES} — enforced wherever this is written, not just presented as options in the UI. `null` clears it on write; reads always normalize to `undefined`. */

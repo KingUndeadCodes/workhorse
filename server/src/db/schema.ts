@@ -29,6 +29,7 @@ export function migrateStateDb(): void {
   // ambiguous. Safe/idempotent against the single pre-existing seeded project.
   run(stateDb, `CREATE UNIQUE INDEX IF NOT EXISTS idx_project_key ON project(key)`);
   // Next number for `${key}-${n}` issue keys — see ProjectRepository.allocateIssueKey.
+  addColumnIfMissing('workspace', 'feature_flags', 'TEXT');
   addColumnIfMissing('project', 'next_issue_number', 'INTEGER');
   addColumnIfMissing('project', 'color', 'TEXT');
   addColumnIfMissing('project', 'feature_flags', 'TEXT');
@@ -83,11 +84,6 @@ export function migrateStateDb(): void {
     stateDb,
     `CREATE TABLE IF NOT EXISTS workflow_transitions (id TEXT PRIMARY KEY, workflow_id TEXT, name TEXT, from_status_id TEXT, to_status_id TEXT, required_field_ids TEXT)`,
   );
-  run(stateDb, `CREATE TABLE IF NOT EXISTS components (id TEXT PRIMARY KEY, project_id TEXT, name TEXT, description TEXT, lead_id TEXT)`);
-  run(
-    stateDb,
-    `CREATE TABLE IF NOT EXISTS versions (id TEXT PRIMARY KEY, project_id TEXT, name TEXT, description TEXT, release_date TEXT, released_at TEXT, archived_at TEXT)`,
-  );
   run(
     stateDb,
     `CREATE TABLE IF NOT EXISTS issue_types (id TEXT PRIMARY KEY, project_id TEXT, name TEXT, icon TEXT, color TEXT, workflow_id TEXT, is_subtask_type INTEGER)`,
@@ -118,7 +114,7 @@ export function migrateStateDb(): void {
     `CREATE TABLE IF NOT EXISTS issues (
       id TEXT PRIMARY KEY, key TEXT, project_id TEXT, issue_type_id TEXT, status_id TEXT, title TEXT, description TEXT,
       priority TEXT, reporter_id TEXT, parent_id TEXT, additional_parent_ids TEXT,
-      label_ids TEXT, component_ids TEXT, fix_version_ids TEXT, sprint_id TEXT, story_points REAL,
+      label_ids TEXT, sprint_id TEXT, story_points REAL,
       original_estimate_seconds INTEGER, remaining_estimate_seconds INTEGER, logged_seconds INTEGER,
       field_values TEXT, due_date TEXT, created_at TEXT, updated_at TEXT, resolved_at TEXT
     )`,

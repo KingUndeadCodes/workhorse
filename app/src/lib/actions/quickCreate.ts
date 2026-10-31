@@ -2,9 +2,9 @@ import { currentView, selectedIssueId, settingsJumpTab } from '../stores/workspa
 
 /**
  * TopBar.svelte's "+" dropdown and MobileNav.svelte's "New" tab both offer the same handful of
- * quick-create shortcuts (New Sprint/Label/Component/Version) — New Issue opens NewIssueModal
+ * quick-create shortcuts (New Sprint/Label) — New Issue opens NewIssueModal
  * directly in both, but these others just jump to a create form that already lives elsewhere
- * (Backlog for sprints, Settings/ProjectSettings for catalog items), so there's no dedicated
+ * (Backlog for sprints, Settings for labels), so there's no dedicated
  * store or modal for them. Shared here so the two nav surfaces can't drift apart on where each
  * shortcut actually goes.
  */
@@ -15,8 +15,8 @@ export function goToNewSprint(): void {
   selectedIssueId.set(null);
 }
 
-/** Jumps to the settings screen that owns a catalog item's create form, pre-selecting its tab via `settingsJumpTab`. Components/Versions live in project settings; Labels stays in workspace settings. */
-export function goToNewCatalogItem(tab: 'Labels' | 'Components' | 'Versions'): void {
-  settingsJumpTab.set(tab);
-  currentView.set(tab === 'Components' || tab === 'Versions' ? 'projectSettings' : 'settings');
+/** Jumps to workspace settings' Labels tab, where the create-label form lives, via `settingsJumpTab`. */
+export function goToNewLabel(): void {
+  settingsJumpTab.set('Labels');
+  currentView.set('settings');
 }

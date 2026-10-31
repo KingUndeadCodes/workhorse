@@ -2,7 +2,7 @@ import type { Kysely } from 'kysely';
 import type { DB } from '../db/types';
 import { persistState } from '../db/core';
 import { rowToWorkspace, rowToWorkspaceInvite, rowToWorkspaceMember } from '../db/mappers';
-import type { Workspace, WorkspaceInvite, WorkspaceMember, WorkspaceRole } from '../domain';
+import type { Workspace, WorkspaceFeatureFlags, WorkspaceInvite, WorkspaceMember, WorkspaceRole } from '../domain';
 
 /** Reads/writes for the single workspace this prototype serves, plus workspace membership/roles. Project CRUD lives in {@link ProjectRepository} — a workspace can hold many projects. */
 export class WorkspaceRepository {
@@ -10,6 +10,12 @@ export class WorkspaceRepository {
 
   async getWorkspace(): Promise<Workspace> {
     return rowToWorkspace((await this.db.selectFrom('workspace').selectAll().executeTakeFirst())!);
+  }
+
+  async setFeatureFlags(flags: WorkspaceFeatureFlags): Promise<Workspace> {
+    await this.db.updateTable('workspace').set({ feature_flags: JSON.stringify(flags) }).execute();
+    persistState();
+    return this.getWorkspace();
   }
 
   async listMembers(): Promise<WorkspaceMember[]> {

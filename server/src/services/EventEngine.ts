@@ -237,9 +237,11 @@ export class EventEngine {
   /** The entry point every route should use to record something that happened. */
   async emitEvent(entry: { actor: ActorRef; subject: EntityRef; payload: EventPayload }): Promise<EventEnvelope> {
     const event = await this.writeEvent(entry);
-    await this.runAutomations(event);
-    await this.runAgents(event);
-    await this.dispatchWebhooks(event);
+    // A module an owner/admin switched off doesn't react to events at all — see features.ts for the route-level half of this.
+    const { featureFlags } = await this.workspace.getWorkspace();
+    if (featureFlags.automations) await this.runAutomations(event);
+    if (featureFlags.agents) await this.runAgents(event);
+    if (featureFlags.webhooks) await this.dispatchWebhooks(event);
     return event;
   }
 

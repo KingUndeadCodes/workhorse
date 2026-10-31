@@ -2,16 +2,19 @@
   import Icon from './Icon.svelte';
   import WorkflowDiagram from './WorkflowDiagram.svelte';
   import AgentsSettings from './AgentsSettings.svelte';
+  import FeaturesSettings from './FeaturesSettings.svelte';
   import GitConnectionsSettings from './GitConnectionsSettings.svelte';
   import {
     automationRules,
     fieldDefinitions,
+    isWorkspaceAdmin,
     labels,
     settingsJumpTab,
     statusCategories,
     users,
     webhookSubscriptions,
     workflow,
+    workspaceFeatures,
   } from '../stores/workspace';
   import { theme, type Theme } from '../stores/theme';
   import { isMobile } from '../stores/viewport';
@@ -26,8 +29,8 @@
   import { describeAutomationAction, formatRelativeDate, splitHumansAndAgents } from '../util';
   import type { AutomationAction, AutomationCondition, EventType, FilterOp, WebhookDelivery } from '$domain';
 
-  const tabs = ['Appearance', 'Accessibility', 'Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Git', 'Webhooks'] as const;
-  const TAB_LABEL_KEYS: Record<(typeof tabs)[number], string> = {
+  const allTabs = ['Appearance', 'Accessibility', 'Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Git', 'Webhooks', 'Features'] as const;
+  const TAB_LABEL_KEYS: Record<(typeof allTabs)[number], string> = {
     Appearance: 'settings.tabs.appearance',
     Accessibility: 'settings.tabs.accessibility',
     Labels: 'settings.tabs.labels',
@@ -37,15 +40,27 @@
     Agents: 'settings.tabs.agents',
     Git: 'settings.tabs.git',
     Webhooks: 'settings.tabs.webhooks',
+    Features: 'settings.tabs.features',
   };
-  let activeTab: (typeof tabs)[number] = 'Labels';
+  // Tabs for a module an owner/admin switched off disappear; Features itself is admin-only.
+  $: tabs = allTabs.filter(
+    (tab) =>
+      (tab !== 'Automations' || $workspaceFeatures.automations) &&
+      (tab !== 'Agents' || $workspaceFeatures.agents) &&
+      (tab !== 'Git' || $workspaceFeatures.git) &&
+      (tab !== 'Webhooks' || $workspaceFeatures.webhooks) &&
+      (tab !== 'Features' || $isWorkspaceAdmin),
+  );
+  let activeTab: (typeof allTabs)[number] = 'Labels';
+  // If the active tab's module gets switched off (here or elsewhere), fall back to a tab that still exists.
+  $: if (!tabs.includes(activeTab)) activeTab = 'Labels';
 
   // Lets the TopBar "New…" menu open Settings already on the relevant tab (e.g. "New Label").
   // Reactive, not a one-time check: this component stays mounted across jumps whenever the
   // view is already 'settings' (no {#key} in App.svelte), so a plain top-level `if` would only
   // ever fire once, at first mount.
-  $: if ($settingsJumpTab && (tabs as readonly string[]).includes($settingsJumpTab)) {
-    activeTab = $settingsJumpTab as (typeof tabs)[number];
+  $: if ($settingsJumpTab && (allTabs as readonly string[]).includes($settingsJumpTab)) {
+    activeTab = $settingsJumpTab as (typeof allTabs)[number];
     settingsJumpTab.set(null);
   }
 
@@ -471,6 +486,8 @@
       <AgentsSettings />
     {:else if activeTab === 'Git'}
       <GitConnectionsSettings />
+    {:else if activeTab === 'Features'}
+      <FeaturesSettings />
     {:else if activeTab === 'Webhooks'}
       <div class="list">
         {#each $webhookSubscriptions as hook (hook.id)}

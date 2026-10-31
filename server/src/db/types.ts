@@ -10,6 +10,7 @@ export interface DB {
     name: string | null;
     slug: string | null;
     created_at: string | null;
+    feature_flags: string | null;
   };
   project: {
     id: string;
@@ -113,22 +114,6 @@ export interface DB {
     to_status_id: string | null;
     required_field_ids: string | null;
   };
-  components: {
-    id: string;
-    project_id: string | null;
-    name: string | null;
-    description: string | null;
-    lead_id: string | null;
-  };
-  versions: {
-    id: string;
-    project_id: string | null;
-    name: string | null;
-    description: string | null;
-    release_date: string | null;
-    released_at: string | null;
-    archived_at: string | null;
-  };
   issue_types: {
     id: string;
     project_id: string | null;
@@ -214,8 +199,6 @@ export interface DB {
     parent_id: string | null;
     additional_parent_ids: string | null;
     label_ids: string | null;
-    component_ids: string | null;
-    fix_version_ids: string | null;
     sprint_id: string | null;
     story_points: number | null;
     original_estimate_seconds: number | null;

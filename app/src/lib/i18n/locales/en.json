@@ -162,7 +162,8 @@
       "agents": "Agents",
       "git": "Git",
       "webhooks": "Webhooks",
-      "accessibility": "Accessibility"
+      "accessibility": "Accessibility",
+      "features": "Features"
     },
     "appearance": {
       "themeLabel": "Theme",
@@ -502,6 +503,31 @@
     "recentActivity": "Recent activity",
     "totalTokensTitle": "Total tokens used across every run",
     "aiBadge": "AI"
+  },
+  "featuresSettings": {
+    "hint": "Switch off optional modules your workspace doesn't use. A module that's off is hidden everywhere and stops working — agents don't run, automations and webhooks don't fire. Nothing is deleted, so turning it back on restores everything.",
+    "failed": "Could not update the feature",
+    "coreNote": "Boards, the backlog, issues and comments are always on.",
+    "agents": {
+      "label": "AI agents",
+      "description": "Agents that can be attached to tickets to comment, change status and more."
+    },
+    "automations": {
+      "label": "Automations",
+      "description": "Rules that react to events and change tickets automatically."
+    },
+    "webhooks": {
+      "label": "Webhooks",
+      "description": "Send workspace events to other services."
+    },
+    "insights": {
+      "label": "Insights",
+      "description": "The time-spent charts and most-active-ticket rankings."
+    },
+    "git": {
+      "label": "GitHub & git",
+      "description": "Connect GitHub, link a repository to a project, and create branches from tickets."
+    }
   },
   "agentOverview": {
     "capabilitiesLabel": "Capabilities",

@@ -144,8 +144,6 @@ export class IssueRepository {
         parent_id: issue.parentId ?? null,
         additional_parent_ids: JSON.stringify(issue.additionalParentIds ?? null),
         label_ids: JSON.stringify(issue.labelIds),
-        component_ids: JSON.stringify(issue.componentIds),
-        fix_version_ids: JSON.stringify(issue.fixVersionIds),
         sprint_id: issue.sprintId ?? null,
         story_points: issue.storyPoints ?? null,
         original_estimate_seconds: issue.originalEstimateSeconds ?? null,
@@ -209,10 +207,8 @@ export class IssueRepository {
       originalEstimateSeconds: 'original_estimate_seconds',
       remainingEstimateSeconds: 'remaining_estimate_seconds',
       labelIds: 'label_ids',
-      componentIds: 'component_ids',
-      fixVersionIds: 'fix_version_ids',
     };
-    const jsonFields = new Set(['labelIds', 'componentIds', 'fixVersionIds']);
+    const jsonFields = new Set(['labelIds']);
     const set: Record<string, unknown> = { updated_at: occurredAt };
     for (const [field, value] of Object.entries(changes)) {
       if (field === 'description') {

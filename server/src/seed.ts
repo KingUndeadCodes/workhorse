@@ -1,5 +1,5 @@
 import type { Board, Project, StatusCategory, Workflow, WorkflowStatus, Workspace } from './domain';
-import { DEFAULT_FEATURE_FLAGS, PROJECT_COLORS } from './domain';
+import { DEFAULT_FEATURE_FLAGS, DEFAULT_WORKSPACE_FEATURE_FLAGS, PROJECT_COLORS } from './domain';
 import { persistState, run, stateDb } from './db/core';
 
 /**
@@ -15,7 +15,7 @@ import { persistState, run, stateDb } from './db/core';
  * here alongside the workflow, not content.
  */
 export function bootstrapDatabase(): void {
-  const workspace: Workspace = { id: 'ws_default', name: 'My Workspace', slug: 'workspace', createdAt: new Date().toISOString() };
+  const workspace: Workspace = { id: 'ws_default', name: 'My Workspace', slug: 'workspace', createdAt: new Date().toISOString(), featureFlags: DEFAULT_WORKSPACE_FEATURE_FLAGS };
   run(stateDb, `INSERT INTO workspace (id, name, slug, created_at) VALUES (?, ?, ?, ?)`, [workspace.id, workspace.name, workspace.slug, workspace.createdAt]);
 
   const statusCategories: StatusCategory[] = [

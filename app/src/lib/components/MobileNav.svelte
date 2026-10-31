@@ -25,10 +25,11 @@
     switchProject,
     users,
     workspace,
+    workspaceFeatures,
   } from '../stores/workspace';
   import { splitHumansAndAgents } from '../util';
   import { isMobile } from '../stores/viewport';
-  import { goToNewCatalogItem, goToNewSprint } from '../actions/quickCreate';
+  import { goToNewLabel, goToNewSprint } from '../actions/quickCreate';
   import { t, tn } from '../i18n';
 
   const primaryTabs: { icon: string; labelKey: string; view: 'board' | 'backlog' }[] = [
@@ -58,9 +59,9 @@
     showNewCreate = false;
     goToNewSprint();
   }
-  function createNewCatalogItem(tab: 'Labels' | 'Components' | 'Versions') {
+  function createNewLabel() {
     showNewCreate = false;
-    goToNewCatalogItem(tab);
+    goToNewLabel();
   }
 
   async function selectProject(id: string) {
@@ -152,19 +153,9 @@
       </button>
     {/if}
     {#if $featureFlags.labels}
-      <button type="button" class="sheet-row" on:click={() => createNewCatalogItem('Labels')}>
+      <button type="button" class="sheet-row" on:click={createNewLabel}>
         <Icon name="gear" size={15} />
         <span class="sheet-row-label">{$t('topBar.newLabel')}</span>
-      </button>
-    {/if}
-    {#if $featureFlags.componentsAndVersions}
-      <button type="button" class="sheet-row" on:click={() => createNewCatalogItem('Components')}>
-        <Icon name="grid" size={15} />
-        <span class="sheet-row-label">{$t('topBar.newComponent')}</span>
-      </button>
-      <button type="button" class="sheet-row" on:click={() => createNewCatalogItem('Versions')}>
-        <Icon name="grid" size={15} />
-        <span class="sheet-row-label">{$t('topBar.newVersion')}</span>
       </button>
     {/if}
   </div>
@@ -217,10 +208,12 @@
       <Icon name="bars" size={15} />
       <span class="sheet-row-label">{$workspace?.name ?? ''} · {$tn('common.members', memberCount)}</span>
     </button>
-    <button type="button" class="sheet-row" on:click={() => goTo('stats')}>
+    {#if $workspaceFeatures.insights}
+      <button type="button" class="sheet-row" on:click={() => goTo('stats')}>
       <Icon name="columns" size={15} />
       <span class="sheet-row-label">{$t('mobileNav.statsRow')}</span>
     </button>
+    {/if}
     <button type="button" class="sheet-row" on:click={() => goTo('projectSettings')}>
       <Icon name="grid" size={15} />
       <span class="sheet-row-label">{$t('mobileNav.projectSettingsRow')}</span>

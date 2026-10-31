@@ -6,7 +6,6 @@ import type {
   AutomationRule,
   Board,
   Comment,
-  Component,
   FieldDefinition,
   FieldValue,
   GitRepoLink,
@@ -17,7 +16,6 @@ import type {
   Label,
   Project,
   ProjectFeatureFlags,
-  ProjectVersion,
   SavedView,
   Sprint,
   StatusCategory,
@@ -26,11 +24,12 @@ import type {
   Workflow,
   Worklog,
   Workspace,
+  WorkspaceFeatureFlags,
   WorkspaceInvite,
   WorkspaceMember,
   WorkspaceRole,
 } from '$domain';
-import { DEFAULT_FEATURE_FLAGS } from '$domain';
+import { DEFAULT_FEATURE_FLAGS, DEFAULT_WORKSPACE_FEATURE_FLAGS } from '$domain';
 import {
   addAttachment as apiAddAttachment,
   AuthError,
@@ -61,6 +60,7 @@ import {
   startSprint as apiStartSprint,
   updateIssue as apiUpdateIssue,
   updateProject as apiUpdateProject,
+  updateWorkspaceFeatures as apiUpdateWorkspaceFeatures,
   updateWorkspaceMemberRole as apiUpdateWorkspaceMemberRole,
 } from '../api';
 import { t } from '../i18n';
@@ -91,6 +91,13 @@ export const settingsJumpTab = writable<string | null>(null);
 export const workspace = writable<Workspace | null>(null);
 export const users = writable<User[]>([]);
 export const workspaceMembers = writable<WorkspaceMember[]>([]);
+/** Which optional modules an owner/admin has switched on for the workspace — everything on until the workspace loads, so nothing flickers away at startup. */
+export const workspaceFeatures = derived(workspace, ($w) => $w?.featureFlags ?? DEFAULT_WORKSPACE_FEATURE_FLAGS);
+/** Whether the signed-in user may change workspace-level settings (owner or admin). */
+export const isWorkspaceAdmin = derived([workspaceMembers, currentUser], ([$members, $me]) => {
+  const role = $members.find((m) => m.userId === $me?.id)?.role;
+  return role === 'owner' || role === 'admin';
+});
 /** Pending signup pre-approvals — not part of bootstrap (owner/admin-only data, fetched on demand when WorkspaceView mounts for one). */
 export const workspaceInvites = writable<WorkspaceInvite[]>([]);
 export const agents = writable<Agent[]>([]);
@@ -103,8 +110,6 @@ export const currentProjectId = writable<string | null>(null);
 export const currentProject = derived([projects, currentProjectId], ([$projects, $id]) => $projects.find((p) => p.id === $id) ?? null);
 /** The active project's feature flags — falls back to everything-on if no project has loaded yet (avoids flicker-hiding UI during initial load). */
 export const featureFlags = derived(currentProject, ($p) => $p?.featureFlags ?? DEFAULT_FEATURE_FLAGS);
-export const components = writable<Component[]>([]);
-export const versions = writable<ProjectVersion[]>([]);
 export const issueTypes = writable<IssueType[]>([]);
 export const labels = writable<Label[]>([]);
 export const fieldDefinitions = writable<FieldDefinition[]>([]);
@@ -170,7 +175,7 @@ export async function initWorkspace(): Promise<void> {
     // Not part of Bootstrap (see gitRepoLink's own doc comment) but still loaded eagerly here,
     // not lazily per-drawer-open, since it's small (never carries the token) and every
     // IssueDrawer needs to know synchronously whether to show its Branch section.
-    const gitRepoLinkResult = await getGitRepoLink(data.currentProjectId).catch(() => null);
+    const gitRepoLinkResult = data.workspace.featureFlags.git ? await getGitRepoLink(data.currentProjectId).catch(() => null) : null;
     if (token !== latestLoadToken) return; // a switchProject/initWorkspace call started during this await superseded it
     gitRepoLink.set(gitRepoLinkResult);
     loaded.set(true);
@@ -187,8 +192,6 @@ export async function initWorkspace(): Promise<void> {
  * left).
  */
 function applyProjectScopedBootstrap(data: Awaited<ReturnType<typeof fetchBootstrap>>): void {
-  components.set(data.components);
-  versions.set(data.versions);
   issueTypes.set(data.issueTypes);
   sprints.set(data.sprints);
   board.set(data.board);
@@ -211,7 +214,7 @@ let latestLoadToken = 0;
 /** Switches the active project: re-fetches its bootstrap slice and applies it, without touching workspace-global stores (users, workflow, labels, agents, etc. — re-setting them would be harmless but pointless). */
 export async function switchProject(id: string): Promise<void> {
   const token = ++latestLoadToken;
-  const [data, gitRepoLinkResult] = await Promise.all([fetchBootstrap(id), getGitRepoLink(id).catch(() => null)]);
+  const [data, gitRepoLinkResult] = await Promise.all([fetchBootstrap(id), get(workspaceFeatures).git ? getGitRepoLink(id).catch(() => null) : Promise.resolve(null)]);
   if (token !== latestLoadToken) return; // a newer switchProject/initWorkspace call superseded this one while we were awaiting
   currentProjectId.set(id);
   localStorage.setItem(CURRENT_PROJECT_STORAGE_KEY, id);
@@ -415,6 +418,11 @@ export async function startSprint(id: string): Promise<void> {
 export async function completeSprint(id: string): Promise<void> {
   const { sprint } = await apiCompleteSprint(id);
   replaceSprint(sprint);
+}
+
+/** Switches one optional module on or off for the whole workspace (owners/admins only — the server enforces it). */
+export async function setWorkspaceFeature(flag: keyof WorkspaceFeatureFlags, enabled: boolean): Promise<void> {
+  workspace.set(await apiUpdateWorkspaceFeatures({ [flag]: enabled }));
 }
 
 export async function updateWorkspaceMemberRole(userId: string, role: WorkspaceRole): Promise<void> {

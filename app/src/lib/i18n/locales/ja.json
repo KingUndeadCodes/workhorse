@@ -156,7 +156,8 @@
       "agents": "エージェント",
       "git": "Git",
       "webhooks": "Webhook",
-      "accessibility": "アクセシビリティ"
+      "accessibility": "アクセシビリティ",
+      "features": "機能"
     },
     "appearance": {
       "themeLabel": "テーマ",
@@ -491,6 +492,31 @@
     "recentActivity": "最近のアクティビティ",
     "totalTokensTitle": "すべての実行で使用された合計トークン数",
     "aiBadge": "AI"
+  },
+  "featuresSettings": {
+    "hint": "ワークスペースで使わないオプションのモジュールをオフにします。オフにしたモジュールはどこでも非表示になり、動作しなくなります — エージェントは実行されず、自動化とWebhookも発火しません。何も削除されないため、再びオンにするとすべて元に戻ります。",
+    "failed": "機能を更新できませんでした",
+    "coreNote": "ボード、バックログ、課題、コメントは常にオンです。",
+    "agents": {
+      "label": "AIエージェント",
+      "description": "チケットに割り当ててコメントやステータス変更などを任せられるエージェント。"
+    },
+    "automations": {
+      "label": "自動化",
+      "description": "イベントに反応してチケットを自動的に変更するルール。"
+    },
+    "webhooks": {
+      "label": "Webhook",
+      "description": "ワークスペースのイベントを他のサービスに送信します。"
+    },
+    "insights": {
+      "label": "インサイト",
+      "description": "作業時間のグラフと最もアクティブなチケットのランキング。"
+    },
+    "git": {
+      "label": "GitHubとgit",
+      "description": "GitHubの接続、プロジェクトへのリポジトリ連携、チケットからのブランチ作成。"
+    }
   },
   "agentOverview": {
     "capabilitiesLabel": "能力",

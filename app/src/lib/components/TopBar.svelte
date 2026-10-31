@@ -5,8 +5,8 @@
   import AccountSettingsModal from './AccountSettingsModal.svelte';
   import NotificationBell from './NotificationBell.svelte';
   import { currentUser, logout } from '../stores/auth';
-  import { currentView, featureFlags, issuesStore, selectedIssueId, sprints } from '../stores/workspace';
-  import { goToNewCatalogItem, goToNewSprint } from '../actions/quickCreate';
+  import { currentView, featureFlags, issuesStore, selectedIssueId, sprints, workspaceFeatures } from '../stores/workspace';
+  import { goToNewLabel, goToNewSprint } from '../actions/quickCreate';
   import { t } from '../i18n';
 
   const allTabs: { labelKey: string; view: 'board' | 'backlog' }[] = [
@@ -70,9 +70,9 @@
     goToNewSprint();
   }
 
-  function newCatalogItem(tab: 'Labels' | 'Components' | 'Versions') {
+  function newLabel() {
     showNewMenu = false;
-    goToNewCatalogItem(tab);
+    goToNewLabel();
   }
 </script>
 
@@ -99,15 +99,11 @@
           <button class="dropdown-item" on:click={newIssue}>{$t('topBar.newIssue')}</button>
           {#if $featureFlags.sprints}<button class="dropdown-item" on:click={newSprint}>{$t('topBar.newSprint')}</button>{/if}
           <div class="dropdown-sep"></div>
-          {#if $featureFlags.labels}<button class="dropdown-item" on:click={() => newCatalogItem('Labels')}>{$t('topBar.newLabel')}</button>{/if}
-          {#if $featureFlags.componentsAndVersions}
-            <button class="dropdown-item" on:click={() => newCatalogItem('Components')}>{$t('topBar.newComponent')}</button>
-            <button class="dropdown-item" on:click={() => newCatalogItem('Versions')}>{$t('topBar.newVersion')}</button>
-          {/if}
+          {#if $featureFlags.labels}<button class="dropdown-item" on:click={newLabel}>{$t('topBar.newLabel')}</button>{/if}
         </div>
       {/if}
     </div>
-    <button class="icon-btn stats-btn" title={$t('topBar.statsTitle')} aria-label={$t('topBar.statsTitle')} on:click={() => ($currentView = 'stats')}><Icon name="columns" /></button>
+    {#if $workspaceFeatures.insights}<button class="icon-btn stats-btn" title={$t('topBar.statsTitle')} aria-label={$t('topBar.statsTitle')} on:click={() => ($currentView = 'stats')}><Icon name="columns" /></button>{/if}
     <button class="icon-btn project-settings-btn" title={$t('topBar.projectSettingsTitle')} aria-label={$t('topBar.projectSettingsTitle')} on:click={() => ($currentView = 'projectSettings')}><Icon name="grid" /></button>
     <button class="icon-btn workspace-settings-btn" title={$t('topBar.workspaceSettingsTitle')} aria-label={$t('topBar.workspaceSettingsTitle')} on:click={() => ($currentView = 'settings')}><Icon name="gear" /></button>
     {#if $currentUser}<NotificationBell />{/if}

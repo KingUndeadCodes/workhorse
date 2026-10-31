@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
-import type { WorkspaceRole } from '../domain';
+import type { WorkspaceFeatureFlags, WorkspaceRole } from '../domain';
 import type { AuthVariables } from '../auth/middleware';
 import { userRepo, workspaceRepo } from '../container';
 import { disconnectUser } from '../ws';
@@ -31,6 +31,24 @@ async function requireAdmin(c: { get(key: 'user'): { id: string } }) {
   const caller = await workspaceRepo.getMember(c.get('user').id);
   return caller && (caller.role === 'owner' || caller.role === 'admin') ? caller : undefined;
 }
+
+const FEATURE_FLAG_KEYS: (keyof WorkspaceFeatureFlags)[] = ['agents', 'automations', 'webhooks', 'insights', 'git'];
+
+/** PATCH /api/workspace/features — switch optional modules on or off. Body: any subset of the flags, each a boolean. Owners/admins only. */
+workspaceRouter.patch('/workspace/features', async (c) => {
+  if (!(await requireAdmin(c))) return c.json({ error: 'Only workspace owners/admins can change features' }, 403);
+  const body = await c.req.json<Record<string, unknown>>().catch(() => null);
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return c.json({ error: 'Expected an object of feature flags' }, 400);
+  const changes: Partial<WorkspaceFeatureFlags> = {};
+  for (const [key, value] of Object.entries(body)) {
+    if (!(FEATURE_FLAG_KEYS as string[]).includes(key)) return c.json({ error: `Unknown feature "${key}"` }, 400);
+    if (typeof value !== 'boolean') return c.json({ error: `"${key}" must be true or false` }, 400);
+    changes[key as keyof WorkspaceFeatureFlags] = value;
+  }
+  const current = (await workspaceRepo.getWorkspace()).featureFlags;
+  const workspace = await workspaceRepo.setFeatureFlags({ ...current, ...changes });
+  return c.json(workspace);
+});
 
 workspaceRouter.get('/workspace-members', async (c) => c.json(await workspaceRepo.listMembers()));
 
