@@ -15,6 +15,13 @@ them, instead of rebuilding from scratch.
 
 ## Trimmed within existing components
 
+- **Sidebar Board/Backlog items** (`Sidebar.svelte`) — duplicated the top bar's Board/Backlog view
+  tabs on desktop. The tabs stay (project-scoped view toggle beside the sprint breadcrumb); the
+  sidebar now holds only My Issues, the workspace card and Projects, and clicking the current
+  project returns to its board. The sprints-off redirect off Backlog moved to `App.svelte`.
+- **Default (`medium`) priority glyph on cards** (`IssueCard.svelte`, `LandingShowcase.svelte`) —
+  the dash shown on nearly every card carried no information; only non-default priorities show
+  a glyph now. The issue drawer still shows priority for every issue.
 - **Roadmap / Reports / Docs nav items** (`TopBar.svelte`, `Sidebar.svelte`) — routed to
   `view: null`, i.e. clicking did nothing. Remove this note once those views actually exist
   and route somewhere.

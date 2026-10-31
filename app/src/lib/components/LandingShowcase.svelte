@@ -284,7 +284,7 @@
                                 <span class="mtype {card.type.toLowerCase()}"><Icon name={typeIcon(card.type)} size={9} /></span>
                                 <span class="mkey">{card.key}</span>
                               </span>
-                              <span class="mprio {card.priority}"><Icon name={priorityIcon(card.priority)} size={11} /></span>
+                              {#if card.priority !== 'medium'}<span class="mprio {card.priority}"><Icon name={priorityIcon(card.priority)} size={11} /></span>{/if}
                             </div>
                             <div class="mtitle">{card.title}</div>
                             {#if card.labels}
@@ -577,7 +577,6 @@
   .mprio { display: flex; align-items: center; }
   .mprio.highest { color: var(--lp-critical); }
   .mprio.high { color: var(--lp-warning); }
-  .mprio.medium { color: var(--lp-info); }
   .mprio.low, .mprio.lowest { color: var(--lp-text-3); }
   .mtitle { font-size: 12.5px; font-weight: 500; line-height: 1.4; color: var(--lp-text); }
   .mlabels { display: flex; gap: 5px; flex-wrap: wrap; }

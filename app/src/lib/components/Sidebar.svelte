@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { currentView, currentProjectId, featureFlags, projects, selectedIssueId, switchProject, createNewProject, workspace, users } from '../stores/workspace';
+  import { currentView, currentProjectId, projects, selectedIssueId, switchProject, createNewProject, workspace, users } from '../stores/workspace';
   import { splitHumansAndAgents } from '../util';
   import { t, tn } from '../i18n';
 
@@ -8,24 +8,12 @@
   // but they aren't people — the workspace's member count should only reflect humans.
   $: memberCount = splitHumansAndAgents($users).humans.length;
 
-  const allNavItems: { icon: string; labelKey: string; view: 'board' | 'backlog' }[] = [
-    { icon: 'list', labelKey: 'nav.backlog', view: 'backlog' },
-    { icon: 'columns', labelKey: 'nav.board', view: 'board' },
-  ];
-  $: navItems = $featureFlags.sprints ? allNavItems : allNavItems.filter((i) => i.view !== 'backlog');
-  // Sprints just got turned off while looking at the Backlog view — nothing to show there anymore.
-  $: if (!$featureFlags.sprints && $currentView === 'backlog') $currentView = 'board';
-
-  /** Switching views always leaves the current ticket — Board/Backlog should show the list, not a stale drawer. */
-  function goToView(view: 'board' | 'backlog') {
-    $currentView = view;
-    $selectedIssueId = null;
-  }
-
+  // Board/Backlog live in the top bar's view tabs (TopBar.svelte) — this sidebar only answers
+  // "where" (My Issues, projects), so the project row doubles as the way back to its board.
   async function selectProject(id: string) {
-    if (id === $currentProjectId) return;
     $currentView = 'board';
-    await switchProject(id);
+    $selectedIssueId = null;
+    if (id !== $currentProjectId) await switchProject(id);
   }
 
   let showNewProjectForm = false;
@@ -66,11 +54,6 @@
     <button type="button" class="nav-item" class:active={$currentView === 'myIssues'} on:click={() => { $currentView = 'myIssues'; $selectedIssueId = null; }}>
       <Icon name="task" />{$t('sidebar.myIssuesLabel')}
     </button>
-    {#each navItems as item}
-      <button class="nav-item" class:active={item.view === $currentView} on:click={() => goToView(item.view)}>
-        <Icon name={item.icon} />{$t(item.labelKey)}
-      </button>
-    {/each}
   </nav>
 
   <div class="section-label">{$t('sidebar.projectsLabel')}</div>

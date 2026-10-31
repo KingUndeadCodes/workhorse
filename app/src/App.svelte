@@ -17,7 +17,7 @@
   import TermsOfUse from './lib/components/TermsOfUse.svelte';
   import AccessibilityStatement from './lib/components/AccessibilityStatement.svelte';
   import { currentUser } from './lib/stores/auth';
-  import { currentView, initWorkspace, loaded, loadError, selectedIssueId, settingsJumpTab, statusChangeError, workspaceFeatures } from './lib/stores/workspace';
+  import { currentView, featureFlags, initWorkspace, loaded, loadError, selectedIssueId, settingsJumpTab, statusChangeError, workspaceFeatures } from './lib/stores/workspace';
   import { initNotifications, resetNotifications } from './lib/stores/notifications';
   import { connectWebSocket, disconnectWebSocket } from './lib/ws';
   import { isMobile } from './lib/stores/viewport';
@@ -45,6 +45,8 @@
 
   // Insights switched off (possibly while it's open) — don't leave the user on a view that no longer exists.
   $: if (!$workspaceFeatures.insights && $currentView === 'stats') currentView.set('board');
+  // Same for sprints turned off while looking at the Backlog view.
+  $: if (!$featureFlags.sprints && $currentView === 'backlog') currentView.set('board');
 
   // Kicks off the one API call that populates every store in workspace.ts, once there's a
   // logged-in user to make it as; $loaded and $loadError below gate what renders until it

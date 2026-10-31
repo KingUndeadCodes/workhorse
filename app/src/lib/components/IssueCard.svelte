@@ -113,7 +113,7 @@
       {#if held}<span class="held-badge">{$t('issueCard.pickedUpLabel')}</span>{/if}
     </div>
     <div class="top-right">
-      {#if $featureFlags.priority}
+      {#if $featureFlags.priority && issue.priority !== 'medium'}
         <span class="priority-flag {issue.priority}"><Icon name={priorityIcon(issue.priority)} size={11} /></span>
       {/if}
       {#if onMove && moveTargets.length > 0}
@@ -251,7 +251,6 @@
   .priority-flag { display: flex; align-items: center; }
   .priority-flag.highest { color: var(--critical); }
   .priority-flag.high { color: var(--warning); }
-  .priority-flag.medium { color: var(--info); }
   .priority-flag.low, .priority-flag.lowest { color: var(--text-3); }
   .title { font-size: 12.5px; font-weight: 500; color: var(--text); line-height: 1.4; }
   .labels { display: flex; gap: 5px; flex-wrap: wrap; }
