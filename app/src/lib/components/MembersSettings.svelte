@@ -78,11 +78,8 @@
   }
 </script>
 
-<div class="workspace-view">
-  <div class="header">
-    <h1>{$workspace?.name ?? ''}</h1>
-    <p class="sub">{$tn('common.members', rows.length)}{isAdmin ? ` · ${$t('workspaceView.canManageRoles')}` : ''}</p>
-  </div>
+<div class="members">
+  <p class="sub">{$workspace?.name ?? ''} · {$tn('common.members', rows.length)}{isAdmin ? ` · ${$t('workspaceView.canManageRoles')}` : ''}</p>
 
   <div class="member-list">
     {#each rows as { member, user } (member.userId)}
@@ -154,19 +151,17 @@
 </div>
 
 <style>
-  .workspace-view { flex: 1; overflow-y: auto; padding: 28px 32px; max-width: 640px; }
+  /* A tab body inside Settings.svelte, which supplies the panel padding and scrolling. */
+  .members { max-width: 640px; }
 
   @media (max-width: 767px) {
-    .workspace-view { padding: 16px; }
     .member-row { padding: 12px; gap: 11px; }
     .member-name { font-size: 14px; }
     .member-email { font-size: 12.5px; }
     .role-select, .role-badge { padding: 8px 10px; font-size: 12.5px; }
     .invite-form { flex-wrap: wrap; }
   }
-  .header { margin-bottom: 22px; }
-  h1 { font-size: 19px; font-weight: 700; color: var(--text); margin: 0 0 4px; }
-  .sub { font-size: 12.5px; color: var(--text-2); margin: 0; }
+  .sub { font-size: 12.5px; color: var(--text-2); margin: 0 0 18px; }
   .member-list { display: flex; flex-direction: column; gap: 2px; }
   .member-row {
     display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 9px;

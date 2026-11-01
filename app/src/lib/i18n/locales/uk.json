@@ -43,9 +43,8 @@
     "newComponent": "Компонент",
     "newVersion": "Версія",
     "statsTitle": "Статистика",
-    "projectSettingsTitle": "Налаштування проєкту",
-    "workspaceSettingsTitle": "Налаштування робочого простору",
-    "accountSettings": "Налаштування облікового запису",
+    "workspaceSettingsTitle": "Налаштування",
+    "accountSettings": "Профіль",
     "logOut": "Вийти"
   },
   "sidebar": {
@@ -62,9 +61,7 @@
     "moreTab": "Ще",
     "newProjectRow": "Новий проєкт",
     "statsRow": "Статистика",
-    "projectSettingsRow": "Налаштування проєкту",
-    "workspaceSettingsRow": "Налаштування робочого простору",
-    "accountSettingsRow": "Налаштування облікового запису",
+    "workspaceSettingsRow": "Налаштування",
     "logOutRow": "Вийти"
   },
   "board": {
@@ -160,7 +157,9 @@
       "git": "Git",
       "webhooks": "Вебхуки",
       "accessibility": "Доступність",
-      "features": "Функції"
+      "features": "Функції",
+      "members": "Учасники",
+      "profile": "Профіль"
     },
     "appearance": {
       "themeLabel": "Тема",
@@ -216,6 +215,13 @@
     "accessibility": {
       "keyboardNavLabel": "Навігація з клавіатури",
       "keyboardNavHint": "Будь-яку дошку, беклог і редактор робочого процесу можна використовувати без миші: стрілки переміщують фокус, Пробіл бере і відпускає елемент, Enter відкриває його, а Escape скасовує дію. Це завжди увімкнено."
+    },
+    "title": "Налаштування",
+    "backToSettings": "Назад до налаштувань",
+    "groups": {
+      "personal": "Особисті",
+      "project": "Проєкт · {name}",
+      "workspace": "Робочий простір"
     }
   },
   "gitConnections": {
@@ -324,8 +330,7 @@
     "createButton": "Створити задачу",
     "creatingButton": "Створення…"
   },
-  "accountSettingsModal": {
-    "title": "Налаштування облікового запису",
+  "accountSettings": {
     "uploadPicture": "Завантажити фото",
     "removePicture": "Видалити",
     "nameLabel": "Ім'я",
@@ -336,7 +341,28 @@
     "failedUpdate": "Не вдалося оновити обліковий запис",
     "saveButton": "Зберегти зміни",
     "savingButton": "Збереження…",
-    "youFallback": "Ви"
+    "youFallback": "Ви",
+    "saved": "Збережено",
+    "nameRequired": "Ім'я не може бути порожнім",
+    "nameTooLong": "Ім'я має містити не більше {max} символів",
+    "emailInvalid": "Введіть дійсну адресу електронної пошти",
+    "discardButton": "Скасувати зміни",
+    "pictureHint": "Зображення обрізаються до квадрата.",
+    "unreadableImage": "Не вдалося прочитати це зображення",
+    "currentPasswordLabel": "Поточний пароль",
+    "emailPasswordHint": "Введіть пароль, щоб підтвердити нову адресу.",
+    "passwordHeading": "Пароль",
+    "newPasswordLabel": "Новий пароль",
+    "confirmPasswordLabel": "Підтвердьте новий пароль",
+    "passwordTooShort": "Використовуйте щонайменше {min} символів",
+    "passwordMismatch": "Паролі не збігаються",
+    "changePasswordButton": "Змінити пароль",
+    "changingPasswordButton": "Зміна…",
+    "passwordChanged": "Пароль змінено",
+    "failedPassword": "Не вдалося змінити пароль",
+    "detailsHeading": "Обліковий запис",
+    "roleLabel": "Роль",
+    "memberSinceLabel": "У команді з"
   },
   "commentThread": {
     "reply": "Відповісти",

@@ -43,9 +43,8 @@
     "newComponent": "Компонент",
     "newVersion": "Версия",
     "statsTitle": "Статистика",
-    "projectSettingsTitle": "Настройки проекта",
-    "workspaceSettingsTitle": "Настройки рабочего пространства",
-    "accountSettings": "Настройки аккаунта",
+    "workspaceSettingsTitle": "Настройки",
+    "accountSettings": "Профиль",
     "logOut": "Выйти"
   },
   "sidebar": {
@@ -62,9 +61,7 @@
     "moreTab": "Ещё",
     "newProjectRow": "Новый проект",
     "statsRow": "Статистика",
-    "projectSettingsRow": "Настройки проекта",
-    "workspaceSettingsRow": "Настройки рабочего пространства",
-    "accountSettingsRow": "Настройки аккаунта",
+    "workspaceSettingsRow": "Настройки",
     "logOutRow": "Выйти"
   },
   "board": {
@@ -160,7 +157,9 @@
       "git": "Git",
       "webhooks": "Вебхуки",
       "accessibility": "Доступность",
-      "features": "Функции"
+      "features": "Функции",
+      "members": "Участники",
+      "profile": "Профиль"
     },
     "appearance": {
       "themeLabel": "Тема",
@@ -216,6 +215,13 @@
     "accessibility": {
       "keyboardNavLabel": "Навигация с клавиатуры",
       "keyboardNavHint": "Любую доску, бэклог и редактор рабочего процесса можно использовать без мыши: стрелки перемещают фокус, Пробел берёт и отпускает элемент, Enter открывает его, а Escape отменяет действие. Это всегда включено."
+    },
+    "title": "Настройки",
+    "backToSettings": "Назад к настройкам",
+    "groups": {
+      "personal": "Личные",
+      "project": "Проект · {name}",
+      "workspace": "Рабочее пространство"
     }
   },
   "gitConnections": {
@@ -324,8 +330,7 @@
     "createButton": "Создать задачу",
     "creatingButton": "Создание…"
   },
-  "accountSettingsModal": {
-    "title": "Настройки аккаунта",
+  "accountSettings": {
     "uploadPicture": "Загрузить фото",
     "removePicture": "Удалить",
     "nameLabel": "Имя",
@@ -336,7 +341,28 @@
     "failedUpdate": "Не удалось обновить аккаунт",
     "saveButton": "Сохранить изменения",
     "savingButton": "Сохранение…",
-    "youFallback": "Вы"
+    "youFallback": "Вы",
+    "saved": "Сохранено",
+    "nameRequired": "Имя не может быть пустым",
+    "nameTooLong": "Имя должно быть не длиннее {max} символов",
+    "emailInvalid": "Введите корректный адрес электронной почты",
+    "discardButton": "Отменить изменения",
+    "pictureHint": "Изображения обрезаются до квадрата.",
+    "unreadableImage": "Не удалось прочитать это изображение",
+    "currentPasswordLabel": "Текущий пароль",
+    "emailPasswordHint": "Введите пароль, чтобы подтвердить новый адрес.",
+    "passwordHeading": "Пароль",
+    "newPasswordLabel": "Новый пароль",
+    "confirmPasswordLabel": "Подтвердите новый пароль",
+    "passwordTooShort": "Используйте не менее {min} символов",
+    "passwordMismatch": "Пароли не совпадают",
+    "changePasswordButton": "Сменить пароль",
+    "changingPasswordButton": "Смена…",
+    "passwordChanged": "Пароль изменён",
+    "failedPassword": "Не удалось сменить пароль",
+    "detailsHeading": "Учётная запись",
+    "roleLabel": "Роль",
+    "memberSinceLabel": "В команде с"
   },
   "commentThread": {
     "reply": "Ответить",

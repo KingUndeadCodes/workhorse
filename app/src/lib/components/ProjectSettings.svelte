@@ -1,27 +1,17 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { currentProject, currentProjectId, currentView, featureFlags, gitRepoLink, settingsJumpTab, workspaceFeatures, linkGitRepo, unlinkGitRepo, setFeatureFlag, updateCurrentProject } from '../stores/workspace';
+  import { currentProject, currentProjectId, featureFlags, gitRepoLink, settingsJumpTab, workspaceFeatures, linkGitRepo, unlinkGitRepo, setFeatureFlag, updateCurrentProject } from '../stores/workspace';
   import * as api from '../api';
   import { PROJECT_COLORS, type GitRepoSummary, type ProjectFeatureFlags } from '$domain';
   import { t } from '../i18n';
 
-  const allTabs = ['Project', 'Git'] as const;
-  const TAB_LABEL_KEYS: Record<(typeof allTabs)[number], string> = {
-    Project: 'projectSettings.tabs.project',
-    Git: 'projectSettings.tabs.git',
-  };
-  // The Git tab disappears when an owner/admin switches the git module off.
-  $: tabs = allTabs.filter((tab) => tab !== 'Git' || $workspaceFeatures.git);
-  let activeTab: (typeof allTabs)[number] = 'Project';
-  $: if (!tabs.includes(activeTab)) activeTab = 'Project';
-  // Lets other screens open this view already on the relevant tab.
-  // Reactive, not a one-time check: this component stays mounted across jumps whenever the
-  // view is already 'projectSettings' (no {#key} in App.svelte), so a plain top-level `if`
-  // would only ever fire once, at first mount.
-  $: if ($settingsJumpTab && (allTabs as readonly string[]).includes($settingsJumpTab)) {
-    activeTab = $settingsJumpTab as (typeof allTabs)[number];
-    settingsJumpTab.set(null);
-  }
+  /**
+   * One of the two project-scoped tab bodies inside Settings.svelte (its "Project" group) —
+   * Settings owns the tab nav, the panel padding and which tab is showing; this component only
+   * renders the body for the tab it's given. Settings hides the Git tab when the git module is
+   * switched off, so it never has to be rendered in that case.
+   */
+  export let tab: 'Project' | 'Git' = 'Project';
 
   const FEATURE_LABEL_KEYS: Record<keyof ProjectFeatureFlags, string> = {
     reporters: 'projectSettings.features.reporters',
@@ -133,119 +123,96 @@
   }
 </script>
 
-<div class="settings">
-  <nav class="tabs">
-    {#each tabs as tab}
-      <button class="tab" class:active={tab === activeTab} on:click={() => (activeTab = tab)}>{$t(TAB_LABEL_KEYS[tab])}</button>
-    {/each}
-  </nav>
-
-  <div class="panel">
-    {#if activeTab === 'Project'}
-      {#if $currentProject}
-        <div class="field-row">
-          <label class="field-label" for="proj-name-input">{$t('projectSettings.nameLabel')}</label>
-          <input id="proj-name-input" type="text" bind:value={editProjectName} on:focus={() => (editingProjectName = true)} on:blur={saveProjectName} on:keydown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
-        </div>
-        <div class="field-row">
-          <span class="field-label">{$t('projectSettings.keyLabel')}</span>
-          <span class="row-tag mono">{$currentProject.key}</span>
-        </div>
-        <p class="section-hint">{$t('projectSettings.keyHint', { key: $currentProject.key })}</p>
-        <div class="field-row">
-          <span class="field-label">{$t('projectSettings.colorLabel')}</span>
-          <div class="swatch-row">
-            {#each PROJECT_COLORS as c}
-              <button
-                type="button"
-                class="swatch"
-                class:active={c === $currentProject.color}
-                style="background:{c}"
-                title={c}
-                aria-label={$t('projectSettings.colorSwatchLabel', { color: c })}
-                on:click={() => setProjectColor(c)}
-              ><Icon name="check" size={11} /></button>
-            {/each}
-          </div>
-        </div>
-        <div class="subsection-label">{$t('projectSettings.featuresLabel')}</div>
-        <p class="section-hint">{$t('projectSettings.featuresHint')}</p>
-        <div class="feature-list">
-          {#each FEATURE_KEYS as key}
-            <label class="toggle feature-toggle">
-              <input type="checkbox" checked={$featureFlags[key]} on:change={(e) => setFeatureFlag(key, (e.target as HTMLInputElement).checked)} />
-              {$t(FEATURE_LABEL_KEYS[key])}
-            </label>
+<div class="project-panel">
+  {#if tab === 'Project'}
+    {#if $currentProject}
+      <div class="field-row">
+        <label class="field-label" for="proj-name-input">{$t('projectSettings.nameLabel')}</label>
+        <input id="proj-name-input" type="text" bind:value={editProjectName} on:focus={() => (editingProjectName = true)} on:blur={saveProjectName} on:keydown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
+      </div>
+      <div class="field-row">
+        <span class="field-label">{$t('projectSettings.keyLabel')}</span>
+        <span class="row-tag mono">{$currentProject.key}</span>
+      </div>
+      <p class="section-hint">{$t('projectSettings.keyHint', { key: $currentProject.key })}</p>
+      <div class="field-row">
+        <span class="field-label">{$t('projectSettings.colorLabel')}</span>
+        <div class="swatch-row">
+          {#each PROJECT_COLORS as c}
+            <button
+              type="button"
+              class="swatch"
+              class:active={c === $currentProject.color}
+              style="background:{c}"
+              title={c}
+              aria-label={$t('projectSettings.colorSwatchLabel', { color: c })}
+              on:click={() => setProjectColor(c)}
+            ><Icon name="check" size={11} /></button>
           {/each}
         </div>
+      </div>
+      <div class="subsection-label">{$t('projectSettings.featuresLabel')}</div>
+      <p class="section-hint">{$t('projectSettings.featuresHint')}</p>
+      <div class="feature-list">
+        {#each FEATURE_KEYS as key}
+          <label class="toggle feature-toggle">
+            <input type="checkbox" checked={$featureFlags[key]} on:change={(e) => setFeatureFlag(key, (e.target as HTMLInputElement).checked)} />
+            {$t(FEATURE_LABEL_KEYS[key])}
+          </label>
+        {/each}
+      </div>
 
-        <button type="button" class="text-btn danger" on:click={archiveProject}>{$t('projectSettings.archiveButton')}</button>
-      {/if}
-    {:else if activeTab === 'Git'}
-      <p class="section-hint">{$t('projectSettings.gitHint')}</p>
-      {#if $gitRepoLink}
-        <div class="row">
-          <Icon name="branch" size={13} />
-          <span class="row-name">{$gitRepoLink.owner}/{$gitRepoLink.repo}</span>
-          <span class="row-tag">{$gitRepoLink.provider} · {$t('projectSettings.defaultBranchSuffix', { branch: $gitRepoLink.defaultBranch })}</span>
-          <button class="icon-btn" aria-label={$t('projectSettings.unlinkRepoLabel')} on:click={removeGitRepoLink}><Icon name="trash" size={13} /></button>
-        </div>
-      {:else if availableGitProviders.length === 0}
-        <p class="section-hint">{$t('projectSettings.noGitProviderHint')}</p>
-      {:else}
-        <form class="add-form column" on:submit|preventDefault={submitGitRepoLink}>
-          {#if availableGitProviders.length > 1}
-            <select bind:value={newRepoProvider}>
-              {#each availableGitProviders as p}<option value={p}>{p}</option>{/each}
-            </select>
-          {/if}
-          {#if usePicker}
-            <input type="search" placeholder={$t('projectSettings.repoSearchPlaceholder')} bind:value={repoFilter} aria-label={$t('projectSettings.repoSearchPlaceholder')} />
-            <select bind:value={selectedRepo} on:change={pickRepo} aria-label={$t('projectSettings.repoSelectPlaceholder')}>
-              <option value="">{$t('projectSettings.repoSelectPlaceholder')}</option>
-              {#each filteredRepos as r (`${r.owner}/${r.repo}`)}
-                <option value={`${r.owner}/${r.repo}`}>{r.owner}/{r.repo}{r.private ? ` · ${$t('projectSettings.privateTag')}` : ''}</option>
-              {/each}
-            </select>
-          {:else}
-            {#if reposState === 'loading'}<p class="field-hint">{$t('projectSettings.reposLoading')}</p>{/if}
-            <input type="text" placeholder={$t('projectSettings.ownerPlaceholder')} bind:value={newRepoOwner} />
-            <input type="text" placeholder={$t('projectSettings.repoPlaceholder')} bind:value={newRepoName} />
-          {/if}
-          <input type="text" placeholder={$t('projectSettings.defaultBranchPlaceholder')} bind:value={newRepoDefaultBranch} />
-          {#if needsConnection}
-            <p class="field-hint">{$t('projectSettings.connectAccountHint')}</p>
-            <button type="button" class="text-btn" on:click={() => ($currentView = 'settings', settingsJumpTab.set('Git'))}>{$t('projectSettings.connectAccountButton')}</button>
-          {:else if myConnection?.accountLogin}
-            <p class="field-hint">{$t('projectSettings.linkingAsHint', { login: myConnection.accountLogin })}</p>
-          {/if}
-          <button type="submit" disabled={linkingRepo || needsConnection || (usePicker && !selectedRepo)}>{linkingRepo ? $t('projectSettings.linkingRepoButton') : $t('projectSettings.linkRepoButton')}</button>
-        </form>
-        {#if linkRepoError}<p class="error">{linkRepoError}</p>{/if}
-      {/if}
+      <button type="button" class="text-btn danger" on:click={archiveProject}>{$t('projectSettings.archiveButton')}</button>
     {/if}
-  </div>
+  {:else if tab === 'Git'}
+    <p class="section-hint">{$t('projectSettings.gitHint')}</p>
+    {#if $gitRepoLink}
+      <div class="row">
+        <Icon name="branch" size={13} />
+        <span class="row-name">{$gitRepoLink.owner}/{$gitRepoLink.repo}</span>
+        <span class="row-tag">{$gitRepoLink.provider} · {$t('projectSettings.defaultBranchSuffix', { branch: $gitRepoLink.defaultBranch })}</span>
+        <button class="icon-btn" aria-label={$t('projectSettings.unlinkRepoLabel')} on:click={removeGitRepoLink}><Icon name="trash" size={13} /></button>
+      </div>
+    {:else if availableGitProviders.length === 0}
+      <p class="section-hint">{$t('projectSettings.noGitProviderHint')}</p>
+    {:else}
+      <form class="add-form column" on:submit|preventDefault={submitGitRepoLink}>
+        {#if availableGitProviders.length > 1}
+          <select bind:value={newRepoProvider}>
+            {#each availableGitProviders as p}<option value={p}>{p}</option>{/each}
+          </select>
+        {/if}
+        {#if usePicker}
+          <input type="search" placeholder={$t('projectSettings.repoSearchPlaceholder')} bind:value={repoFilter} aria-label={$t('projectSettings.repoSearchPlaceholder')} />
+          <select bind:value={selectedRepo} on:change={pickRepo} aria-label={$t('projectSettings.repoSelectPlaceholder')}>
+            <option value="">{$t('projectSettings.repoSelectPlaceholder')}</option>
+            {#each filteredRepos as r (`${r.owner}/${r.repo}`)}
+              <option value={`${r.owner}/${r.repo}`}>{r.owner}/{r.repo}{r.private ? ` · ${$t('projectSettings.privateTag')}` : ''}</option>
+            {/each}
+          </select>
+        {:else}
+          {#if reposState === 'loading'}<p class="field-hint">{$t('projectSettings.reposLoading')}</p>{/if}
+          <input type="text" placeholder={$t('projectSettings.ownerPlaceholder')} bind:value={newRepoOwner} />
+          <input type="text" placeholder={$t('projectSettings.repoPlaceholder')} bind:value={newRepoName} />
+        {/if}
+        <input type="text" placeholder={$t('projectSettings.defaultBranchPlaceholder')} bind:value={newRepoDefaultBranch} />
+        {#if needsConnection}
+          <p class="field-hint">{$t('projectSettings.connectAccountHint')}</p>
+          <button type="button" class="text-btn" on:click={() => settingsJumpTab.set('Git')}>{$t('projectSettings.connectAccountButton')}</button>
+        {:else if myConnection?.accountLogin}
+          <p class="field-hint">{$t('projectSettings.linkingAsHint', { login: myConnection.accountLogin })}</p>
+        {/if}
+        <button type="submit" disabled={linkingRepo || needsConnection || (usePicker && !selectedRepo)}>{linkingRepo ? $t('projectSettings.linkingRepoButton') : $t('projectSettings.linkRepoButton')}</button>
+      </form>
+      {#if linkRepoError}<p class="error">{linkRepoError}</p>{/if}
+    {/if}
+  {/if}
 </div>
 
 <style>
-  .settings { flex: 1; display: flex; overflow: hidden; }
-  .tabs { flex: 0 0 180px; display: flex; flex-direction: column; gap: 2px; padding: 16px 10px; border-right: 1px solid var(--border); overflow-y: auto; }
-  .tab { text-align: left; font-size: 12.5px; font-weight: 500; color: var(--text-2); padding: 7px 10px; border-radius: 7px; }
-  .tab:hover { background: var(--surface-sunken); }
-  .tab.active { background: var(--accent-soft); color: var(--accent-strong); font-weight: 600; }
-  .panel { flex: 1; overflow-y: auto; padding: 20px 24px; }
-
   @media (max-width: 768px) {
-    .settings { flex-direction: column; overflow: auto; }
-    .tabs {
-      flex: 0 0 auto; flex-direction: row; overflow-x: auto; overflow-y: visible;
-      border-right: none; border-bottom: 1px solid var(--border); padding: 10px; gap: 4px;
-    }
-    .tab { white-space: nowrap; padding: 10px 14px; font-size: 13.5px; }
-    .panel { padding: 16px; }
     .row { padding: 11px 12px; font-size: 13.5px; }
     .icon-btn { padding: 8px; }
-    .toggle { font-size: 13.5px; }
     .field-row { flex-wrap: wrap; gap: 8px 12px; }
     .field-row input[type='text'] { padding: 9px 11px; max-width: none; }
     .swatch { width: 30px; height: 30px; }

@@ -37,7 +37,7 @@ No new domain types are anticipated in this plan except whatever a real agent cl
 | Drafts / private event logs | **Purely conceptual — zero code, zero types** | See §5. "Draft" only exists today as local unsaved-input state in Svelte components (`draftComment` etc.) — unrelated to this feature. This is a real "start from nothing" item if you still want it. |
 | Auth | **Real, working** | JWT bearer, signup/login. Membership is checked on every request (and on websocket connect), so removing a member takes effect immediately; logins are rate-limited and use async scrypt; websockets use one-time tickets, not the JWT. Signup is still open — see the workspace membership row. |
 | DB layer (Kysely) | **Real, done** | See §8 — no longer a pending migration. |
-| Workspace membership | **Real, working; no invite flow** | Every signup gets a `workspace_members` row (first signup = owner, rest = member); `WorkspaceView.svelte` lets owners/admins change roles. Membership is still assigned automatically at signup rather than granted by an admin — see §11. |
+| Workspace membership | **Real, working; no invite flow** | Every signup gets a `workspace_members` row (first signup = owner, rest = member); `MembersSettings.svelte` (Settings → Members) lets owners/admins change roles. Membership is still assigned automatically at signup rather than granted by an admin — see §11. |
 | Frontend UI | **Real for core flows; a few areas intentionally absent** | Roadmap/Reports/Docs nav removed as dead links (`removed-ui.md`), not rebuilt. `FilterBar` deleted outright as decorative. Multi-project sidebar and per-project switching, previously fake, are now real (`removed-ui.md` updated to drop that entry). |
 
 ## 4. What "done" looks like per subsystem — near-term priorities
@@ -86,5 +86,5 @@ Placeholder section — deliberately not spec'd yet per §5's "decision needed" 
 
 ## 11. Known future UI/product work (flagged, not scheduled)
 
-- **Workspace invite flow.** `server/src/routes/workspace.ts` and `WorkspaceView.svelte` support real membership and role management, but membership is only ever granted by self-signup (first signup = owner, rest = member) — there's no admin-driven invite-by-email flow. Worth building if the workspace ever needs a member added by someone other than themselves.
+- **Workspace invite flow.** `server/src/routes/workspace.ts` and `MembersSettings.svelte` support real membership and role management, but membership is only ever granted by self-signup (first signup = owner, rest = member) — there's no admin-driven invite-by-email flow. Worth building if the workspace ever needs a member added by someone other than themselves.
 - **Agent cloud backend.** See §7 — local Ollama works today; a hosted-model `AgentRuntime` implementation is the natural next increment, not yet started.

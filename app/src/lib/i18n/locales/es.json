@@ -41,9 +41,8 @@
     "newComponent": "Componente",
     "newVersion": "Versión",
     "statsTitle": "Estadísticas",
-    "projectSettingsTitle": "Configuración del proyecto",
-    "workspaceSettingsTitle": "Configuración del espacio de trabajo",
-    "accountSettings": "Configuración de la cuenta",
+    "workspaceSettingsTitle": "Configuración",
+    "accountSettings": "Perfil",
     "logOut": "Cerrar sesión"
   },
   "sidebar": {
@@ -60,9 +59,7 @@
     "moreTab": "Más",
     "newProjectRow": "Nuevo proyecto",
     "statsRow": "Estadísticas",
-    "projectSettingsRow": "Configuración del proyecto",
-    "workspaceSettingsRow": "Configuración del espacio de trabajo",
-    "accountSettingsRow": "Configuración de la cuenta",
+    "workspaceSettingsRow": "Configuración",
     "logOutRow": "Cerrar sesión"
   },
   "board": {
@@ -158,7 +155,9 @@
       "git": "Git",
       "webhooks": "Webhooks",
       "accessibility": "Accesibilidad",
-      "features": "Funciones"
+      "features": "Funciones",
+      "members": "Miembros",
+      "profile": "Perfil"
     },
     "appearance": {
       "themeLabel": "Tema",
@@ -214,6 +213,13 @@
     "accessibility": {
       "keyboardNavLabel": "Navegación por teclado",
       "keyboardNavHint": "Cada tablero, backlog y el editor de flujo de trabajo se pueden usar sin ratón: las flechas mueven el foco, Espacio recoge y suelta un elemento, Enter lo abre y Escape cancela. Esto siempre está activado."
+    },
+    "title": "Configuración",
+    "backToSettings": "Volver a configuración",
+    "groups": {
+      "personal": "Personal",
+      "project": "Proyecto · {name}",
+      "workspace": "Espacio de trabajo"
     }
   },
   "gitConnections": {
@@ -322,8 +328,7 @@
     "createButton": "Crear tarea",
     "creatingButton": "Creando…"
   },
-  "accountSettingsModal": {
-    "title": "Configuración de la cuenta",
+  "accountSettings": {
     "uploadPicture": "Subir foto",
     "removePicture": "Quitar",
     "nameLabel": "Nombre",
@@ -334,7 +339,28 @@
     "failedUpdate": "No se pudo actualizar la cuenta",
     "saveButton": "Guardar cambios",
     "savingButton": "Guardando…",
-    "youFallback": "Tú"
+    "youFallback": "Tú",
+    "saved": "Guardado",
+    "nameRequired": "El nombre no puede estar vacío",
+    "nameTooLong": "El nombre debe tener {max} caracteres o menos",
+    "emailInvalid": "Introduce una dirección de correo válida",
+    "discardButton": "Descartar cambios",
+    "pictureHint": "Las imágenes se recortan en formato cuadrado.",
+    "unreadableImage": "No se pudo leer esa imagen",
+    "currentPasswordLabel": "Contraseña actual",
+    "emailPasswordHint": "Introduce tu contraseña para confirmar el nuevo correo.",
+    "passwordHeading": "Contraseña",
+    "newPasswordLabel": "Contraseña nueva",
+    "confirmPasswordLabel": "Confirmar contraseña nueva",
+    "passwordTooShort": "Usa al menos {min} caracteres",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "changePasswordButton": "Cambiar contraseña",
+    "changingPasswordButton": "Cambiando…",
+    "passwordChanged": "Contraseña cambiada",
+    "failedPassword": "No se pudo cambiar la contraseña",
+    "detailsHeading": "Cuenta",
+    "roleLabel": "Rol",
+    "memberSinceLabel": "Miembro desde"
   },
   "commentThread": {
     "reply": "Responder",

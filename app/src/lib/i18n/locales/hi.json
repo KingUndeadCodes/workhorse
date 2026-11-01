@@ -41,9 +41,8 @@
     "newComponent": "कॉम्पोनेंट",
     "newVersion": "वर्शन",
     "statsTitle": "आँकड़े",
-    "projectSettingsTitle": "प्रोजेक्ट सेटिंग्स",
-    "workspaceSettingsTitle": "वर्कस्पेस सेटिंग्स",
-    "accountSettings": "खाता सेटिंग्स",
+    "workspaceSettingsTitle": "सेटिंग्स",
+    "accountSettings": "प्रोफ़ाइल",
     "logOut": "लॉग आउट"
   },
   "sidebar": {
@@ -60,9 +59,7 @@
     "moreTab": "और",
     "newProjectRow": "नया प्रोजेक्ट",
     "statsRow": "आँकड़े",
-    "projectSettingsRow": "प्रोजेक्ट सेटिंग्स",
-    "workspaceSettingsRow": "वर्कस्पेस सेटिंग्स",
-    "accountSettingsRow": "खाता सेटिंग्स",
+    "workspaceSettingsRow": "सेटिंग्स",
     "logOutRow": "लॉग आउट"
   },
   "board": {
@@ -158,7 +155,9 @@
       "git": "Git",
       "webhooks": "वेबहुक",
       "accessibility": "सुगम्यता",
-      "features": "सुविधाएँ"
+      "features": "सुविधाएँ",
+      "members": "सदस्य",
+      "profile": "प्रोफ़ाइल"
     },
     "appearance": {
       "themeLabel": "थीम",
@@ -214,6 +213,13 @@
     "accessibility": {
       "keyboardNavLabel": "कीबोर्ड नेविगेशन",
       "keyboardNavHint": "हर बोर्ड, बैकलॉग, और वर्कफ़्लो एडिटर को बिना माउस के इस्तेमाल किया जा सकता है: एरो कीज़ फोकस बदलती हैं, Space किसी आइटम को उठाती और छोड़ती है, Enter उसे खोलता है, और Escape रद्द करता है। यह हमेशा चालू रहता है।"
+    },
+    "title": "सेटिंग्स",
+    "backToSettings": "सेटिंग्स पर वापस जाएँ",
+    "groups": {
+      "personal": "व्यक्तिगत",
+      "project": "प्रोजेक्ट · {name}",
+      "workspace": "वर्कस्पेस"
     }
   },
   "gitConnections": {
@@ -322,8 +328,7 @@
     "createButton": "इश्यू बनाएँ",
     "creatingButton": "बनाया जा रहा है…"
   },
-  "accountSettingsModal": {
-    "title": "खाता सेटिंग्स",
+  "accountSettings": {
     "uploadPicture": "फ़ोटो अपलोड करें",
     "removePicture": "हटाएँ",
     "nameLabel": "नाम",
@@ -334,7 +339,28 @@
     "failedUpdate": "खाता अपडेट करने में विफल",
     "saveButton": "बदलाव सहेजें",
     "savingButton": "सहेजा जा रहा है…",
-    "youFallback": "आप"
+    "youFallback": "आप",
+    "saved": "सहेजा गया",
+    "nameRequired": "नाम खाली नहीं हो सकता",
+    "nameTooLong": "नाम {max} अक्षरों या उससे कम का होना चाहिए",
+    "emailInvalid": "मान्य ईमेल पता दर्ज करें",
+    "discardButton": "बदलाव छोड़ें",
+    "pictureHint": "तस्वीरें वर्गाकार में काटी जाती हैं।",
+    "unreadableImage": "यह छवि पढ़ी नहीं जा सकी",
+    "currentPasswordLabel": "वर्तमान पासवर्ड",
+    "emailPasswordHint": "नए ईमेल की पुष्टि के लिए अपना पासवर्ड दर्ज करें।",
+    "passwordHeading": "पासवर्ड",
+    "newPasswordLabel": "नया पासवर्ड",
+    "confirmPasswordLabel": "नए पासवर्ड की पुष्टि करें",
+    "passwordTooShort": "कम से कम {min} अक्षर उपयोग करें",
+    "passwordMismatch": "पासवर्ड मेल नहीं खाते",
+    "changePasswordButton": "पासवर्ड बदलें",
+    "changingPasswordButton": "बदला जा रहा है…",
+    "passwordChanged": "पासवर्ड बदल दिया गया",
+    "failedPassword": "पासवर्ड बदलने में विफल",
+    "detailsHeading": "खाता",
+    "roleLabel": "भूमिका",
+    "memberSinceLabel": "सदस्य बने"
   },
   "commentThread": {
     "reply": "जवाब दें",

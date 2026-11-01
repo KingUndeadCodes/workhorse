@@ -15,6 +15,18 @@ them, instead of rebuilding from scratch.
 
 ## Trimmed within existing components
 
+- **Separate "Project settings" and "Workspace" (members) screens** (`App.svelte`, `TopBar.svelte`,
+  `Sidebar.svelte`, `MobileNav.svelte`) — folded into the one Settings screen as tabs, grouped
+  Personal / Project / Workspace (`ProjectSettings.svelte` now renders just a tab body;
+  `WorkspaceView.svelte` became `MembersSettings.svelte`). The header's project-settings icon and
+  the mobile "More" sheet's project-settings row are gone; the sidebar workspace card and the
+  mobile workspace row open Settings → Members. On phones Settings is a menu you drill into
+  (grouped list, then a detail screen with Back) rather than a tab strip.
+- **Account settings modal** (`AccountSettingsModal.svelte`, mounted in `TopBar.svelte` and
+  `MobileNav.svelte`) — became the Profile tab of Settings (`AccountSettings.svelte`, Personal group).
+  The avatar menu's "Profile" item opens Settings → Profile; the mobile "Account settings" row is
+  gone (Profile is the first entry in the Settings menu). Save is disabled until something changes
+  and a "Saved" note replaces the modal closing.
 - **Sidebar Board/Backlog items** (`Sidebar.svelte`) — duplicated the top bar's Board/Backlog view
   tabs on desktop. The tabs stay (project-scoped view toggle beside the sprint breadcrumb); the
   sidebar now holds only My Issues, the workspace card and Projects, and clicking the current

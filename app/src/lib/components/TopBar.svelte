@@ -2,10 +2,9 @@
   import Icon from './Icon.svelte';
   import Avatar from './Avatar.svelte';
   import NewIssueModal from './NewIssueModal.svelte';
-  import AccountSettingsModal from './AccountSettingsModal.svelte';
   import NotificationBell from './NotificationBell.svelte';
   import { currentUser, logout } from '../stores/auth';
-  import { currentView, featureFlags, issuesStore, selectedIssueId, sprints, workspaceFeatures } from '../stores/workspace';
+  import { currentView, featureFlags, issuesStore, selectedIssueId, settingsJumpTab, sprints, workspaceFeatures } from '../stores/workspace';
   import { goToNewLabel, goToNewSprint } from '../actions/quickCreate';
   import { t } from '../i18n';
 
@@ -28,7 +27,6 @@
   }
 
   let showNewIssue = false;
-  let showAccountSettings = false;
   let showUserMenu = false;
   let showNewMenu = false;
   let userMenuWrap: HTMLDivElement;
@@ -55,9 +53,12 @@
     logout();
   }
 
-  function openAccountSettings() {
+  /** Your profile lives in Settings (Personal → Profile) — the avatar menu is just the shortcut people expect to it. */
+  function openProfile() {
     showUserMenu = false;
-    showAccountSettings = true;
+    settingsJumpTab.set('Profile');
+    $currentView = 'settings';
+    $selectedIssueId = null;
   }
 
   function newIssue() {
@@ -104,7 +105,6 @@
       {/if}
     </div>
     {#if $workspaceFeatures.insights}<button class="icon-btn stats-btn" title={$t('topBar.statsTitle')} aria-label={$t('topBar.statsTitle')} on:click={() => ($currentView = 'stats')}><Icon name="columns" /></button>{/if}
-    <button class="icon-btn project-settings-btn" title={$t('topBar.projectSettingsTitle')} aria-label={$t('topBar.projectSettingsTitle')} on:click={() => ($currentView = 'projectSettings')}><Icon name="grid" /></button>
     <button class="icon-btn workspace-settings-btn" title={$t('topBar.workspaceSettingsTitle')} aria-label={$t('topBar.workspaceSettingsTitle')} on:click={() => ($currentView = 'settings')}><Icon name="gear" /></button>
     {#if $currentUser}<NotificationBell />{/if}
     {#if $currentUser}
@@ -118,7 +118,7 @@
               <div class="user-menu-name">{$currentUser.displayName}</div>
               <div class="user-menu-email">{$currentUser.email}</div>
             </div>
-            <button class="dropdown-item" on:click={openAccountSettings}>{$t('topBar.accountSettings')}</button>
+            <button class="dropdown-item" on:click={openProfile}>{$t('topBar.accountSettings')}</button>
             <button class="dropdown-item" on:click={handleLogout}>{$t('topBar.logOut')}</button>
           </div>
         {/if}
@@ -129,10 +129,6 @@
 
 {#if showNewIssue}
   <NewIssueModal onClose={() => (showNewIssue = false)} />
-{/if}
-
-{#if showAccountSettings}
-  <AccountSettingsModal onClose={() => (showAccountSettings = false)} />
 {/if}
 
 <style>
@@ -196,7 +192,7 @@
        — Board/Backlog/Projects/Settings are all one tap away there instead of a second tap
        through a menu, so the icon-only project/workspace settings buttons (now reachable from
        MobileNav's More sheet) stay hidden on mobile too. */
-    .stats-btn, .project-settings-btn, .workspace-settings-btn { display: none; }
+    .stats-btn, .workspace-settings-btn { display: none; }
     .crumb { display: none; }
     /* Nothing else occupies the bar's left side on mobile (crumb hidden, tabs hidden below) —
        shows the wordmark instead of leaving it blank, same identity Sidebar's .brand carries

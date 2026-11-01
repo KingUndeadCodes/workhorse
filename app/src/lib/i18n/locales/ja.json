@@ -40,9 +40,8 @@
     "newComponent": "コンポーネント",
     "newVersion": "バージョン",
     "statsTitle": "統計",
-    "projectSettingsTitle": "プロジェクト設定",
-    "workspaceSettingsTitle": "ワークスペース設定",
-    "accountSettings": "アカウント設定",
+    "workspaceSettingsTitle": "設定",
+    "accountSettings": "プロフィール",
     "logOut": "ログアウト"
   },
   "sidebar": {
@@ -59,9 +58,7 @@
     "moreTab": "その他",
     "newProjectRow": "新規プロジェクト",
     "statsRow": "統計",
-    "projectSettingsRow": "プロジェクト設定",
-    "workspaceSettingsRow": "ワークスペース設定",
-    "accountSettingsRow": "アカウント設定",
+    "workspaceSettingsRow": "設定",
     "logOutRow": "ログアウト"
   },
   "board": {
@@ -157,7 +154,9 @@
       "git": "Git",
       "webhooks": "Webhook",
       "accessibility": "アクセシビリティ",
-      "features": "機能"
+      "features": "機能",
+      "members": "メンバー",
+      "profile": "プロフィール"
     },
     "appearance": {
       "themeLabel": "テーマ",
@@ -213,6 +212,13 @@
     "accessibility": {
       "keyboardNavLabel": "キーボードナビゲーション",
       "keyboardNavHint": "ボード、バックログ、ワークフローエディタはすべてマウスなしで操作できます。矢印キーでフォーカスを移動し、スペースキーで項目を持ち上げたり置いたりし、Enter キーで開き、Esc キーでキャンセルします。これは常に有効です。"
+    },
+    "title": "設定",
+    "backToSettings": "設定に戻る",
+    "groups": {
+      "personal": "個人",
+      "project": "プロジェクト · {name}",
+      "workspace": "ワークスペース"
     }
   },
   "gitConnections": {
@@ -321,8 +327,7 @@
     "createButton": "課題を作成",
     "creatingButton": "作成中…"
   },
-  "accountSettingsModal": {
-    "title": "アカウント設定",
+  "accountSettings": {
     "uploadPicture": "画像をアップロード",
     "removePicture": "削除",
     "nameLabel": "名前",
@@ -333,7 +338,28 @@
     "failedUpdate": "アカウントの更新に失敗しました",
     "saveButton": "変更を保存",
     "savingButton": "保存中…",
-    "youFallback": "あなた"
+    "youFallback": "あなた",
+    "saved": "保存しました",
+    "nameRequired": "名前を入力してください",
+    "nameTooLong": "名前は{max}文字以内で入力してください",
+    "emailInvalid": "有効なメールアドレスを入力してください",
+    "discardButton": "変更を破棄",
+    "pictureHint": "画像は正方形に切り抜かれます。",
+    "unreadableImage": "この画像を読み込めませんでした",
+    "currentPasswordLabel": "現在のパスワード",
+    "emailPasswordHint": "新しいメールアドレスを確認するため、パスワードを入力してください。",
+    "passwordHeading": "パスワード",
+    "newPasswordLabel": "新しいパスワード",
+    "confirmPasswordLabel": "新しいパスワード（確認）",
+    "passwordTooShort": "{min}文字以上で入力してください",
+    "passwordMismatch": "パスワードが一致しません",
+    "changePasswordButton": "パスワードを変更",
+    "changingPasswordButton": "変更中…",
+    "passwordChanged": "パスワードを変更しました",
+    "failedPassword": "パスワードの変更に失敗しました",
+    "detailsHeading": "アカウント",
+    "roleLabel": "役割",
+    "memberSinceLabel": "参加日"
   },
   "commentThread": {
     "reply": "返信",

@@ -1,12 +1,19 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { currentView, currentProjectId, projects, selectedIssueId, switchProject, createNewProject, workspace, users } from '../stores/workspace';
+  import { currentView, currentProjectId, projects, selectedIssueId, settingsJumpTab, switchProject, createNewProject, workspace, users } from '../stores/workspace';
   import { splitHumansAndAgents } from '../util';
   import { t, tn } from '../i18n';
 
   // AI agents are User rows (kind: 'agent') so they can be assigned/mentioned like anyone else,
   // but they aren't people — the workspace's member count should only reflect humans.
   $: memberCount = splitHumansAndAgents($users).humans.length;
+
+  /** The workspace card is the shortcut to who's in the workspace — a tab of Settings now, not a screen of its own. */
+  function openMembers() {
+    settingsJumpTab.set('Members');
+    $currentView = 'settings';
+    $selectedIssueId = null;
+  }
 
   // Board/Backlog live in the top bar's view tabs (TopBar.svelte) — this sidebar only answers
   // "where" (My Issues, projects), so the project row doubles as the way back to its board.
@@ -42,7 +49,7 @@
 <aside class="sidebar">
   <div class="brand"><Icon name="anvil" size={22} />{$t('topBar.workhorseBrand')}</div>
 
-  <button class="workspace" class:active={$currentView === 'workspace'} on:click={() => ($currentView = 'workspace')}>
+  <button class="workspace" on:click={openMembers}>
     <div class="workspace-dot"></div>
     <div class="workspace-text">
       <div class="workspace-name">{$workspace?.name ?? ''}</div>
@@ -115,7 +122,7 @@
     width: calc(100% - 24px);
     text-align: left;
   }
-  .workspace:hover, .workspace.active { border-color: var(--accent); }
+  .workspace:hover { border-color: var(--accent); }
   .workspace-text { overflow: hidden; }
   .workspace-dot { width: 18px; height: 18px; border-radius: 5px; background: linear-gradient(140deg, var(--accent), var(--accent-strong)); flex: 0 0 18px; }
   .workspace-name { font-size: 12.5px; font-weight: 600; color: var(--sidebar-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

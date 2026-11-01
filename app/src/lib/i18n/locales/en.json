@@ -41,9 +41,8 @@
     "newComponent": "Component",
     "newVersion": "Version",
     "statsTitle": "Stats",
-    "projectSettingsTitle": "Project settings",
-    "workspaceSettingsTitle": "Workspace settings",
-    "accountSettings": "Account settings",
+    "workspaceSettingsTitle": "Settings",
+    "accountSettings": "Profile",
     "logOut": "Log out"
   },
   "sidebar": {
@@ -65,9 +64,7 @@
     "moreTab": "More",
     "newProjectRow": "New project",
     "statsRow": "Stats",
-    "projectSettingsRow": "Project settings",
-    "workspaceSettingsRow": "Workspace settings",
-    "accountSettingsRow": "Account settings",
+    "workspaceSettingsRow": "Settings",
     "logOutRow": "Log out"
   },
   "board": {
@@ -163,7 +160,9 @@
       "git": "Git",
       "webhooks": "Webhooks",
       "accessibility": "Accessibility",
-      "features": "Features"
+      "features": "Features",
+      "members": "Members",
+      "profile": "Profile"
     },
     "appearance": {
       "themeLabel": "Theme",
@@ -219,6 +218,13 @@
     "accessibility": {
       "keyboardNavLabel": "Keyboard navigation",
       "keyboardNavHint": "Every board, backlog, and the workflow editor can be used without a mouse: arrow keys move focus, Space picks up and drops an item, Enter opens it, and Escape cancels. This is always on."
+    },
+    "title": "Settings",
+    "backToSettings": "Back to settings",
+    "groups": {
+      "personal": "Personal",
+      "project": "Project · {name}",
+      "workspace": "Workspace"
     }
   },
   "gitConnections": {
@@ -327,8 +333,7 @@
     "createButton": "Create issue",
     "creatingButton": "Creating…"
   },
-  "accountSettingsModal": {
-    "title": "Account settings",
+  "accountSettings": {
     "uploadPicture": "Upload picture",
     "removePicture": "Remove",
     "nameLabel": "Name",
@@ -339,7 +344,28 @@
     "failedUpdate": "Failed to update account",
     "saveButton": "Save changes",
     "savingButton": "Saving…",
-    "youFallback": "You"
+    "youFallback": "You",
+    "saved": "Saved",
+    "nameRequired": "Name can't be empty",
+    "nameTooLong": "Name must be {max} characters or fewer",
+    "emailInvalid": "Enter a valid email address",
+    "discardButton": "Discard changes",
+    "pictureHint": "Pictures are cropped to a square.",
+    "unreadableImage": "That image couldn't be read",
+    "currentPasswordLabel": "Current password",
+    "emailPasswordHint": "Enter your password to confirm the new email.",
+    "passwordHeading": "Password",
+    "newPasswordLabel": "New password",
+    "confirmPasswordLabel": "Confirm new password",
+    "passwordTooShort": "Use at least {min} characters",
+    "passwordMismatch": "Passwords don't match",
+    "changePasswordButton": "Change password",
+    "changingPasswordButton": "Changing…",
+    "passwordChanged": "Password changed",
+    "failedPassword": "Failed to change password",
+    "detailsHeading": "Account",
+    "roleLabel": "Role",
+    "memberSinceLabel": "Member since"
   },
   "commentThread": {
     "reply": "Reply",

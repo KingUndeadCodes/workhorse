@@ -41,9 +41,8 @@
     "newComponent": "Componente",
     "newVersion": "Versão",
     "statsTitle": "Estatísticas",
-    "projectSettingsTitle": "Configurações do projeto",
-    "workspaceSettingsTitle": "Configurações do espaço de trabalho",
-    "accountSettings": "Configurações da conta",
+    "workspaceSettingsTitle": "Configurações",
+    "accountSettings": "Perfil",
     "logOut": "Sair"
   },
   "sidebar": {
@@ -65,9 +64,7 @@
     "moreTab": "Mais",
     "newProjectRow": "Novo projeto",
     "statsRow": "Estatísticas",
-    "projectSettingsRow": "Configurações do projeto",
-    "workspaceSettingsRow": "Configurações do espaço de trabalho",
-    "accountSettingsRow": "Configurações da conta",
+    "workspaceSettingsRow": "Configurações",
     "logOutRow": "Sair"
   },
   "board": {
@@ -163,7 +160,9 @@
       "git": "Git",
       "webhooks": "Webhooks",
       "accessibility": "Acessibilidade",
-      "features": "Recursos"
+      "features": "Recursos",
+      "members": "Membros",
+      "profile": "Perfil"
     },
     "appearance": {
       "themeLabel": "Tema",
@@ -219,6 +218,13 @@
     "accessibility": {
       "keyboardNavLabel": "Navegação pelo teclado",
       "keyboardNavHint": "Todo quadro, backlog e o editor de fluxo de trabalho podem ser usados sem mouse: as setas movem o foco, Espaço pega e solta um item, Enter o abre e Esc cancela. Isso está sempre ativado."
+    },
+    "title": "Configurações",
+    "backToSettings": "Voltar para configurações",
+    "groups": {
+      "personal": "Pessoal",
+      "project": "Projeto · {name}",
+      "workspace": "Espaço de trabalho"
     }
   },
   "gitConnections": {
@@ -327,8 +333,7 @@
     "createButton": "Criar tarefa",
     "creatingButton": "Criando…"
   },
-  "accountSettingsModal": {
-    "title": "Configurações da conta",
+  "accountSettings": {
     "uploadPicture": "Enviar foto",
     "removePicture": "Remover",
     "nameLabel": "Nome",
@@ -339,7 +344,28 @@
     "failedUpdate": "Falha ao atualizar a conta",
     "saveButton": "Salvar alterações",
     "savingButton": "Salvando…",
-    "youFallback": "Você"
+    "youFallback": "Você",
+    "saved": "Salvo",
+    "nameRequired": "O nome não pode ficar vazio",
+    "nameTooLong": "O nome deve ter no máximo {max} caracteres",
+    "emailInvalid": "Informe um endereço de e-mail válido",
+    "discardButton": "Descartar alterações",
+    "pictureHint": "As imagens são cortadas em formato quadrado.",
+    "unreadableImage": "Não foi possível ler essa imagem",
+    "currentPasswordLabel": "Senha atual",
+    "emailPasswordHint": "Digite sua senha para confirmar o novo e-mail.",
+    "passwordHeading": "Senha",
+    "newPasswordLabel": "Nova senha",
+    "confirmPasswordLabel": "Confirmar nova senha",
+    "passwordTooShort": "Use pelo menos {min} caracteres",
+    "passwordMismatch": "As senhas não coincidem",
+    "changePasswordButton": "Alterar senha",
+    "changingPasswordButton": "Alterando…",
+    "passwordChanged": "Senha alterada",
+    "failedPassword": "Falha ao alterar a senha",
+    "detailsHeading": "Conta",
+    "roleLabel": "Função",
+    "memberSinceLabel": "Membro desde"
   },
   "commentThread": {
     "reply": "Responder",

@@ -40,9 +40,8 @@
     "newComponent": "组件",
     "newVersion": "版本",
     "statsTitle": "统计",
-    "projectSettingsTitle": "项目设置",
-    "workspaceSettingsTitle": "工作区设置",
-    "accountSettings": "账户设置",
+    "workspaceSettingsTitle": "设置",
+    "accountSettings": "个人资料",
     "logOut": "退出登录"
   },
   "sidebar": {
@@ -59,9 +58,7 @@
     "moreTab": "更多",
     "newProjectRow": "新建项目",
     "statsRow": "统计",
-    "projectSettingsRow": "项目设置",
-    "workspaceSettingsRow": "工作区设置",
-    "accountSettingsRow": "账户设置",
+    "workspaceSettingsRow": "设置",
     "logOutRow": "退出登录"
   },
   "board": {
@@ -157,7 +154,9 @@
       "git": "Git",
       "webhooks": "Webhook",
       "accessibility": "辅助功能",
-      "features": "功能"
+      "features": "功能",
+      "members": "成员",
+      "profile": "个人资料"
     },
     "appearance": {
       "themeLabel": "主题",
@@ -213,6 +212,13 @@
     "accessibility": {
       "keyboardNavLabel": "键盘导航",
       "keyboardNavHint": "每个看板、待办列表和工作流编辑器都可以不用鼠标操作:方向键移动焦点,空格键拾取和放下项目,回车键打开它,Esc 键取消操作。此功能始终处于开启状态。"
+    },
+    "title": "设置",
+    "backToSettings": "返回设置",
+    "groups": {
+      "personal": "个人",
+      "project": "项目 · {name}",
+      "workspace": "工作区"
     }
   },
   "gitConnections": {
@@ -321,8 +327,7 @@
     "createButton": "创建事项",
     "creatingButton": "创建中…"
   },
-  "accountSettingsModal": {
-    "title": "账户设置",
+  "accountSettings": {
     "uploadPicture": "上传图片",
     "removePicture": "移除",
     "nameLabel": "姓名",
@@ -333,7 +338,28 @@
     "failedUpdate": "更新账户失败",
     "saveButton": "保存更改",
     "savingButton": "保存中…",
-    "youFallback": "你"
+    "youFallback": "你",
+    "saved": "已保存",
+    "nameRequired": "姓名不能为空",
+    "nameTooLong": "姓名不能超过 {max} 个字符",
+    "emailInvalid": "请输入有效的电子邮件地址",
+    "discardButton": "放弃更改",
+    "pictureHint": "图片会被裁剪为正方形。",
+    "unreadableImage": "无法读取该图片",
+    "currentPasswordLabel": "当前密码",
+    "emailPasswordHint": "请输入密码以确认新的电子邮件。",
+    "passwordHeading": "密码",
+    "newPasswordLabel": "新密码",
+    "confirmPasswordLabel": "确认新密码",
+    "passwordTooShort": "请至少使用 {min} 个字符",
+    "passwordMismatch": "两次输入的密码不一致",
+    "changePasswordButton": "修改密码",
+    "changingPasswordButton": "正在修改…",
+    "passwordChanged": "密码已修改",
+    "failedPassword": "修改密码失败",
+    "detailsHeading": "账户",
+    "roleLabel": "角色",
+    "memberSinceLabel": "加入时间"
   },
   "commentThread": {
     "reply": "回复",

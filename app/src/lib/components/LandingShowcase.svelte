@@ -24,7 +24,7 @@
     { id: 'board', icon: 'columns', title: 'Board & Backlog', desc: 'Drag-and-drop kanban plus full sprint planning, without leaving the page.', crumb: 'Sprint 12' },
     { id: 'agents', icon: 'robot', title: 'AI Agents', desc: 'Attach an agent to a ticket and it picks up the work, commenting and updating status as it goes. Runs on a local Ollama model — no hosted AI provider required.', crumb: 'Sprint 12' },
     { id: 'control', icon: 'lock', title: 'You stay in control', desc: 'Require approval before an agent acts, and cap how often and how much each one can do. Repo writes always wait for a human.', crumb: 'Settings' },
-    { id: 'github', icon: 'branch', title: 'GitHub, built in', desc: 'Connect your own GitHub account to link a repo and create a branch straight from a ticket.', crumb: 'Project settings' },
+    { id: 'github', icon: 'branch', title: 'GitHub, built in', desc: 'Connect your own GitHub account to link a repo and create a branch straight from a ticket.', crumb: 'Settings' },
     { id: 'automations', icon: 'route', title: 'Automations', desc: "Rule-based triggers and actions handle the busywork so your team doesn't have to.", crumb: 'Settings' },
     { id: 'insights', icon: 'clock', title: 'Insights', desc: 'Time-spent charts and most-active-ticket rankings, updated in real time.', crumb: 'Stats' },
   ];
@@ -68,8 +68,16 @@
 
   // ---- scenes 1-5: demo state. Each scene mirrors a real screen (see the header note); the flags below are
   // the little bit of "someone is using it" that plays when the scene appears. ----
-  const SETTINGS_TABS = ['Appearance', 'Accessibility', 'Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Git', 'Webhooks'];
-  const PROJECT_TABS = ['Project', 'Git'];
+  // The one Settings screen: personal, project and workspace config share a single grouped nav (the two Git
+  // entries are the project's repo link and the workspace's GitHub connection, hence ids as well as labels).
+  const SETTINGS_NAV: { group: string; tabs: { id: string; label: string }[] }[] = [
+    { group: 'Personal', tabs: [{ id: 'profile', label: 'Profile' }, { id: 'appearance', label: 'Appearance' }, { id: 'accessibility', label: 'Accessibility' }] },
+    { group: 'Project · Workhorse', tabs: [{ id: 'project', label: 'Project' }, { id: 'projectGit', label: 'Git' }] },
+    {
+      group: 'Workspace',
+      tabs: ['Members', 'Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Git', 'Webhooks'].map((label) => ({ id: label === 'Git' ? 'git' : label.toLowerCase(), label })),
+    },
+  ];
   // Scene 1: IssueDrawer
   let agentAttached = false;
   let agentRunning = false;
@@ -77,7 +85,7 @@
   // Scene 2: Settings → Agents, "Awaiting your approval"
   let approvePressed = false;
   let approved = false;
-  // Scene 3: Project settings → Git, then the drawer's Branch section
+  // Scene 3: Settings → Project → Git, then the drawer's Branch section
   let repoPicked = false;
   let linkPressed = false;
   let repoLinked = false;
@@ -232,6 +240,17 @@
   <span class="magent-avatar" style="width:{px}px;height:{px}px"><picture><source media="(prefers-color-scheme: dark)" srcset="/agents/ollama-light.svg" /><img src="/agents/ollama-dark.svg" alt="" width={Math.round(px * 0.62)} height={Math.round(px * 0.62)} /></picture></span>
 {/snippet}
 
+{#snippet settingsNav(active: string)}
+  <nav class="stabs">
+    {#each SETTINGS_NAV as g}
+      <div class="stab-group">
+        <div class="stab-heading">{g.group}</div>
+        {#each g.tabs as tab}<span class="stab" class:active={tab.id === active}>{tab.label}</span>{/each}
+      </div>
+    {/each}
+  </nav>
+{/snippet}
+
 <section class="showcase" bind:this={root} aria-labelledby="showcase-title">
   <h2 id="showcase-title" class="sr-only">Features</h2>
   <ol class="sr-only sr-list">
@@ -364,7 +383,7 @@
             <!-- 2 · You stay in control — Settings → Agents, "Awaiting your approval" and the agent list -->
             <div class="scene scene-flush" class:on={active === 2}>
               <div class="sframe">
-                <nav class="stabs">{#each SETTINGS_TABS as tn}<span class="stab" class:active={tn === 'Agents'}>{tn}</span>{/each}</nav>
+                {@render settingsNav('agents')}
                 <div class="spanel">
                   {#if !approved}
                     <div class="subsection-label" out:fade={{ duration: 150 }}>Awaiting your approval</div>
@@ -393,10 +412,10 @@
               </div>
             </div>
 
-            <!-- 3 · GitHub — Project settings → Git (link a repo), then the drawer's Branch section -->
+            <!-- 3 · GitHub — Settings → Project → Git (link a repo), then the drawer's Branch section -->
             <div class="scene scene-flush" class:on={active === 3}>
               <div class="sframe">
-                <nav class="stabs">{#each PROJECT_TABS as tn}<span class="stab" class:active={tn === 'Git'}>{tn}</span>{/each}</nav>
+                {@render settingsNav('projectGit')}
                 <div class="spanel">
                   <p class="section-hint">Link this project to a git repository to create a real branch for any ticket, right from its drawer.</p>
                   {#if repoLinked}
@@ -428,7 +447,7 @@
             <!-- 4 · Automations — Settings → Automations: a row per rule, then the if/then detail lines -->
             <div class="scene scene-flush" class:on={active === 4}>
               <div class="sframe">
-                <nav class="stabs">{#each SETTINGS_TABS as tn}<span class="stab" class:active={tn === 'Automations'}>{tn}</span>{/each}</nav>
+                {@render settingsNav('automations')}
                 <div class="spanel">
                   <div class="list">
                     {#each RULES as rule, i}
@@ -692,8 +711,12 @@
 
   /* Settings / ProjectSettings: a tab column plus a panel */
   .sframe { display: flex; height: 100%; }
-  .stabs { flex: 0 0 180px; display: flex; flex-direction: column; gap: 2px; padding: 16px 10px; border-right: 1px solid var(--lp-border); }
-  .stab { font-size: 12.5px; font-weight: 500; color: var(--lp-text-2); padding: 7px 10px; border-radius: 7px; }
+  .stabs { flex: 0 0 200px; display: flex; flex-direction: column; padding: 12px 10px 16px; border-right: 1px solid var(--lp-border); overflow: hidden; }
+  .stab-group { display: flex; flex-direction: column; gap: 2px; }
+  .stab-group + .stab-group { margin-top: 8px; }
+  .stab-heading { font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--lp-text-3); padding: 4px 10px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Rows are a touch tighter than the real nav's 7px so all twelve fit the mock window's fixed height. */
+  .stab { font-size: 12.5px; font-weight: 500; color: var(--lp-text-2); padding: 4px 10px; border-radius: 7px; }
   .stab.active { background: var(--lp-accent-soft); color: var(--lp-accent-strong); font-weight: 600; }
   .spanel { flex: 1; min-width: 0; padding: 18px 24px; overflow: hidden; }
   .spanel > .subsection-label:first-child { margin-top: 0; }

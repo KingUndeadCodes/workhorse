@@ -1,11 +1,16 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import Icon from './Icon.svelte';
   import WorkflowDiagram from './WorkflowDiagram.svelte';
+  import AccountSettings from './AccountSettings.svelte';
   import AgentsSettings from './AgentsSettings.svelte';
   import FeaturesSettings from './FeaturesSettings.svelte';
   import GitConnectionsSettings from './GitConnectionsSettings.svelte';
+  import MembersSettings from './MembersSettings.svelte';
+  import ProjectSettings from './ProjectSettings.svelte';
   import {
     automationRules,
+    currentProject,
     fieldDefinitions,
     isWorkspaceAdmin,
     labels,
@@ -29,10 +34,17 @@
   import { describeAutomationAction, formatRelativeDate, splitHumansAndAgents } from '../util';
   import type { AutomationAction, AutomationCondition, EventType, FilterOp, WebhookDelivery } from '$domain';
 
-  const allTabs = ['Appearance', 'Accessibility', 'Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Git', 'Webhooks', 'Features'] as const;
-  const TAB_LABEL_KEYS: Record<(typeof allTabs)[number], string> = {
+  // 'Git' is the workspace-level GitHub connections tab (what settingsJumpTab.set('Git') has always
+  // meant); the project's own repo link is 'ProjectGit'.
+  const allTabs = ['Profile', 'Appearance', 'Accessibility', 'Project', 'ProjectGit', 'Members', 'Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Git', 'Webhooks', 'Features'] as const;
+  type Tab = (typeof allTabs)[number];
+  const TAB_LABEL_KEYS: Record<Tab, string> = {
+    Profile: 'settings.tabs.profile',
     Appearance: 'settings.tabs.appearance',
     Accessibility: 'settings.tabs.accessibility',
+    Project: 'projectSettings.tabs.project',
+    ProjectGit: 'projectSettings.tabs.git',
+    Members: 'settings.tabs.members',
     Labels: 'settings.tabs.labels',
     Fields: 'settings.tabs.fields',
     Workflow: 'settings.tabs.workflow',
@@ -42,25 +54,58 @@
     Webhooks: 'settings.tabs.webhooks',
     Features: 'settings.tabs.features',
   };
+  // One screen for everything configurable, grouped by what it applies to: you, this project, or the whole workspace.
+  const GROUPS: { id: 'personal' | 'project' | 'workspace'; tabs: Tab[] }[] = [
+    { id: 'personal', tabs: ['Profile', 'Appearance', 'Accessibility'] },
+    { id: 'project', tabs: ['Project', 'ProjectGit'] },
+    { id: 'workspace', tabs: ['Members', 'Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Git', 'Webhooks', 'Features'] },
+  ];
   // Tabs for a module an owner/admin switched off disappear; Features itself is admin-only.
-  $: tabs = allTabs.filter(
-    (tab) =>
-      (tab !== 'Automations' || $workspaceFeatures.automations) &&
-      (tab !== 'Agents' || $workspaceFeatures.agents) &&
-      (tab !== 'Git' || $workspaceFeatures.git) &&
-      (tab !== 'Webhooks' || $workspaceFeatures.webhooks) &&
-      (tab !== 'Features' || $isWorkspaceAdmin),
-  );
-  let activeTab: (typeof allTabs)[number] = 'Labels';
+  $: visible = (tab: Tab) =>
+    (tab !== 'Automations' || $workspaceFeatures.automations) &&
+    (tab !== 'Agents' || $workspaceFeatures.agents) &&
+    (tab !== 'Git' || $workspaceFeatures.git) &&
+    (tab !== 'ProjectGit' || $workspaceFeatures.git) &&
+    (tab !== 'Webhooks' || $workspaceFeatures.webhooks) &&
+    (tab !== 'Features' || $isWorkspaceAdmin);
+  $: groups = GROUPS.map((g) => ({ id: g.id, tabs: g.tabs.filter(visible) })).filter((g) => g.tabs.length > 0);
+  $: tabs = groups.flatMap((g) => g.tabs);
+  $: groupLabel = (id: 'personal' | 'project' | 'workspace') => $t(`settings.groups.${id}`, { name: $currentProject?.name ?? '' });
+  let activeTab: Tab = 'Labels';
+  $: activeGroupId = groups.find((g) => g.tabs.includes(activeTab))?.id;
   // If the active tab's module gets switched off (here or elsewhere), fall back to a tab that still exists.
   $: if (!tabs.includes(activeTab)) activeTab = 'Labels';
+
+  // On a phone the tabs are a menu you drill into (a grouped list, then a detail screen with a
+  // Back button) instead of a sideways-scrolling tab strip — with this many tabs a strip would
+  // hide most of them off-screen. `activeTab` stays the single source of truth; this flag only
+  // decides, on mobile, whether the menu or the detail is showing, so desktop (and resizing
+  // across the breakpoint) never depends on it.
+  let mobileMenuOpen = true;
+  let rowEls: Partial<Record<Tab, HTMLButtonElement>> = {};
+  let detailTitleEl: HTMLElement | undefined;
+  let lastOpenedTab: Tab | null = null;
+  async function openTab(tab: Tab) {
+    activeTab = tab;
+    lastOpenedTab = tab;
+    mobileMenuOpen = false;
+    await tick();
+    detailTitleEl?.focus();
+  }
+  async function backToMenu() {
+    mobileMenuOpen = true;
+    await tick();
+    if (lastOpenedTab) rowEls[lastOpenedTab]?.focus();
+  }
 
   // Lets the TopBar "New…" menu open Settings already on the relevant tab (e.g. "New Label").
   // Reactive, not a one-time check: this component stays mounted across jumps whenever the
   // view is already 'settings' (no {#key} in App.svelte), so a plain top-level `if` would only
-  // ever fire once, at first mount.
+  // ever fire once, at first mount. On mobile a jump opens the tab's detail directly.
   $: if ($settingsJumpTab && (allTabs as readonly string[]).includes($settingsJumpTab)) {
-    activeTab = $settingsJumpTab as (typeof allTabs)[number];
+    activeTab = $settingsJumpTab as Tab;
+    lastOpenedTab = activeTab;
+    mobileMenuOpen = false;
     settingsJumpTab.set(null);
   }
 
@@ -273,14 +318,49 @@
 </script>
 
 <div class="settings">
-  <nav class="tabs">
-    {#each tabs as tab}
-      <button class="tab" class:active={tab === activeTab} on:click={() => (activeTab = tab)}>{$t(TAB_LABEL_KEYS[tab])}</button>
-    {/each}
-  </nav>
+  {#if $isMobile && mobileMenuOpen}
+    <nav class="menu" aria-label={$t('settings.title')}>
+      {#each groups as group (group.id)}
+        <div class="menu-group">
+          <div class="menu-heading">{groupLabel(group.id)}</div>
+          {#each group.tabs as tab (tab)}
+            <button type="button" class="menu-row" bind:this={rowEls[tab]} on:click={() => openTab(tab)}>
+              <span>{$t(TAB_LABEL_KEYS[tab])}</span>
+              <Icon name="chevron" size={14} />
+            </button>
+          {/each}
+        </div>
+      {/each}
+    </nav>
+  {:else}
+    {#if $isMobile}
+      <div class="detail-head">
+        <button type="button" class="back-btn" aria-label={$t('settings.backToSettings')} on:click={backToMenu}>
+          <span class="back-chevron"><Icon name="chevron" size={14} /></span>{$t('settings.title')}
+        </button>
+        <div class="detail-heading">
+          <h2 class="detail-title" tabindex="-1" bind:this={detailTitleEl}>{$t(TAB_LABEL_KEYS[activeTab])}</h2>
+          <!-- "Git" exists under both Project and Workspace — the group line says which one this is. -->
+          {#if activeGroupId}<span class="detail-group">{groupLabel(activeGroupId)}</span>{/if}
+        </div>
+      </div>
+    {:else}
+      <nav class="tabs" aria-label={$t('settings.title')}>
+        {#each groups as group (group.id)}
+          <div class="tab-group">
+            <div class="tab-heading">{groupLabel(group.id)}</div>
+            {#each group.tabs as tab (tab)}
+              <button class="tab" class:active={tab === activeTab} on:click={() => (activeTab = tab)}>{$t(TAB_LABEL_KEYS[tab])}</button>
+            {/each}
+          </div>
+        {/each}
+      </nav>
+    {/if}
 
   <div class="panel">
-    {#if activeTab === 'Appearance'}
+    {#if activeTab === 'Profile'}
+      <AccountSettings />
+    {:else if activeTab === 'Appearance'}
       <div class="appearance-row">
         <div class="appearance-copy">
           <span class="row-name">{$t('settings.appearance.themeLabel')}</span>
@@ -347,6 +427,10 @@
           <span class="row-hint">{$t('settings.accessibility.keyboardNavHint')}</span>
         </div>
       </div>
+    {:else if activeTab === 'Project' || activeTab === 'ProjectGit'}
+      <ProjectSettings tab={activeTab === 'Project' ? 'Project' : 'Git'} />
+    {:else if activeTab === 'Members'}
+      <MembersSettings />
     {:else if activeTab === 'Labels'}
       <div class="list">
         {#each $labels as l (l.id)}
@@ -537,24 +621,53 @@
       </form>
     {/if}
   </div>
+  {/if}
 </div>
 
 <style>
   .settings { flex: 1; display: flex; overflow: hidden; }
-  .tabs { flex: 0 0 180px; display: flex; flex-direction: column; gap: 2px; padding: 16px 10px; border-right: 1px solid var(--border); overflow-y: auto; }
+  .tabs { flex: 0 0 200px; display: flex; flex-direction: column; padding: 12px 10px 16px; border-right: 1px solid var(--border); overflow-y: auto; }
+  .tab-group { display: flex; flex-direction: column; gap: 2px; }
+  .tab-group + .tab-group { margin-top: 14px; }
+  .tab-heading {
+    font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3);
+    padding: 4px 10px 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
   .tab { text-align: left; font-size: 12.5px; font-weight: 500; color: var(--text-2); padding: 7px 10px; border-radius: 7px; }
   .tab:hover { background: var(--surface-sunken); }
   .tab.active { background: var(--accent-soft); color: var(--accent-strong); font-weight: 600; }
   .panel { flex: 1; overflow-y: auto; padding: 20px 24px; }
 
+  /* Phone layout: a grouped menu you drill into, with a Back header on the detail screen — see
+     the `mobileMenuOpen` note in the script. Rows are full-width 48px+ touch targets. */
+  .menu { flex: 1; overflow-y: auto; padding: 8px 16px 24px; }
+  .menu-group + .menu-group { margin-top: 18px; }
+  .menu-heading {
+    font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3);
+    padding: 10px 4px 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .menu-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 48px;
+    padding: 0 14px; text-align: left; font-size: 14.5px; font-weight: 500; color: var(--text);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+  }
+  .menu-row + .menu-row { margin-top: 6px; }
+  .menu-row :global(svg) { color: var(--text-3); transform: rotate(-90deg); }
+  .menu-row:active { background: var(--surface-sunken); }
+  .detail-head {
+    position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 6px 8px;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+  }
+  .back-btn { display: flex; align-items: center; gap: 2px; min-height: 44px; padding: 0 10px 0 6px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--accent-strong); flex: 0 0 auto; }
+  .back-chevron { display: flex; transform: rotate(90deg); }
+  .detail-heading { display: flex; flex-direction: column; min-width: 0; }
+  .detail-title { margin: 0; font-size: 15px; font-weight: 700; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-title:focus { outline: none; }
+  .detail-group { font-size: 11px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
   @media (max-width: 768px) {
     .settings { flex-direction: column; overflow: auto; }
-    .tabs {
-      flex: 0 0 auto; flex-direction: row; overflow-x: auto; overflow-y: visible;
-      border-right: none; border-bottom: 1px solid var(--border); padding: 10px; gap: 4px;
-    }
-    .tab { white-space: nowrap; padding: 10px 14px; font-size: 13.5px; }
-    .panel { padding: 16px; }
+    .panel { flex: 0 0 auto; overflow: visible; padding: 16px; }
     .row { padding: 11px 12px; font-size: 13.5px; }
     .icon-btn { padding: 8px; }
     .toggle { font-size: 13.5px; }

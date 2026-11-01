@@ -13,7 +13,6 @@
   import Icon from './Icon.svelte';
   import BottomSheet from './BottomSheet.svelte';
   import NewIssueModal from './NewIssueModal.svelte';
-  import AccountSettingsModal from './AccountSettingsModal.svelte';
   import { currentUser, logout } from '../stores/auth';
   import {
     createNewProject,
@@ -22,6 +21,7 @@
     featureFlags,
     projects,
     selectedIssueId,
+    settingsJumpTab,
     switchProject,
     users,
     workspace,
@@ -49,7 +49,6 @@
   let showNewCreate = false;
   let showProjects = false;
   let showMore = false;
-  let showAccountSettings = false;
 
   function openNewIssue() {
     showNewCreate = false;
@@ -94,10 +93,16 @@
     }
   }
 
-  function goTo(view: 'settings' | 'projectSettings' | 'workspace' | 'stats' | 'myIssues') {
+  function goTo(view: 'settings' | 'stats' | 'myIssues') {
     showMore = false;
     $currentView = view;
     $selectedIssueId = null;
+  }
+
+  /** The workspace row is the shortcut to who's in the workspace — a tab of Settings, opened directly. */
+  function goToMembers() {
+    settingsJumpTab.set('Members');
+    goTo('settings');
   }
 
   function handleLogout() {
@@ -132,7 +137,7 @@
   <button
     type="button"
     class="nav-btn"
-    class:active={showMore || $currentView === 'settings' || $currentView === 'projectSettings' || $currentView === 'workspace' || $currentView === 'stats' || $currentView === 'myIssues'}
+    class:active={showMore || $currentView === 'settings' || $currentView === 'stats' || $currentView === 'myIssues'}
     on:click={() => (showMore = true)}
   >
     <Icon name="gear" size={19} />
@@ -204,7 +209,7 @@
       <Icon name="task" size={15} />
       <span class="sheet-row-label">{$t('sidebar.myIssuesLabel')}</span>
     </button>
-    <button type="button" class="sheet-row" on:click={() => goTo('workspace')}>
+    <button type="button" class="sheet-row" on:click={goToMembers}>
       <Icon name="bars" size={15} />
       <span class="sheet-row-label">{$workspace?.name ?? ''} · {$tn('common.members', memberCount)}</span>
     </button>
@@ -214,17 +219,9 @@
       <span class="sheet-row-label">{$t('mobileNav.statsRow')}</span>
     </button>
     {/if}
-    <button type="button" class="sheet-row" on:click={() => goTo('projectSettings')}>
-      <Icon name="grid" size={15} />
-      <span class="sheet-row-label">{$t('mobileNav.projectSettingsRow')}</span>
-    </button>
     <button type="button" class="sheet-row" on:click={() => goTo('settings')}>
       <Icon name="gear" size={15} />
       <span class="sheet-row-label">{$t('mobileNav.workspaceSettingsRow')}</span>
-    </button>
-    <button type="button" class="sheet-row" on:click={() => ((showMore = false), (showAccountSettings = true))}>
-      <Icon name="pencil" size={15} />
-      <span class="sheet-row-label">{$t('mobileNav.accountSettingsRow')}</span>
     </button>
     <button type="button" class="sheet-row danger" on:click={handleLogout}>
       <Icon name="x" size={15} />
@@ -237,9 +234,6 @@
   <NewIssueModal onClose={() => (showNewIssue = false)} />
 {/if}
 
-{#if showAccountSettings}
-  <AccountSettingsModal onClose={() => (showAccountSettings = false)} />
-{/if}
 
 <style>
   /* Hidden entirely above the mobile breakpoint — this component only ever renders below it,

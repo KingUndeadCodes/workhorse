@@ -75,8 +75,8 @@ export const loaded = writable(false);
 /** Set if {@link initWorkspace} failed — see the error screen in App.svelte. */
 export const loadError = writable<string | null>(null);
 
-/** Which top-level screen is showing: the board, sprint planning, admin settings, or the workspace view. */
-export const currentView = writable<'board' | 'backlog' | 'settings' | 'projectSettings' | 'workspace' | 'stats' | 'myIssues'>('board');
+/** Which top-level screen is showing: the board, sprint planning, my issues, stats, or Settings (which also holds the project and workspace/members screens as tabs). */
+export const currentView = writable<'board' | 'backlog' | 'settings' | 'stats' | 'myIssues'>('board');
 
 /**
  * Settings tab to land on next time Settings mounts — set by the TopBar "New…" menu (e.g.
@@ -98,7 +98,7 @@ export const isWorkspaceAdmin = derived([workspaceMembers, currentUser], ([$memb
   const role = $members.find((m) => m.userId === $me?.id)?.role;
   return role === 'owner' || role === 'admin';
 });
-/** Pending signup pre-approvals — not part of bootstrap (owner/admin-only data, fetched on demand when WorkspaceView mounts for one). */
+/** Pending signup pre-approvals — not part of bootstrap (owner/admin-only data, fetched on demand when the Members settings tab mounts for one). */
 export const workspaceInvites = writable<WorkspaceInvite[]>([]);
 export const agents = writable<Agent[]>([]);
 export const agentRuns = writable<AgentRun[]>([]);
