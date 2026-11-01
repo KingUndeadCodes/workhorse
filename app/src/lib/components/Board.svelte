@@ -248,7 +248,7 @@
 <SearchFilterBar />
 <div class="board-wrap">
   <KeyboardNavHint message={$t('board.keyboardNav.hint')} {announcement} />
-  <div class="board-inner">
+  <div class="board-inner" style="--cols:{Math.max(columns.length, 1)}">
     <div class="board-head">
       {#each columns as col, i}
         <div class="col-head">
@@ -383,9 +383,11 @@
      Its 12px bottom margin moves into .board-head's padding instead, so that gap survives when
      the header is stuck rather than collapsing against whatever scrolls beneath it. */
   .board-wrap > :global(.keyboard-nav-hint) { margin: 16px 0 0; }
-  .board-inner { min-width: 880px; }
+  /* --cols is set inline from the board's real column count; the grids below size to it so a 3-column board
+     fills the width and a 6-column one stays on a single row instead of wrapping under the header. */
+  .board-inner { min-width: calc(var(--cols, 4) * 200px + (var(--cols, 4) - 1) * 14px); }
   .board-head {
-    display: grid; grid-template-columns: repeat(4, minmax(200px, 1fr)); gap: 14px;
+    display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(200px, 1fr)); gap: 14px;
     position: sticky; top: 0; background: var(--bg); z-index: 5; padding: 12px 0 10px;
   }
   .col-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 6px; }
@@ -406,7 +408,7 @@
   .epic-progress { font-size: 11px; color: var(--text-3); }
   .epic-bar { width: 64px; height: 4px; border-radius: 99px; background: var(--surface-sunken); overflow: hidden; }
   .epic-bar > span { display: block; height: 100%; border-radius: 99px; }
-  .swimlane-body { display: grid; grid-template-columns: repeat(4, minmax(200px, 1fr)); gap: 14px; }
+  .swimlane-body { display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(200px, 1fr)); gap: 14px; }
   .cell {
     background: var(--surface-sunken); border-radius: 10px; padding: 8px; min-height: 56px;
     display: flex; flex-direction: column; gap: 8px; transition: background .1s ease;
