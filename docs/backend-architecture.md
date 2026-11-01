@@ -480,6 +480,16 @@ logins are rate-limited per email and per client address, and signups per client
 `X-Forwarded-For` is trusted — set that only behind a proxy you control. All `/api` request bodies
 are capped at 5 MB (`bodyLimit`).
 
+**Account changes** (`routes/auth.ts`): `POST /api/auth/password` changes the caller's own password
+(new one at least 8 characters, like signup), and `PATCH /api/auth/me` only accepts a *different*
+email alongside `currentPassword` — the email is the login identifier, so a session left open
+shouldn't be enough to take the account over. Both re-check the password through one helper,
+rate-limited per signed-in user (5 wrong tries per 15 minutes). A wrong password is a **403, never a
+401**: the app treats any 401 as an expired session and signs the user out. Changing a password does
+not sign out other devices — sessions are stateless JWTs with no server-side list to revoke from, so
+that would need token versioning (a `credentials` version claimed in the token and checked in
+`requireAuth`).
+
 **Live updates** (`ws.ts`): the websocket URL carries a one-time, 30-second ticket
 (`POST /api/ws-ticket`), never the long-lived JWT, so a logged URL isn't a reusable credential.
 

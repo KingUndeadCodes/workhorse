@@ -480,7 +480,15 @@ export function revokeWorkspaceInvite(id: string): Promise<{ ok: true }> {
 
 // ---- Account ------------------------------------------------------------------
 
-/** Updates the caller's own profile. `avatarUrl` is a data: URL, or `null` to remove the picture. */
-export function updateProfile(changes: { displayName?: string; email?: string; avatarUrl?: string | null }): Promise<{ user: User }> {
+/**
+ * Updates the caller's own profile. `avatarUrl` is a data: URL, or `null` to remove the picture.
+ * Changing the email also needs `currentPassword` — the server rejects it otherwise.
+ */
+export function updateProfile(changes: { displayName?: string; email?: string; avatarUrl?: string | null; currentPassword?: string }): Promise<{ user: User }> {
   return patch('/auth/me', changes);
+}
+
+/** Changes the caller's own password. A wrong `currentPassword` is a 403 (not a 401), so it surfaces as an error here rather than ending the session. */
+export function changePassword(currentPassword: string, newPassword: string): Promise<{ ok: true }> {
+  return post('/auth/password', { currentPassword, newPassword });
 }

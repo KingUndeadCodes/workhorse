@@ -41,6 +41,12 @@ export class UserRepository {
     return row?.password_hash;
   }
 
+  /** Replaces a user's stored password hash (already hashed — see auth/password.ts). Callers verify the current password first. */
+  async setPasswordHash(userId: string, passwordHash: string): Promise<void> {
+    await this.db.updateTable('credentials').set({ password_hash: passwordHash }).where('user_id', '=', userId).execute();
+    persistState();
+  }
+
   /** Creates a human account with a credential row. Does not touch workspace membership — see {@link WorkspaceRepository.addMember}. */
   async createHuman(email: string, displayName: string, passwordHash: string): Promise<User> {
     const id = `u_${randomUUID()}`;
