@@ -136,6 +136,12 @@
     "commentsTab": "Комментарии",
     "activityTab": "Активность",
     "nothingLoggedYet": "Пока ничего не зафиксировано.",
+    "activityGroupChanges": {
+      "one": "внёс {count} изменение",
+      "few": "внёс {count} изменения",
+      "many": "внёс {count} изменений",
+      "other": "внёс {count} изменения"
+    },
     "loadingDetails": "Загрузка данных…",
     "couldntLoadDetails": "Не удалось загрузить данные о событии.",
     "runAgentConfirm": "Запустить «{name}» для этой задачи сейчас?",

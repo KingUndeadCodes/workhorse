@@ -136,6 +136,12 @@
     "commentsTab": "Коментарі",
     "activityTab": "Активність",
     "nothingLoggedYet": "Поки нічого не зафіксовано.",
+    "activityGroupChanges": {
+      "one": "зробив {count} зміну",
+      "few": "зробив {count} зміни",
+      "many": "зробив {count} змін",
+      "other": "зробив {count} зміни"
+    },
     "loadingDetails": "Завантаження даних…",
     "couldntLoadDetails": "Не вдалося завантажити дані про подію.",
     "runAgentConfirm": "Запустити «{name}» для цієї задачі зараз?",

@@ -133,6 +133,9 @@
     "commentsTab": "コメント",
     "activityTab": "アクティビティ",
     "nothingLoggedYet": "まだ何も記録されていません。",
+    "activityGroupChanges": {
+      "other": "{count} 件の変更を行いました"
+    },
     "loadingDetails": "詳細を読み込み中…",
     "couldntLoadDetails": "このイベントの詳細を読み込めませんでした。",
     "runAgentConfirm": "「{name}」をこの課題に対して今すぐ実行しますか？",

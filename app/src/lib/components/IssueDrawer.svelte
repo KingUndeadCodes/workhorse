@@ -36,7 +36,7 @@
     workspaceFeatures,
   } from '../stores/workspace';
   import { createBranch as apiCreateBranch, deleteBranch as apiDeleteBranch, fetchEventDetail, fetchIssueEvents, getBranch, triggerAgent, type ActivityEventSummary } from '../api';
-  import { describeEvent, describeEventType, displayName, formatHours, formatRelativeDate, legalTargetStatusIds, priorityIcon, renderMarkdown, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
+  import { describeEvent, describeEventType, displayName, formatHours, formatRelativeDate, groupActivityEvents, legalTargetStatusIds, priorityIcon, renderMarkdown, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
   import { lineNumbers } from '../actions/lineNumbers';
   import { locale, t, tn } from '../i18n';
   import { STORY_POINT_VALUES, slugifyBranchName, type Branch, type EventEnvelope, type Issue, type IssueLinkType } from '$domain';
@@ -116,6 +116,22 @@
     }
   }
 
+  // Newest first. One actor's consecutive events within an hour collapse into a group (see groupActivityEvents);
+  // a lone event is shown as the plain row it always was.
+  $: activityGroups = groupActivityEvents(activityEvents).reverse();
+  let expandedGroupIds = new Set<string>();
+  const clockTime = (iso: string) => new Date(iso).toLocaleTimeString($locale, { timeStyle: 'short' });
+
+  async function ensureDetail(eventId: string) {
+    if (eventDetails[eventId]) return; // already fetched (or in flight) — reuse it
+    eventDetails[eventId] = 'loading';
+    try {
+      eventDetails[eventId] = (await fetchEventDetail(eventId)).event;
+    } catch {
+      eventDetails[eventId] = 'error';
+    }
+  }
+
   async function toggleActivityItem(eventId: string) {
     if (expandedEventIds.has(eventId)) {
       expandedEventIds.delete(eventId);
@@ -124,13 +140,17 @@
     }
     expandedEventIds.add(eventId);
     expandedEventIds = expandedEventIds;
-    if (eventDetails[eventId]) return; // already fetched (or in flight) — reuse it
-    eventDetails[eventId] = 'loading';
-    try {
-      eventDetails[eventId] = (await fetchEventDetail(eventId)).event;
-    } catch {
-      eventDetails[eventId] = 'error';
+    await ensureDetail(eventId);
+  }
+
+  /** Opening a group fetches each of its events' detail (in parallel, cached) so every line can say what actually changed, not just "updated this issue". */
+  function toggleActivityGroup(group: { id: string; events: { id: string }[] }) {
+    if (expandedGroupIds.has(group.id)) expandedGroupIds.delete(group.id);
+    else {
+      expandedGroupIds.add(group.id);
+      group.events.forEach((e) => void ensureDetail(e.id));
     }
+    expandedGroupIds = expandedGroupIds;
   }
 
   function actorLabel(actor: ActivityEventSummary['actor']): string {
@@ -717,37 +737,82 @@
               <div class="activity-empty">{$t('issueDrawer.nothingLoggedYet')}</div>
             {:else}
               <ul class="activity-list">
-                {#each [...activityEvents].reverse() as event (event.id)}
-                  {@const expanded = expandedEventIds.has(event.id)}
-                  {@const detail = eventDetails[event.id]}
-                  {@const user = actorUser(event.actor)}
-                  <li>
-                    <button type="button" class="activity-row" aria-expanded={expanded} on:click={() => toggleActivityItem(event.id)}>
-                      <Icon name={expanded ? 'chevdown' : 'chevron'} size={10} />
-                      {#if user}
-                        <Avatar userId={user.id} name={displayName(user)} avatarUrl={user.avatarUrl} kind={user.kind} size={18} />
-                      {:else}
-                        <div class="activity-system-avatar"><Icon name="gear" size={10} /></div>
-                      {/if}
-                      <span class="activity-actor">{actorLabel(event.actor)}</span>
-                      <span class="activity-desc">{describeEventType(event.type, $t)}</span>
-                      <span class="activity-time">{formatRelativeDate(event.occurredAt, $t, $tn, $locale)}</span>
-                    </button>
-                    {#if expanded}
-                      <div class="activity-detail">
-                        {#if detail === 'loading' || detail === undefined}
-                          {$t('issueDrawer.loadingDetails')}
-                        {:else if detail === 'error'}
-                          {$t('issueDrawer.couldntLoadDetails')}
+                {#each activityGroups as group (group.id)}
+                  {#if group.events.length === 1}
+                    {@const event = group.events[0]}
+                    {@const expanded = expandedEventIds.has(event.id)}
+                    {@const detail = eventDetails[event.id]}
+                    {@const user = actorUser(event.actor)}
+                    <li>
+                      <button type="button" class="activity-row" aria-expanded={expanded} on:click={() => toggleActivityItem(event.id)}>
+                        <Icon name={expanded ? 'chevdown' : 'chevron'} size={10} />
+                        {#if user}
+                          <Avatar userId={user.id} name={displayName(user)} avatarUrl={user.avatarUrl} kind={user.kind} size={18} />
                         {:else}
-                          <div>{describeEvent(detail, { workflow: $workflow, labels: $labels, users: $users }, $t)}</div>
-                          {#if (detail.payload.type === 'comment.created' || detail.payload.type === 'comment.edited') && detail.payload.body}
-                            <div class="activity-detail-body markdown">{@html renderMarkdown(detail.payload.body, $users)}</div>
-                          {/if}
+                          <div class="activity-system-avatar"><Icon name="gear" size={10} /></div>
                         {/if}
-                      </div>
-                    {/if}
-                  </li>
+                        <span class="activity-actor">{actorLabel(event.actor)}</span>
+                        <span class="activity-desc">{describeEventType(event.type, $t)}</span>
+                        <span class="activity-time">{formatRelativeDate(event.occurredAt, $t, $tn, $locale)}</span>
+                      </button>
+                      {#if expanded}
+                        <div class="activity-detail">
+                          {#if detail === 'loading' || detail === undefined}
+                            {$t('issueDrawer.loadingDetails')}
+                          {:else if detail === 'error'}
+                            {$t('issueDrawer.couldntLoadDetails')}
+                          {:else}
+                            <div>{describeEvent(detail, { workflow: $workflow, labels: $labels, users: $users }, $t)}</div>
+                            {#if (detail.payload.type === 'comment.created' || detail.payload.type === 'comment.edited') && detail.payload.body}
+                              <div class="activity-detail-body markdown">{@html renderMarkdown(detail.payload.body, $users)}</div>
+                            {/if}
+                          {/if}
+                        </div>
+                      {/if}
+                    </li>
+                  {:else}
+                    {@const groupOpen = expandedGroupIds.has(group.id)}
+                    {@const user = actorUser(group.actor)}
+                    <li>
+                      <button type="button" class="activity-row" aria-expanded={groupOpen} aria-controls="activity-group-{group.id}" on:click={() => toggleActivityGroup(group)}>
+                        <Icon name={groupOpen ? 'chevdown' : 'chevron'} size={10} />
+                        {#if user}
+                          <Avatar userId={user.id} name={displayName(user)} avatarUrl={user.avatarUrl} kind={user.kind} size={18} />
+                        {:else}
+                          <div class="activity-system-avatar"><Icon name="gear" size={10} /></div>
+                        {/if}
+                        <span class="activity-actor">{actorLabel(group.actor)}</span>
+                        <span class="activity-desc">{$tn('issueDrawer.activityGroupChanges', group.events.length)}</span>
+                        <span class="activity-time">{formatRelativeDate(group.events[group.events.length - 1].occurredAt, $t, $tn, $locale)}</span>
+                      </button>
+                      {#if groupOpen}
+                        <ul class="activity-group-list" id="activity-group-{group.id}">
+                          {#each [...group.events].reverse() as event (event.id)}
+                            {@const detail = eventDetails[event.id]}
+                            {@const isComment = event.type === 'comment.created' || event.type === 'comment.edited'}
+                            {@const bodyOpen = expandedEventIds.has(event.id)}
+                            {@const line = detail && detail !== 'loading' && detail !== 'error' ? describeEvent(detail, { workflow: $workflow, labels: $labels, users: $users }, $t) : describeEventType(event.type, $t)}
+                            <li>
+                              {#if isComment}
+                                <button type="button" class="activity-child clickable" aria-expanded={bodyOpen} on:click={() => toggleActivityItem(event.id)}>
+                                  <time class="activity-child-time" datetime={event.occurredAt} title={new Date(event.occurredAt).toLocaleString($locale, { dateStyle: 'medium', timeStyle: 'short' })}>{clockTime(event.occurredAt)}</time>
+                                  <span class="activity-desc">{line}</span>
+                                </button>
+                              {:else}
+                                <div class="activity-child">
+                                  <time class="activity-child-time" datetime={event.occurredAt} title={new Date(event.occurredAt).toLocaleString($locale, { dateStyle: 'medium', timeStyle: 'short' })}>{clockTime(event.occurredAt)}</time>
+                                  <span class="activity-desc">{line}</span>
+                                </div>
+                              {/if}
+                              {#if isComment && bodyOpen && detail && detail !== 'loading' && detail !== 'error' && (detail.payload.type === 'comment.created' || detail.payload.type === 'comment.edited') && detail.payload.body}
+                                <div class="activity-detail"><div class="activity-detail-body markdown">{@html renderMarkdown(detail.payload.body, $users)}</div></div>
+                              {/if}
+                            </li>
+                          {/each}
+                        </ul>
+                      {/if}
+                    </li>
+                  {/if}
                 {/each}
               </ul>
             {/if}
@@ -911,6 +976,11 @@
   .activity-time { color: var(--text-3); }
   .activity-detail { margin: 2px 2px 6px 24px; padding: 8px 10px; background: var(--surface-2); border-radius: 6px; font-size: 12px; color: var(--text-2); }
   .activity-detail-body { margin-top: 6px; }
+  .activity-group-list { list-style: none; margin: 2px 0 6px 24px; padding: 0 0 0 10px; border-left: 2px solid var(--border); display: flex; flex-direction: column; gap: 1px; }
+  .activity-child { display: flex; align-items: baseline; gap: 10px; width: 100%; padding: 3px 4px; border-radius: 4px; text-align: left; font: inherit; color: inherit; }
+  .activity-child.clickable { cursor: pointer; }
+  .activity-child.clickable:hover { background: var(--surface-2); }
+  .activity-child-time { flex: 0 0 auto; min-width: 58px; color: var(--text-3); font-variant-numeric: tabular-nums; }
   .desc-view {
     display: block; width: 100%; text-align: left; font: inherit; background: var(--surface-2); border: 1px solid transparent;
     border-radius: 8px; padding: 8px; cursor: text; min-height: 40px;
@@ -1004,7 +1074,8 @@
     .assignee-add { padding: 6px 12px; font-size: 13px; }
     .chip-remove :global(svg) { width: 13px; height: 13px; }
     .tabs button { padding: 9px 4px 10px; font-size: 13px; margin-right: 18px; }
-    .activity-row { padding: 8px 4px; }
+    .activity-row { padding: 8px 4px; min-height: 44px; }
+    .activity-child { padding: 6px 4px; }
     .desc-view { padding: 11px; }
     .inline-form { flex-wrap: wrap; }
     .inline-input, .inline-select, .inline-btn { padding: 8px 10px; }

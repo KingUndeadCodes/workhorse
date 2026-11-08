@@ -134,6 +134,11 @@
     "commentsTab": "Comentarios",
     "activityTab": "Actividad",
     "nothingLoggedYet": "Nada registrado todavía.",
+    "activityGroupChanges": {
+      "one": "hizo {count} cambio",
+      "many": "hizo {count} cambios",
+      "other": "hizo {count} cambios"
+    },
     "loadingDetails": "Cargando datos…",
     "couldntLoadDetails": "No se pudieron cargar los datos de este evento.",
     "runAgentConfirm": "¿Ejecutar «{name}» en esta tarea ahora?",

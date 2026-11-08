@@ -3,6 +3,7 @@ import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js';
 import DOMPurify from 'dompurify';
 import { PROJECT_COLORS, replaceMentions, STORY_POINT_VALUES } from '$domain';
+import type { ActivityEventSummary } from './api';
 import type { AgentRun, AgentRunStatus, AutomationAction, Comment, EventEnvelope, EventType, FieldDefinition, Label, Mentionable, StatsWindow, User, Workflow } from '$domain';
 
 /** The resolved value of the `t`/`tn` i18n stores (see `lib/i18n/index.ts`) — plain functions,
@@ -420,4 +421,45 @@ export function describeAutomationAction(a: AutomationAction, ctx: { workflow: W
     case 'writeRepoFile':
       return t('automation.action.writeRepoFile', { path: a.path, branch: a.branchName });
   }
+}
+
+/** One actor's consecutive events within a single clock hour — what the Activity tab shows as one row (or, for several events, one expandable group). */
+export interface ActivityGroup {
+  /** The first event's id: stable while later events join the group, so it can key the list and remember what's expanded. */
+  id: string;
+  actor: ActivityEventSummary['actor'];
+  events: ActivityEventSummary[];
+}
+
+function activityActorKey(actor: ActivityEventSummary['actor']): string {
+  return actor.kind === 'user' ? `user:${actor.userId}` : actor.kind === 'automation' ? `automation:${actor.ruleId}` : 'system';
+}
+
+/** Start of the viewer's local clock hour containing `iso`, so 2:05 and 2:55 PM share a bucket and 2:59 and 3:01 PM don't. */
+function localHourOf(iso: string): number {
+  const d = new Date(iso);
+  d.setMinutes(0, 0, 0);
+  return d.getTime();
+}
+
+/**
+ * Groups an issue's events (oldest first, as the API returns them) into runs by the same actor within one
+ * local clock hour. Only *consecutive* events merge, so A, B, A stays three groups and the order stays truthful.
+ * Returns groups oldest first.
+ */
+export function groupActivityEvents(events: ActivityEventSummary[]): ActivityGroup[] {
+  const groups: ActivityGroup[] = [];
+  let lastKey = '';
+  let lastHour = NaN;
+  for (const event of events) {
+    const key = activityActorKey(event.actor);
+    const hour = localHourOf(event.occurredAt);
+    if (groups.length === 0 || key !== lastKey || hour !== lastHour) {
+      groups.push({ id: event.id, actor: event.actor, events: [] });
+      lastKey = key;
+      lastHour = hour;
+    }
+    groups[groups.length - 1].events.push(event);
+  }
+  return groups;
 }

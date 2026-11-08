@@ -139,6 +139,10 @@
     "commentsTab": "Comments",
     "activityTab": "Activity",
     "nothingLoggedYet": "Nothing logged yet.",
+    "activityGroupChanges": {
+      "one": "made {count} change",
+      "other": "made {count} changes"
+    },
     "loadingDetails": "Loading details…",
     "couldntLoadDetails": "Couldn't load details for this event.",
     "runAgentConfirm": "Run \"{name}\" on this issue now?",

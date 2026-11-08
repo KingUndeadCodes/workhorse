@@ -133,6 +133,9 @@
     "commentsTab": "评论",
     "activityTab": "动态",
     "nothingLoggedYet": "目前还没有记录。",
+    "activityGroupChanges": {
+      "other": "做了 {count} 项更改"
+    },
     "loadingDetails": "正在加载详情…",
     "couldntLoadDetails": "无法加载此事件的详情。",
     "runAgentConfirm": "现在对此事项运行「{name}」？",

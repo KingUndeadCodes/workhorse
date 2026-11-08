@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { AgentRun, AutomationAction, Comment, EventEnvelope, User, Workflow } from '$domain';
 import {
   agentRunStatusLabel, avatarColor, legalColumnTarget, legalTargetStatusIds, describeAutomationAction, describeEvent, describeEventType, formatBucketLabel, formatDuration, formatHours,
-  formatRelativeDate, formatTokenCount, initials, priorityIcon, recentRunsForAgent, removeCommentSubtree, renderMarkdown, splitHumansAndAgents,
+  formatRelativeDate, formatTokenCount, groupActivityEvents, initials, priorityIcon, recentRunsForAgent, removeCommentSubtree, renderMarkdown, splitHumansAndAgents,
   storyPointColor, storyPointDueDateWarning, totalTokensForAgent, typeIcon,
 } from '../src/lib/util';
 
@@ -249,3 +249,42 @@ describe('workflow transitions (what the UI may offer)', () => {
   });
 });
 
+
+describe('groupActivityEvents', () => {
+  type Ev = Parameters<typeof groupActivityEvents>[0][number];
+  // Local-time constructor, so the hour boundaries mean the same in any timezone the tests run in.
+  const at = (h: number, m: number) => new Date(2026, 5, 10, h, m).toISOString();
+  const user = (id: string) => ({ kind: 'user', userId: id }) as Ev['actor'];
+  const ev = (id: string, actor: Ev['actor'], when: string): Ev => ({ id, actor, occurredAt: when, type: 'issue.updated' });
+  const shape = (events: Ev[]) => groupActivityEvents(events).map((g) => g.events.map((e) => e.id));
+
+  it('makes a lone event a group of one', () => {
+    expect(shape([ev('a', user('u1'), at(14, 5))])).toEqual([['a']]);
+  });
+
+  it('merges one actor\'s events within the same clock hour, keeping the first id and the order', () => {
+    const groups = groupActivityEvents([ev('a', user('u1'), at(14, 5)), ev('b', user('u1'), at(14, 30)), ev('c', user('u1'), at(14, 59))]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].id).toBe('a');
+    expect(groups[0].events.map((e) => e.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('splits at the hour boundary even when the events are minutes apart', () => {
+    expect(shape([ev('a', user('u1'), at(14, 59)), ev('b', user('u1'), at(15, 1))])).toEqual([['a'], ['b']]);
+  });
+
+  it('only merges consecutive events: A, B, A is three groups', () => {
+    expect(shape([ev('a', user('u1'), at(14, 1)), ev('b', user('u2'), at(14, 2)), ev('c', user('u1'), at(14, 3))])).toEqual([['a'], ['b'], ['c']]);
+  });
+
+  it('keeps a person, an automation rule and the system apart, and different rules apart', () => {
+    const rule = (id: string) => ({ kind: 'automation', ruleId: id }) as Ev['actor'];
+    expect(
+      shape([ev('a', user('u1'), at(14, 1)), ev('b', rule('r1'), at(14, 1)), ev('c', rule('r2'), at(14, 1)), ev('d', { kind: 'system' } as Ev['actor'], at(14, 1)), ev('e', { kind: 'system' } as Ev['actor'], at(14, 2))]),
+    ).toEqual([['a'], ['b'], ['c'], ['d', 'e']]);
+  });
+
+  it('returns nothing for no events', () => {
+    expect(groupActivityEvents([])).toEqual([]);
+  });
+});

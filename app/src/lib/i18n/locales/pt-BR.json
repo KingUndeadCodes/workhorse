@@ -139,6 +139,11 @@
     "commentsTab": "Comentários",
     "activityTab": "Atividade",
     "nothingLoggedYet": "Nada registrado ainda.",
+    "activityGroupChanges": {
+      "one": "fez {count} alteração",
+      "many": "fez {count} alterações",
+      "other": "fez {count} alterações"
+    },
     "loadingDetails": "Carregando detalhes…",
     "couldntLoadDetails": "Não foi possível carregar os detalhes deste evento.",
     "runAgentConfirm": "Executar \"{name}\" nesta tarefa agora?",

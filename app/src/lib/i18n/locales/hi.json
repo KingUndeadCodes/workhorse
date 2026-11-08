@@ -134,6 +134,10 @@
     "commentsTab": "टिप्पणियाँ",
     "activityTab": "गतिविधि",
     "nothingLoggedYet": "अभी तक कुछ भी लॉग नहीं हुआ है।",
+    "activityGroupChanges": {
+      "one": "{count} बदलाव किया",
+      "other": "{count} बदलाव किए"
+    },
     "loadingDetails": "विवरण लोड हो रहे हैं…",
     "couldntLoadDetails": "इस इवेंट का विवरण लोड नहीं हो सका।",
     "runAgentConfirm": "\"{name}\" को अभी इस इश्यू पर चलाएँ?",
