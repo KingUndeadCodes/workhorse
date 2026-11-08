@@ -24,7 +24,9 @@
       "lowest": "最低"
     },
     "on": "オン",
-    "off": "オフ"
+    "off": "オフ",
+    "showMore": "もっと見る",
+    "showLess": "閉じる"
   },
   "nav": {
     "board": "ボード",
@@ -286,7 +288,23 @@
     "linkRepoButton": "リポジトリをリンク",
     "linkingRepoButton": "リンク中…",
     "failedLinkRepo": "リポジトリのリンクに失敗しました",
-    "defaultBranchSuffix": "デフォルトブランチ: {branch}"
+    "defaultBranchSuffix": "デフォルトブランチ: {branch}",
+    "colorNames": {
+      "#137A6E": "ティール",
+      "#B5527A": "ローズ",
+      "#3E6FB0": "ブルー",
+      "#B9791A": "アンバー",
+      "#2E9E58": "グリーン",
+      "#CC785C": "テラコッタ",
+      "#946B3A": "ブラウン",
+      "#8A8FA3": "ラベンダーグレー",
+      "#C9A227": "ゴールド",
+      "#5A7D5A": "セージ",
+      "#5C7A89": "スレート",
+      "#A64B4B": "レッド",
+      "#3F9BBE": "スカイブルー",
+      "#7A6C5D": "トープ"
+    }
   },
   "workspaceView": {
     "youBadge": "あなた",
@@ -681,6 +699,21 @@
       "resolved": "{actor} さんが {issue} を解決しました",
       "commented": "{actor} さんが {issue} にコメントしました",
       "mentioned": "{actor} さんが {issue} であなたにメンションしました"
+    },
+    "actions": {
+      "assigned": "さんがあなたを担当者に割り当てました",
+      "statusChanged": "さんがステータスを変更しました",
+      "resolved": "さんが解決しました",
+      "commented": "さんがコメントしました",
+      "mentioned": "さんがあなたにメンションしました"
+    },
+    "automation": "自動化",
+    "unreadCount": "未読 {count} 件",
+    "groups": {
+      "today": "今日",
+      "yesterday": "昨日",
+      "thisWeek": "今週",
+      "earlier": "それ以前"
     }
   },
   "myIssues": {

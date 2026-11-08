@@ -22,6 +22,14 @@ export interface User {
   createdAt: string;
 }
 
+/**
+ * The one canonical form of an email address: signup, login, profile edits, invites and the client's
+ * "did the email change?" comparison all go through this so they can never disagree (e.g. over case).
+ */
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
 /** Coarse workspace-wide permission level. */
 export type WorkspaceRole = 'owner' | 'admin' | 'member' | 'guest';
 

@@ -38,6 +38,7 @@ export interface DB {
     user_id: string;
     password_hash: string;
     created_at: string | null;
+    password_changed_at: number | null;
   };
   workspace_members: {
     workspace_id: string;

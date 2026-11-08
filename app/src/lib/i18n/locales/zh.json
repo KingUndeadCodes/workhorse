@@ -24,7 +24,9 @@
       "lowest": "最低"
     },
     "on": "开启",
-    "off": "关闭"
+    "off": "关闭",
+    "showMore": "展开",
+    "showLess": "收起"
   },
   "nav": {
     "board": "看板",
@@ -286,7 +288,23 @@
     "linkRepoButton": "关联仓库",
     "linkingRepoButton": "关联中…",
     "failedLinkRepo": "关联仓库失败",
-    "defaultBranchSuffix": "默认分支：{branch}"
+    "defaultBranchSuffix": "默认分支：{branch}",
+    "colorNames": {
+      "#137A6E": "青绿色",
+      "#B5527A": "玫瑰红",
+      "#3E6FB0": "蓝色",
+      "#B9791A": "琥珀色",
+      "#2E9E58": "绿色",
+      "#CC785C": "赤陶色",
+      "#946B3A": "棕色",
+      "#8A8FA3": "薰衣草灰",
+      "#C9A227": "金色",
+      "#5A7D5A": "鼠尾草绿",
+      "#5C7A89": "石板灰",
+      "#A64B4B": "红色",
+      "#3F9BBE": "天蓝色",
+      "#7A6C5D": "灰褐色"
+    }
   },
   "workspaceView": {
     "youBadge": "你",
@@ -681,6 +699,21 @@
       "resolved": "{actor} 解决了 {issue}",
       "commented": "{actor} 评论了 {issue}",
       "mentioned": "{actor} 在 {issue} 中提到了你"
+    },
+    "actions": {
+      "assigned": "将任务指派给了你",
+      "statusChanged": "更改了状态",
+      "resolved": "解决了该问题",
+      "commented": "发表了评论",
+      "mentioned": "提到了你"
+    },
+    "automation": "自动化",
+    "unreadCount": "{count} 条未读",
+    "groups": {
+      "today": "今天",
+      "yesterday": "昨天",
+      "thisWeek": "本周",
+      "earlier": "更早"
     }
   },
   "myIssues": {

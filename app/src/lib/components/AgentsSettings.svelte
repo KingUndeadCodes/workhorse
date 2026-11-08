@@ -2,6 +2,7 @@
   import Icon from './Icon.svelte';
   import Avatar from './Avatar.svelte';
   import AgentForm from './AgentForm.svelte';
+  import CollapsibleHint from './CollapsibleHint.svelte';
   import { agentRuns, agents, fieldDefinitions, issuesStore, users, workflow } from '../stores/workspace';
   import * as api from '../api';
   import { agentRunStatusLabel, describeAutomationAction, formatRelativeDate, formatTokenCount, recentRunsForAgent, totalTokensForAgent } from '../util';
@@ -151,7 +152,7 @@
 {/if}
 
 <div class="subsection-label">{$t('agentsSettings.agentsLabel')}</div>
-<p class="section-hint">{$t('agentsSettings.hint')}</p>
+<CollapsibleHint storageKey="agents" text={$t('agentsSettings.hint')} />
 
 {#if $agents.length === 0}
   <div class="empty-state">
@@ -260,7 +261,6 @@
 <style>
   .subsection-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin: 18px 0 8px; }
   .subsection-label:first-child { margin-top: 0; }
-  .section-hint { font-size: 12px; line-height: 1.5; color: var(--text-3); margin: 0 0 16px; max-width: 560px; }
 
   .ai-badge {
     display: inline-flex; align-items: center; font-size: 9px; font-weight: 700; letter-spacing: .03em;

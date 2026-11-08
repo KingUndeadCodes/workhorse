@@ -7,12 +7,14 @@ export interface AuthClaims {
   sub: string;
   email: string;
   displayName: string;
+  /** When the token was issued (unix seconds) — absent on tokens minted before it was added. */
+  iat?: number;
   exp: number;
 }
 
 export async function signToken(user: { id: string; email: string; displayName: string }): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  return sign({ sub: user.id, email: user.email, displayName: user.displayName, exp: now + EXPIRY_SECONDS }, getJwtSecret());
+  return sign({ sub: user.id, email: user.email, displayName: user.displayName, iat: now, exp: now + EXPIRY_SECONDS }, getJwtSecret());
 }
 
 /** Throws if the token is missing/malformed/expired/mis-signed — callers (the auth middleware) turn that into a 401. */

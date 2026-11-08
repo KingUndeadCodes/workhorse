@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import type { WorkspaceFeatureFlags, WorkspaceRole } from '../domain';
+import { normalizeEmail } from '../domain';
 import type { AuthVariables } from '../auth/middleware';
 import { userRepo, workspaceRepo } from '../container';
 import { disconnectUser } from '../ws';
@@ -123,7 +124,7 @@ workspaceRouter.post('/workspace-invites', async (c) => {
   if (!caller) return c.json({ error: 'Only workspace owners/admins can invite' }, 403);
 
   const body = await c.req.json<{ email?: string; role?: WorkspaceRole }>();
-  const email = (body.email ?? '').trim().toLowerCase();
+  const email = normalizeEmail(body.email ?? '');
   if (!email || !email.includes('@')) return c.json({ error: 'a valid email is required' }, 400);
   if (!body.role || !ROLES.includes(body.role)) return c.json({ error: 'Invalid role' }, 400);
   // Same self-escalation guard as the role-change route above: only an owner may pre-approve

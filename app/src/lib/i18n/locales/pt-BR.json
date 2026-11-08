@@ -25,7 +25,9 @@
       "lowest": "mínima"
     },
     "on": "Ativado",
-    "off": "Desativado"
+    "off": "Desativado",
+    "showMore": "Mostrar mais",
+    "showLess": "Mostrar menos"
   },
   "nav": {
     "board": "Quadro",
@@ -292,7 +294,23 @@
     "linkRepoButton": "Vincular repositório",
     "linkingRepoButton": "Vinculando…",
     "failedLinkRepo": "Falha ao vincular o repositório",
-    "defaultBranchSuffix": "branch padrão: {branch}"
+    "defaultBranchSuffix": "branch padrão: {branch}",
+    "colorNames": {
+      "#137A6E": "Verde-azulado",
+      "#B5527A": "Rosa",
+      "#3E6FB0": "Azul",
+      "#B9791A": "Âmbar",
+      "#2E9E58": "Verde",
+      "#CC785C": "Terracota",
+      "#946B3A": "Marrom",
+      "#8A8FA3": "Cinza-lavanda",
+      "#C9A227": "Dourado",
+      "#5A7D5A": "Sálvia",
+      "#5C7A89": "Ardósia",
+      "#A64B4B": "Vermelho",
+      "#3F9BBE": "Azul-celeste",
+      "#7A6C5D": "Taupe"
+    }
   },
   "workspaceView": {
     "youBadge": "você",
@@ -694,6 +712,21 @@
       "resolved": "{actor} resolveu {issue}",
       "commented": "{actor} comentou em {issue}",
       "mentioned": "{actor} mencionou você em {issue}"
+    },
+    "actions": {
+      "assigned": "atribuiu você",
+      "statusChanged": "alterou o status",
+      "resolved": "resolveu",
+      "commented": "comentou",
+      "mentioned": "mencionou você"
+    },
+    "automation": "Automação",
+    "unreadCount": "{count} não lidas",
+    "groups": {
+      "today": "Hoje",
+      "yesterday": "Ontem",
+      "thisWeek": "Esta semana",
+      "earlier": "Anteriores"
     }
   }
 }

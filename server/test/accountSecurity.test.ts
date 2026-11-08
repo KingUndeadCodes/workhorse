@@ -33,7 +33,7 @@ async function boot() {
   const login = (email: string, password: string) =>
     app.request('/api/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password }) });
 
-  return { container, person, login };
+  return { container, person, login, app };
 }
 
 describe('POST /api/auth/password', () => {
@@ -76,6 +76,20 @@ describe('POST /api/auth/password', () => {
     expect(blocked.headers.get('retry-after')).toBeTruthy();
   });
 
+  it('counts wrong guesses on this endpoint and on the email change toward one shared limit', async () => {
+    const { person } = await boot();
+    const alice = await person('alice');
+    const wrongEmailChange = () => alice.call('/auth/me', { method: 'PATCH', body: { email: 'new@example.com', currentPassword: 'not it' } });
+    const wrongPasswordChange = () => alice.call('/auth/password', { method: 'POST', body: { currentPassword: 'not it', newPassword: 'battery staple 9' } });
+    // Three guesses against one endpoint and two against the other spend the same budget of five...
+    for (let i = 0; i < 3; i++) expect((await wrongEmailChange()).status).toBe(403);
+    for (let i = 0; i < 2; i++) expect((await wrongPasswordChange()).status).toBe(403);
+    // ...so now both are locked, even for the right password — splitting guesses across them gains nothing.
+    expect((await wrongEmailChange()).status).toBe(429);
+    const rightPassword = await alice.call('/auth/password', { method: 'POST', body: { currentPassword: PASSWORD, newPassword: 'battery staple 9' } });
+    expect(rightPassword.status).toBe(429);
+  });
+
   it('needs a signed-in caller', async () => {
     const { person } = await boot();
     const alice = await person('alice');
@@ -116,5 +130,68 @@ describe('PATCH /api/auth/me — changing the email needs the password', () => {
     const res = await alice.call('/auth/me', { method: 'PATCH', body: { displayName: 'Alice B', email: 'alice@example.com', avatarUrl: null } });
     expect(res.status).toBe(200);
     expect((await container.userRepo.getById(alice.user.id))?.displayName).toBe('Alice B');
+  });
+});
+
+describe('sessions after a password change', () => {
+  async function tokenIssuedAt(user: { id: string; email: string; displayName: string }, iat: number | undefined) {
+    const { sign } = await import('hono/jwt');
+    const { getJwtSecret } = await import('../src/auth/secret');
+    const now = Math.floor(Date.now() / 1000);
+    return sign({ sub: user.id, email: user.email, displayName: user.displayName, ...(iat === undefined ? {} : { iat }), exp: now + 3600 }, getJwtSecret());
+  }
+
+  it('signs out every token issued before the change, and hands back a fresh one for this session', async () => {
+    const { person, app } = await boot();
+    const alice = await person('alice');
+    const me = (token: string) => app.request('/api/auth/me', { headers: { authorization: `Bearer ${token}` } });
+    const now = Math.floor(Date.now() / 1000);
+    const stolen = await tokenIssuedAt(alice.user, now - 100);
+    const legacy = await tokenIssuedAt(alice.user, undefined); // minted before tokens carried an issue time
+    expect((await me(stolen)).status).toBe(200);
+    expect((await me(legacy)).status).toBe(200);
+
+    const res = await alice.call('/auth/password', { method: 'POST', body: { currentPassword: PASSWORD, newPassword: 'battery staple 9' } });
+    expect(res.status).toBe(200);
+    const { token } = await res.json();
+    expect(typeof token).toBe('string');
+
+    expect((await me(stolen)).status).toBe(401);
+    expect((await me(legacy)).status).toBe(401);
+    expect((await me(token)).status).toBe(200);
+  });
+
+  it("leaves other people's tokens alone", async () => {
+    const { person, app } = await boot();
+    const alice = await person('alice');
+    const bob = await person('bob');
+    await alice.call('/auth/password', { method: 'POST', body: { currentPassword: PASSWORD, newPassword: 'battery staple 9' } });
+    const res = await app.request('/api/auth/me', { headers: { authorization: `Bearer ${await tokenIssuedAt(bob.user, Math.floor(Date.now() / 1000) - 100)}` } });
+    expect(res.status).toBe(200);
+  });
+});
+
+describe('PATCH /api/auth/me — avatar and email normalisation', () => {
+  const jpeg = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
+
+  it('accepts only a jpeg/png/webp data: URL (or null to remove), never an external URL', async () => {
+    const { person } = await boot();
+    const alice = await person('alice');
+    const patch = (avatarUrl: unknown) => alice.call('/auth/me', { method: 'PATCH', body: { avatarUrl } });
+    expect((await patch('https://attacker.example/pixel.png')).status).toBe(400);
+    expect((await patch('javascript:alert(1)')).status).toBe(400);
+    expect((await patch('data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=')).status).toBe(400);
+    expect((await patch('data:,')).status).toBe(400);
+    expect((await patch(42)).status).toBe(400);
+    expect((await patch(jpeg)).status).toBe(200);
+    expect((await patch(null)).status).toBe(200);
+  });
+
+  it('treats an email that differs only by case or spacing as unchanged, so it needs no password', async () => {
+    const { person, container } = await boot();
+    const alice = await person('alice');
+    const res = await alice.call('/auth/me', { method: 'PATCH', body: { email: '  ALICE@Example.com ' } });
+    expect(res.status).toBe(200);
+    expect((await container.userRepo.getById(alice.user.id))?.email).toBe('alice@example.com');
   });
 });

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tick } from 'svelte';
+  import Avatar from './Avatar.svelte';
   import Icon from './Icon.svelte';
   import type { NotificationWithContext } from '../api';
   import {
@@ -11,7 +12,7 @@
     notificationsLoaded,
     unreadCount,
   } from '../stores/notifications';
-  import { currentProjectId, currentView, selectedIssueId, switchProject } from '../stores/workspace';
+  import { currentProjectId, currentView, selectedIssueId, switchProject, users } from '../stores/workspace';
   import { formatRelativeDate } from '../util';
   import { locale, t, tn } from '../i18n';
 
@@ -38,27 +39,36 @@
     mentioned: 'reply',
   };
 
-  function describe(n: NotificationWithContext): string {
-    const actor = n.actorName ?? $t('notifications.unknownActor');
-    const issue = n.issueKey ?? $t('notifications.deletedIssue');
-    switch (n.kind) {
-      case 'assigned':
-        return $t('notifications.kinds.assigned', { actor, issue });
-      case 'statusChanged':
-        return $t('notifications.kinds.statusChanged', { actor, issue, status: n.statusName ?? '' });
-      case 'resolved':
-        return $t('notifications.kinds.resolved', { actor, issue });
-      case 'commented':
-        return $t('notifications.kinds.commented', { actor, issue });
-      case 'mentioned':
-        return $t('notifications.kinds.mentioned', { actor, issue });
-      default:
-        // Exhaustive over NotificationKind's closed set (see domain/notifications.ts) — this
-        // is unreachable in practice; TS just can't prove a switch with no `default` returns
-        // on every path, so this keeps that check happy without an unsafe cast.
-        return n.kind;
-    }
+  // Built once per users change, so each row's avatar lookup is O(1). The picture isn't sent with a notification (it can be megabytes), so it comes from the users the app already has.
+  $: usersById = new Map($users.map((u) => [u.id, u]));
+
+  /** Who did it, for a person's name or, when there is no user behind it, what did. */
+  function actorLabel(n: NotificationWithContext): string {
+    return n.actorName ?? (n.actorKind === 'automation' ? $t('notifications.automation') : $t('notifications.unknownActor'));
   }
+
+  type Bucket = 'today' | 'yesterday' | 'thisWeek' | 'earlier';
+  /** Which day-group a notification falls in, by calendar day rather than hours ago, so 11pm last night is "Yesterday" at 9am. */
+  function bucketOf(iso: string): Bucket {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const day = new Date(iso);
+    day.setHours(0, 0, 0, 0);
+    const daysAgo = Math.round((startOfToday.getTime() - day.getTime()) / 86_400_000);
+    if (daysAgo <= 0) return 'today';
+    if (daysAgo === 1) return 'yesterday';
+    return daysAgo <= 6 ? 'thisWeek' : 'earlier';
+  }
+
+  // Newest first, so each group is contiguous. `index` is the row's place in the full list, which the keyboard
+  // navigation below addresses by (headings between groups aren't rows and don't count).
+  $: sections = $notifications.reduce<{ bucket: Bucket; rows: { n: NotificationWithContext; index: number }[] }[]>((groups, n, index) => {
+    const bucket = bucketOf(n.createdAt);
+    let group = groups.at(-1);
+    if (!group || group.bucket !== bucket) groups.push((group = { bucket, rows: [] }));
+    group.rows.push({ n, index });
+    return groups;
+  }, []);
 
   /**
    * Moves real DOM focus onto the panel itself the moment it opens — without this, focus
@@ -156,27 +166,65 @@
   {#if open}
     <div class="panel" bind:this={panelEl} tabindex="-1" role="menu" aria-label={$t('notifications.bellTitle')} on:keydown={handlePanelKeydown}>
       <div class="panel-head">
-        <span class="panel-title">{$t('notifications.bellTitle')}</span>
+        <div class="head-title">
+          <span class="panel-title">{$t('notifications.bellTitle')}</span>
+          {#if $unreadCount > 0}<span class="count-pill">{$t('notifications.unreadCount', { count: $unreadCount })}</span>{/if}
+        </div>
         {#if $unreadCount > 0}
-          <button type="button" class="mark-all-btn" on:click={() => markAllRead()}>{$t('notifications.markAllRead')}</button>
+          <button type="button" class="mark-all-btn" on:click={() => markAllRead()}><Icon name="check" size={12} />{$t('notifications.markAllRead')}</button>
         {/if}
       </div>
       <div class="panel-list">
         {#if !$notificationsLoaded}
           <div class="panel-empty">{$t('notifications.loading')}</div>
         {:else if $notifications.length === 0}
-          <div class="panel-empty">{$t('notifications.empty')}</div>
+          <div class="panel-empty">
+            <span class="empty-icon"><Icon name="bell" size={20} /></span>
+            {$t('notifications.empty')}
+          </div>
         {:else}
-          {#each $notifications as n, i (n.id)}
-            <div id="notif-row-{i}" class="notif-row" class:unread={!n.read} role="menuitem" tabindex="-1" on:click={() => openNotification(n)}>
-              <span class="notif-icon"><Icon name={ICON_BY_KIND[n.kind]} size={13} /></span>
-              <div class="notif-body">
-                <span class="notif-text">{describe(n)}</span>
-                {#if n.commentPreview}<span class="notif-preview">{n.commentPreview}</span>{/if}
-                <span class="notif-time">{formatRelativeDate(n.createdAt, $t, $tn, $locale)}</span>
+          {#each sections as section (`${section.bucket}-${section.rows[0].n.id}`)}
+            <div class="section-label">{$t(`notifications.groups.${section.bucket}`)}</div>
+            {#each section.rows as { n, index } (n.id)}
+              {@const actor = n.actorId ? usersById.get(n.actorId) : undefined}
+              <div
+                id="notif-row-{index}"
+                class="notif-row"
+                class:unread={!n.read}
+                role="menuitem"
+                tabindex="-1"
+                on:click={() => openNotification(n)}
+              >
+                <span class="notif-avatar">
+                  {#if actor}
+                    <Avatar userId={actor.id} name={actor.displayName} avatarUrl={actor.avatarUrl} kind={actor.kind} size={34} />
+                  {:else}
+                    <span class="actor-fallback"><Icon name={n.actorKind === 'automation' ? 'route' : 'gear'} size={16} /></span>
+                  {/if}
+                  <span class="kind-badge kind-{n.kind}"><Icon name={ICON_BY_KIND[n.kind]} size={9} /></span>
+                </span>
+                <div class="notif-body">
+                  <div class="notif-line"><strong class="notif-actor">{actorLabel(n)}</strong> <span class="notif-action">{$t(`notifications.actions.${n.kind}`)}</span></div>
+                  <div class="notif-issue">
+                    {#if n.issueKey}
+                      <span class="issue-key mono">{n.issueKey}</span>{#if n.issueTitle}<span class="issue-title">{n.issueTitle}</span>{/if}
+                    {:else}
+                      <span class="issue-deleted">{$t('notifications.deletedIssue')}</span>
+                    {/if}
+                  </div>
+                  {#if n.statusName}
+                    <div class="status-line">
+                      {#if n.fromStatusName}<span class="chip">{n.fromStatusName}</span><span class="status-arrow"><Icon name="chevron" size={10} /></span>{/if}<span class="chip to">{n.statusName}</span>
+                    </div>
+                  {/if}
+                  {#if n.commentPreview}<blockquote class="notif-quote">{n.commentPreview}</blockquote>{/if}
+                  <time class="notif-time" datetime={n.createdAt} title={new Date(n.createdAt).toLocaleString($locale, { dateStyle: 'medium', timeStyle: 'short' })}>
+                    {formatRelativeDate(n.createdAt, $t, $tn, $locale)}
+                  </time>
+                </div>
+                {#if !n.read}<span class="unread-dot" aria-hidden="true"></span>{/if}
               </div>
-              {#if !n.read}<span class="unread-dot" aria-hidden="true"></span>{/if}
-            </div>
+            {/each}
           {/each}
           {#if $hasMoreNotifications}
             <button type="button" class="load-more-btn" on:click={() => loadMoreNotifications()}>{$t('notifications.loadMore')}</button>
@@ -207,43 +255,91 @@
     font-size: 9.5px; font-weight: 700; line-height: 1; color: #fff;
     background: var(--critical, #dc2626); border-radius: 99px; border: 1.5px solid var(--surface);
   }
+
   .panel {
-    position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; width: 340px; max-width: 90vw;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; width: 400px; max-width: 92vw;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
     box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden;
   }
   /* Focused programmatically the instant the panel opens (see `toggle`'s doc comment) purely
      so keyboard events have something inside the panel to bubble from — not a meaningful
      interactive target itself, so no visible ring. */
   .panel:focus { outline: none; }
-  .panel-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--border); }
-  .panel-title { font-size: 12.5px; font-weight: 700; color: var(--text); }
-  .mark-all-btn { font-size: 11px; font-weight: 600; color: var(--accent-strong); padding: 3px 6px; border-radius: 5px; }
-  .mark-all-btn:hover { background: var(--surface-sunken); }
-  .panel-list { max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; }
-  .panel-empty { padding: 22px 12px; text-align: center; font-size: 12px; color: var(--text-3); }
+
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .head-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .panel-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .count-pill { font-size: 11px; font-weight: 600; color: var(--accent-strong); background: var(--accent-soft); padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .mark-all-btn { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-2); padding: 5px 8px; border-radius: 6px; white-space: nowrap; }
+  .mark-all-btn:hover { background: var(--surface-sunken); color: var(--text); }
+
+  .panel-list { max-height: min(520px, 72vh); overflow-y: auto; display: flex; flex-direction: column; }
+  .panel-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 36px 16px; text-align: center; font-size: 12.5px; color: var(--text-3); }
+  .empty-icon { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: var(--surface-sunken); color: var(--text-3); }
+  .section-label {
+    position: sticky; top: 0; z-index: 1; padding: 8px 16px 6px; background: var(--surface-2);
+    font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3);
+    border-bottom: 1px solid var(--border);
+  }
+
   .notif-row {
-    display: flex; align-items: flex-start; gap: 9px; padding: 10px 12px; cursor: pointer;
-    border-bottom: 1px solid var(--border); position: relative;
+    position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; cursor: pointer;
+    border-top: 1px solid var(--border);
   }
-  .notif-row:last-child { border-bottom: none; }
-  .notif-row:hover, .notif-row:focus-visible { background: var(--surface-sunken); outline: none; }
-  .notif-row.unread { background: var(--accent-soft); }
+  .section-label + .notif-row { border-top: none; }
+  .notif-row:hover { background: var(--surface-sunken); }
+  .notif-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--surface-sunken); }
+  /* Unread reads at a glance from across the panel: a tinted row with an accent bar down its edge, as well as the dot. */
+  .notif-row.unread { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
   .notif-row.unread:hover, .notif-row.unread:focus-visible { filter: brightness(0.97); }
-  .notif-icon { flex: 0 0 auto; margin-top: 2px; color: var(--text-3); }
-  .notif-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-  .notif-text { font-size: 12px; color: var(--text-2); line-height: 1.4; }
-  .notif-row.unread .notif-text { color: var(--text); font-weight: 500; }
-  .notif-preview {
-    font-size: 11px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis;
-    white-space: nowrap; font-style: italic;
+
+  .notif-avatar { position: relative; flex: 0 0 34px; width: 34px; height: 34px; }
+  .actor-fallback { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: var(--surface-sunken); color: var(--text-3); }
+  /* What happened, as a small badge on the corner of whoever did it. */
+  .kind-badge {
+    position: absolute; right: -4px; bottom: -3px; width: 17px; height: 17px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface); border: 1.5px solid var(--surface); box-shadow: 0 0 0 1px var(--border);
+    color: var(--text-2);
   }
-  .notif-time { font-size: 10.5px; color: var(--text-3); }
-  .unread-dot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-top: 5px; }
-  .load-more-btn { font-size: 11.5px; font-weight: 600; color: var(--accent-strong); padding: 10px; text-align: center; }
+  .kind-assigned { color: var(--accent-strong); }
+  .kind-statusChanged { color: var(--info); }
+  .kind-resolved { color: var(--success); }
+  .kind-commented { color: var(--text-2); }
+  .kind-mentioned { color: var(--warning); }
+
+  .notif-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .notif-line { font-size: 13px; line-height: 1.4; color: var(--text-2); }
+  .notif-actor { font-weight: 600; color: var(--text-2); }
+  .notif-row.unread .notif-actor { color: var(--text); }
+  .notif-row.unread .notif-line { color: var(--text); }
+  .notif-issue { display: flex; align-items: baseline; gap: 7px; min-width: 0; font-size: 12px; }
+  .issue-key { flex: 0 0 auto; font-size: 11px; font-weight: 500; color: var(--text-3); }
+  .issue-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-weight: 500; }
+  .issue-deleted { color: var(--text-3); font-style: italic; }
+
+  .status-line { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+  .chip { font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 99px; color: var(--text-2); background: var(--surface-sunken); border: 1px solid var(--border); }
+  .chip.to { color: var(--info); background: var(--info-soft); border-color: transparent; }
+  .status-arrow { display: flex; color: var(--text-3); }
+  .status-arrow :global(svg) { transform: rotate(-90deg); }
+
+  /* The comment itself, set off as a quotation, two lines at most. */
+  .notif-quote {
+    margin: 3px 0 0; padding: 2px 0 2px 9px; border-left: 2px solid var(--border-strong);
+    font-size: 12px; line-height: 1.45; color: var(--text-2);
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+  .notif-time { margin-top: 2px; font-size: 11px; color: var(--text-3); }
+  .unread-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-top: 6px; }
+  .load-more-btn { font-size: 12px; font-weight: 600; color: var(--accent-strong); padding: 12px; text-align: center; border-top: 1px solid var(--border); }
   .load-more-btn:hover { background: var(--surface-sunken); }
 
   @media (max-width: 768px) {
     .panel { position: fixed; top: 58px; right: 8px; left: 8px; width: auto; max-width: none; }
+    .panel-list { max-height: calc(100vh - 58px - 8px - 56px - 72px); }
+    .notif-row { padding: 14px 16px; }
+    .mark-all-btn { padding: 9px 10px; }
   }
 </style>

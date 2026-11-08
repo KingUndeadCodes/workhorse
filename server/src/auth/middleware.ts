@@ -12,10 +12,18 @@ export const requireAuth = createMiddleware<{ Variables: AuthVariables }>(async 
   if (!token) return c.json({ error: 'unauthorized' }, 401);
   try {
     const claims = await verifyToken(token);
-    const user = await userRepo.getById(claims.sub);
+    // Independent lookups, so run together rather than one after another.
+    const [user, member, passwordChangedAt] = await Promise.all([
+      userRepo.getById(claims.sub),
+      workspaceRepo.getMember(claims.sub),
+      userRepo.getPasswordChangedAt(claims.sub),
+    ]);
     // A valid token alone isn't access: someone an admin has removed keeps a cryptographically valid
     // token for days, so membership is checked on every request, not only at login.
-    if (!user || !(await workspaceRepo.getMember(user.id))) return c.json({ error: 'unauthorized' }, 401);
+    if (!user || !member) return c.json({ error: 'unauthorized' }, 401);
+    // Changing a password is how someone locks out a stolen session, so a token issued before the last change
+    // is dead. (Whole-second granularity: one issued in the same second as the change still passes.)
+    if ((claims.iat ?? 0) < passwordChangedAt) return c.json({ error: 'unauthorized' }, 401);
     c.set('user', user);
     await next();
   } catch {

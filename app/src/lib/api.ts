@@ -375,8 +375,14 @@ export interface NotificationWithContext extends Notification {
   projectId?: string;
   /** Display name of whoever caused the triggering event — `undefined` for an automation/system actor. */
   actorName?: string;
+  /** Id of that user — look the avatar up in the `users` store (the picture isn't sent with notifications). */
+  actorId?: string;
+  /** Whether a person (or agent), an automation rule or the system caused it. */
+  actorKind?: 'user' | 'automation' | 'system';
   /** Only set for `kind === 'statusChanged' | 'resolved'` — the status the issue moved to. */
   statusName?: string;
+  /** Only set for `kind === 'statusChanged'` — the status it moved from. */
+  fromStatusName?: string;
   /** Only set for `kind === 'commented' | 'mentioned'` — a short excerpt of the comment body. */
   commentPreview?: string;
 }
@@ -488,7 +494,11 @@ export function updateProfile(changes: { displayName?: string; email?: string; a
   return patch('/auth/me', changes);
 }
 
-/** Changes the caller's own password. A wrong `currentPassword` is a 403 (not a 401), so it surfaces as an error here rather than ending the session. */
-export function changePassword(currentPassword: string, newPassword: string): Promise<{ ok: true }> {
+/**
+ * Changes the caller's own password. A wrong `currentPassword` is a 403 (not a 401), so it surfaces as an error here
+ * rather than ending the session. On success every older token is retired, so the response carries a fresh `token`
+ * for this session — callers must swap it in (see auth.ts's replaceToken).
+ */
+export function changePassword(currentPassword: string, newPassword: string): Promise<{ ok: true; token: string }> {
   return post('/auth/password', { currentPassword, newPassword });
 }

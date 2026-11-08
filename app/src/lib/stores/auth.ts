@@ -33,6 +33,12 @@ function setAuth(auth: StoredAuth) {
   persist(auth);
 }
 
+/** Swaps in a freshly issued token for the signed-in user — used after a password change, which retires every older token. */
+export function replaceToken(token: string) {
+  const user = get(currentUser);
+  if (user) setAuth({ token, user });
+}
+
 /** Clears auth state — called on logout, or when api.ts sees a 401 (expired/invalid token). */
 export function clearAuth() {
   authToken.set(null);

@@ -13,6 +13,47 @@
    */
   export let tab: 'Project' | 'Git' = 'Project';
 
+  /**
+   * How the color picker lays out {@link PROJECT_COLORS}. The palette keeps its own order on purpose — new
+   * projects take the next entry and `avatarColor` (util.ts) hashes into it, so the list alternates hues to keep
+   * neighbouring picks distinct, and reordering it would recolor every existing avatar. So only the *display* is
+   * arranged: vivid colors around the color wheel (rose, red, orange, yellow, green, teal, blue), then the muted
+   * tones on a row of their own. Derived from the palette, so a color added later lands in the right place.
+   */
+  function hueAndSaturation(hex: string): { hue: number; sat: number } {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const d = max - min;
+    const lightness = (max + min) / 2;
+    const sat = d === 0 ? 0 : d / (1 - Math.abs(2 * lightness - 1));
+    let hue = 0;
+    if (d !== 0) {
+      if (max === r) hue = ((g - b) / d) % 6;
+      else if (max === g) hue = (b - r) / d + 2;
+      else hue = (r - g) / d + 4;
+      hue = (hue * 60 + 360) % 360;
+    }
+    return { hue, sat };
+  }
+  const MUTED_BELOW_SATURATION = 0.3;
+  const swatchGroups: string[][] = (() => {
+    // Each color is converted once up front, then filtered and sorted on the cached numbers.
+    const colors = PROJECT_COLORS.map((hex) => ({ hex, ...hueAndSaturation(hex) }));
+    // Shifted 30° so the wheel starts at rose rather than splitting the reds across both ends of the row.
+    const byHue = (a: { hue: number }, b: { hue: number }) => ((a.hue + 30) % 360) - ((b.hue + 30) % 360);
+    const vivid = colors.filter((c) => c.sat >= MUTED_BELOW_SATURATION).sort(byHue);
+    const muted = colors.filter((c) => c.sat < MUTED_BELOW_SATURATION).sort(byHue);
+    return [vivid, muted].filter((g) => g.length > 0).map((g) => g.map((c) => c.hex));
+  })();
+
+  /** What a swatch is called to a screen reader and in its tooltip. A color added to the palette before it has a name falls back to its hex. */
+  $: colorName = (hex: string) => {
+    const key = `projectSettings.colorNames.${hex}`;
+    const name = $t(key);
+    return name === key ? hex : name;
+  };
+
   const FEATURE_LABEL_KEYS: Record<keyof ProjectFeatureFlags, string> = {
     reporters: 'projectSettings.features.reporters',
     storyPoints: 'projectSettings.features.storyPoints',
@@ -50,13 +91,19 @@
   // only renders once availableGitProviders confirms at least one is actually registered on
   // the server, instead of always showing a form that would 400 no matter what's typed into it.
   let availableGitProviders: string[] = [];
-  if ($workspaceFeatures.git) api.listGitProviders().then((p) => (availableGitProviders = p)).catch(() => {});
 
   let linkRepoError = '';
   // Linking verifies access with *your* connected account (Settings → Git), so say so up front
   // instead of letting the first submit 400. Only 'github' has a connection to check; 'local' needs none.
   let connections: { provider: string; accountLogin?: string }[] = [];
-  if ($workspaceFeatures.git) api.listGitConnections().then((r) => (connections = r.connections)).catch(() => {});
+  // Only the Git tab uses either list, and this component serves both tabs of the Project group (and is rebuilt each
+  // time the group is re-entered) — so fetch on first showing the Git tab, not whenever the Project tab opens.
+  let gitDataRequested = false;
+  $: if (tab === 'Git' && $workspaceFeatures.git && !gitDataRequested) {
+    gitDataRequested = true;
+    api.listGitProviders().then((p) => (availableGitProviders = p)).catch(() => {});
+    api.listGitConnections().then((r) => (connections = r.connections)).catch(() => {});
+  }
   $: myConnection = connections.find((c) => c.provider === newRepoProvider);
   // Repo picker: once the caller's own account is connected, list the repos it can reach so they
   // choose one instead of typing owner/repo/branch. Falls back to the manual fields if the list fails or is empty.
@@ -135,19 +182,24 @@
         <span class="row-tag mono">{$currentProject.key}</span>
       </div>
       <p class="section-hint">{$t('projectSettings.keyHint', { key: $currentProject.key })}</p>
-      <div class="field-row">
+      <div class="field-row top">
         <span class="field-label">{$t('projectSettings.colorLabel')}</span>
-        <div class="swatch-row">
-          {#each PROJECT_COLORS as c}
-            <button
-              type="button"
-              class="swatch"
-              class:active={c === $currentProject.color}
-              style="background:{c}"
-              title={c}
-              aria-label={$t('projectSettings.colorSwatchLabel', { color: c })}
-              on:click={() => setProjectColor(c)}
-            ><Icon name="check" size={11} /></button>
+        <div class="swatch-groups" role="group" aria-label={$t('projectSettings.colorLabel')}>
+          {#each swatchGroups as group}
+            <div class="swatch-row">
+              {#each group as c}
+                <button
+                  type="button"
+                  class="swatch"
+                  class:active={c === $currentProject.color}
+                  style="background:{c}"
+                  title={colorName(c)}
+                  aria-label={$t('projectSettings.colorSwatchLabel', { color: colorName(c) })}
+                  aria-pressed={c === $currentProject.color}
+                  on:click={() => setProjectColor(c)}
+                ><Icon name="check" size={12} /></button>
+              {/each}
+            </div>
           {/each}
         </div>
       </div>
@@ -215,7 +267,6 @@
     .icon-btn { padding: 8px; }
     .field-row { flex-wrap: wrap; gap: 8px 12px; }
     .field-row input[type='text'] { padding: 9px 11px; max-width: none; }
-    .swatch { width: 30px; height: 30px; }
     .add-form { flex-wrap: wrap; }
     .add-form input, .add-form select { padding: 9px 11px; }
     .add-form button { padding: 10px 14px; }
@@ -247,12 +298,24 @@
   .add-form input, .add-form select { font: inherit; font-size: 12.5px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px; flex: 1; }
   .add-form button { font-size: 12px; font-weight: 600; color: var(--accent-on); background: var(--accent); padding: 7px 12px; border-radius: 7px; white-space: nowrap; }
   .add-form button:disabled { opacity: .5; cursor: default; }
-  .swatch-row { display: flex; gap: 7px; flex-wrap: wrap; }
+  .field-row.top { align-items: flex-start; }
+  .field-row.top .field-label { padding-top: 5px; }
+  .swatch-groups { display: flex; flex-direction: column; gap: 12px; }
+  .swatch-row { display: flex; gap: 10px; flex-wrap: wrap; }
   .swatch {
-    width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
     color: #fff; transition: transform .1s ease;
   }
   .swatch:hover { transform: scale(1.12); }
   .swatch :global(svg) { opacity: 0; }
   .swatch.active :global(svg) { opacity: 1; }
+
+  /* After the base .swatch rules on purpose: same specificity, so source order decides, and an earlier
+     media block would lose to them. */
+  @media (max-width: 768px) {
+    /* Five to a row, big enough to tap, so each group wraps into tidy rows instead of a ragged tail. */
+    .swatch-groups { gap: 14px; width: 100%; }
+    .swatch-row { display: grid; grid-template-columns: repeat(5, 36px); gap: 14px 16px; }
+    .swatch { width: 36px; height: 36px; }
+  }
 </style>

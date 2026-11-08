@@ -2,10 +2,11 @@
   import { onDestroy, tick } from 'svelte';
   import Avatar from './Avatar.svelte';
   import Icon from './Icon.svelte';
-  import { currentUser, setCurrentUser } from '../stores/auth';
+  import { currentUser, replaceToken, setCurrentUser } from '../stores/auth';
   import { workspaceMembers } from '../stores/workspace';
   import { changePassword, updateProfile } from '../api';
   import { locale, t } from '../i18n';
+  import { normalizeEmail } from '$domain';
 
   /** The Profile tab of Settings.svelte (Personal group): your picture, name, email and password. */
 
@@ -29,8 +30,8 @@
 
   $: nameError = !displayName.trim() ? $t('accountSettings.nameRequired') : displayName.trim().length > MAX_NAME_LENGTH ? $t('accountSettings.nameTooLong', { max: MAX_NAME_LENGTH }) : '';
   $: emailError = EMAIL_SHAPE.test(email.trim()) ? '' : $t('accountSettings.emailInvalid');
-  // The server lowercases emails, so a case-only edit isn't a change.
-  $: emailChanged = email.trim().toLowerCase() !== ($currentUser?.email ?? '');
+  // Same normalisation the server applies, on both sides, so a case-only edit isn't a change.
+  $: emailChanged = normalizeEmail(email) !== normalizeEmail($currentUser?.email ?? '');
   // Save stays disabled until something actually changed (a removed picture is `null`, an unset one `undefined`).
   $: dirty = displayName.trim() !== ($currentUser?.displayName ?? '') || emailChanged || (avatarUrl ?? null) !== ($currentUser?.avatarUrl ?? null);
   $: canSave = dirty && !nameError && !emailError && (!emailChanged || emailPassword !== '') && !submitting;
@@ -55,6 +56,12 @@
     const img = new Image();
     img.onload = () => {
       const side = Math.min(img.width, img.height);
+      // e.g. an SVG with no intrinsic size decodes "fine" at 0x0, and would otherwise save the empty image 'data:,'.
+      if (!side) {
+        error = $t('accountSettings.unreadableImage');
+        URL.revokeObjectURL(img.src);
+        return;
+      }
       const size = Math.min(MAX_DIMENSION, side);
       const canvas = document.createElement('canvas');
       canvas.width = size;
@@ -149,7 +156,8 @@
     pwError = '';
     pwChanged = false;
     try {
-      await changePassword(currentPassword, newPassword);
+      // Every older token is retired by this, including the one in use — keep this session going on the fresh one.
+      replaceToken((await changePassword(currentPassword, newPassword)).token);
       currentPassword = newPassword = confirmPassword = '';
       newTouched = confirmTouched = false;
       pwChanged = true;
@@ -234,7 +242,7 @@
 
   <form class="card" on:submit|preventDefault={submitPassword}>
     <h3 class="card-title">
-      <button type="button" class="card-toggle" aria-expanded={passwordOpen} aria-controls="profile-password-fields" on:click={togglePassword}>
+      <button type="button" class="card-toggle" aria-expanded={passwordOpen} aria-controls={passwordOpen ? 'profile-password-fields' : undefined} on:click={togglePassword}>
         <span>{$t('accountSettings.passwordHeading')}</span>
         <span class="toggle-side">
           {#if !passwordOpen}<span>{$t('accountSettings.changePasswordButton')}</span>{/if}

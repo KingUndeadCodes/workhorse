@@ -5,12 +5,14 @@ import { burnPasswordCheck, hashPassword, verifyPassword } from '../auth/passwor
 import { createRateLimiter } from '../auth/rateLimit';
 import { signToken } from '../auth/jwt';
 import { userRepo, workspaceRepo } from '../container';
-import { issueWsTicket } from '../ws';
+import { normalizeEmail } from '../domain';
+import { disconnectUser, issueWsTicket } from '../ws';
 
 // Per email AND per client address, so one attacker can neither hammer one account nor spray many.
 const loginByEmail = createRateLimiter({ max: 10, windowMs: 15 * 60_000 });
 const loginByClient = createRateLimiter({ max: 30, windowMs: 15 * 60_000 });
 const signupByClient = createRateLimiter({ max: 10, windowMs: 60 * 60_000 });
+const AVATAR_DATA_URL = /^data:image\/(jpeg|png|webp);base64,/;
 // Re-checking your own password before a sensitive change (email, password) — per signed-in user, since the caller is already authenticated.
 const passwordCheckByUser = createRateLimiter({ max: 5, windowMs: 15 * 60_000 });
 
@@ -66,7 +68,7 @@ publicAuthRouter.post('/auth/signup', async (c) => {
   const limited = signupByClient.hit(clientKey(c));
   if (!limited.ok) return tooManyAttempts(c, limited.retryAfterSeconds);
   const body = await c.req.json<{ email?: string; password?: string; displayName?: string }>();
-  const email = (body.email ?? '').trim().toLowerCase();
+  const email = normalizeEmail(body.email ?? '');
   const password = body.password ?? '';
   const displayName = (body.displayName ?? '').trim();
   if (!email || !email.includes('@')) return c.json({ error: 'a valid email is required' }, 400);
@@ -96,7 +98,7 @@ publicAuthRouter.post('/auth/signup', async (c) => {
 /** POST /api/auth/login — email + password -> token. Same 401 message for "no such user" and "wrong password". */
 publicAuthRouter.post('/auth/login', async (c) => {
   const body = await c.req.json<{ email?: string; password?: string }>();
-  const email = (body.email ?? '').trim().toLowerCase();
+  const email = normalizeEmail(body.email ?? '');
   const password = body.password ?? '';
   const byClient = loginByClient.hit(clientKey(c));
   const byEmail = loginByEmail.hit(email);
@@ -141,7 +143,7 @@ meRouter.patch('/auth/me', async (c) => {
     changes.displayName = displayName;
   }
   if (body.email !== undefined) {
-    const email = body.email.trim().toLowerCase();
+    const email = normalizeEmail(body.email);
     if (!email || !email.includes('@')) return c.json({ error: 'a valid email is required' }, 400);
     // Resending the address you already have (the form always does) isn't a change, so needs no password.
     if (email !== c.get('user').email) {
@@ -154,6 +156,11 @@ meRouter.patch('/auth/me', async (c) => {
     }
   }
   if (body.avatarUrl !== undefined) {
+    // Only the picture the client itself produces (a resized canvas data: URL). Anything else — notably an
+    // https:// URL — would make every member's browser fetch it whenever this avatar is shown.
+    if (body.avatarUrl !== null && (typeof body.avatarUrl !== 'string' || !AVATAR_DATA_URL.test(body.avatarUrl))) {
+      return c.json({ error: 'avatarUrl must be a jpeg, png or webp data: URL' }, 400);
+    }
     // A few MB of headroom for a resized-client-side photo, encoded as base64 (~33% larger
     // than the raw bytes) — generous for an avatar, small enough sql.js won't choke on it.
     if (body.avatarUrl !== null && body.avatarUrl.length > 4_000_000) return c.json({ error: 'image is too large' }, 400);
@@ -167,8 +174,8 @@ meRouter.patch('/auth/me', async (c) => {
 /**
  * POST /api/auth/password — changes the caller's own password. Needs the current one (see
  * {@link requireCurrentPassword}) and a new one of at least 8 characters, matching signup.
- * Other signed-in devices stay signed in: sessions are stateless JWTs that simply expire, with no
- * server-side list to revoke from.
+ * Every other signed-in session is signed out: tokens carry their issue time and requireAuth rejects any
+ * issued before the password last changed. The response includes a fresh token for this session.
  */
 meRouter.post('/auth/password', async (c) => {
   const body = await c.req.json<{ currentPassword?: unknown; newPassword?: unknown }>().catch(() => null);
@@ -182,5 +189,10 @@ meRouter.post('/auth/password', async (c) => {
   if (newPassword === currentPassword) return c.json({ error: 'choose a password different from your current one' }, 400);
 
   await userRepo.setPasswordHash(userId, await hashPassword(newPassword));
-  return c.json({ ok: true });
+  // Live sockets were authenticated once, by a ticket from an old token, so close them too — otherwise a stolen
+  // session's open socket keeps streaming. This session's own client reconnects on its fresh token.
+  disconnectUser(userId);
+  // Every token issued before this moment is now rejected (see requireAuth) — including the one this request
+  // used — so hand back a fresh one for the caller's own session.
+  return c.json({ ok: true, token: await signToken(c.get('user')) });
 });

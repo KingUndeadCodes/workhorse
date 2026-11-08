@@ -25,7 +25,9 @@
       "lowest": "सबसे कम"
     },
     "on": "चालू",
-    "off": "बंद"
+    "off": "बंद",
+    "showMore": "और दिखाएँ",
+    "showLess": "कम दिखाएँ"
   },
   "nav": {
     "board": "बोर्ड",
@@ -287,7 +289,23 @@
     "linkRepoButton": "रिपॉज़िटरी लिंक करें",
     "linkingRepoButton": "लिंक किया जा रहा है…",
     "failedLinkRepo": "रिपॉज़िटरी लिंक करने में विफल",
-    "defaultBranchSuffix": "डिफ़ॉल्ट ब्रांच: {branch}"
+    "defaultBranchSuffix": "डिफ़ॉल्ट ब्रांच: {branch}",
+    "colorNames": {
+      "#137A6E": "फ़िरोज़ी",
+      "#B5527A": "गुलाबी",
+      "#3E6FB0": "नीला",
+      "#B9791A": "एम्बर",
+      "#2E9E58": "हरा",
+      "#CC785C": "टेराकोटा",
+      "#946B3A": "भूरा",
+      "#8A8FA3": "लैवेंडर-धूसर",
+      "#C9A227": "सुनहरा",
+      "#5A7D5A": "सेज हरा",
+      "#5C7A89": "स्लेटी",
+      "#A64B4B": "लाल",
+      "#3F9BBE": "आसमानी",
+      "#7A6C5D": "धूसर-भूरा"
+    }
   },
   "workspaceView": {
     "youBadge": "आप",
@@ -689,6 +707,21 @@
       "resolved": "{actor} ने {issue} हल किया",
       "commented": "{actor} ने {issue} पर टिप्पणी की",
       "mentioned": "{actor} ने आपको {issue} में मेंशन किया"
+    },
+    "actions": {
+      "assigned": "ने आपको असाइन किया",
+      "statusChanged": "ने स्थिति बदली",
+      "resolved": "ने इसे हल किया",
+      "commented": "ने टिप्पणी की",
+      "mentioned": "ने आपको मेंशन किया"
+    },
+    "automation": "ऑटोमेशन",
+    "unreadCount": "{count} अपठित",
+    "groups": {
+      "today": "आज",
+      "yesterday": "कल",
+      "thisWeek": "इस सप्ताह",
+      "earlier": "पहले"
     }
   },
   "myIssues": {

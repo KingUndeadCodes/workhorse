@@ -25,7 +25,9 @@
       "lowest": "lowest"
     },
     "on": "On",
-    "off": "Off"
+    "off": "Off",
+    "showMore": "Show more",
+    "showLess": "Show less"
   },
   "nav": {
     "board": "Board",
@@ -292,7 +294,23 @@
     "linkRepoButton": "Link repository",
     "linkingRepoButton": "Linking…",
     "failedLinkRepo": "Failed to link repository",
-    "defaultBranchSuffix": "default branch: {branch}"
+    "defaultBranchSuffix": "default branch: {branch}",
+    "colorNames": {
+      "#137A6E": "Teal",
+      "#B5527A": "Rose",
+      "#3E6FB0": "Blue",
+      "#B9791A": "Amber",
+      "#2E9E58": "Green",
+      "#CC785C": "Terracotta",
+      "#946B3A": "Brown",
+      "#8A8FA3": "Lavender gray",
+      "#C9A227": "Gold",
+      "#5A7D5A": "Sage",
+      "#5C7A89": "Slate",
+      "#A64B4B": "Red",
+      "#3F9BBE": "Sky blue",
+      "#7A6C5D": "Taupe"
+    }
   },
   "workspaceView": {
     "youBadge": "you",
@@ -694,6 +712,21 @@
       "resolved": "{actor} resolved {issue}",
       "commented": "{actor} commented on {issue}",
       "mentioned": "{actor} mentioned you on {issue}"
+    },
+    "actions": {
+      "assigned": "assigned you",
+      "statusChanged": "changed the status",
+      "resolved": "resolved this",
+      "commented": "commented",
+      "mentioned": "mentioned you"
+    },
+    "automation": "Automation",
+    "unreadCount": "{count} unread",
+    "groups": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "thisWeek": "Earlier this week",
+      "earlier": "Earlier"
     }
   }
 }

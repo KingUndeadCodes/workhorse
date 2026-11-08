@@ -15,6 +15,7 @@
     isWorkspaceAdmin,
     labels,
     settingsJumpTab,
+    type SettingsTab,
     statusCategories,
     users,
     webhookSubscriptions,
@@ -34,10 +35,7 @@
   import { describeAutomationAction, formatRelativeDate, splitHumansAndAgents } from '../util';
   import type { AutomationAction, AutomationCondition, EventType, FilterOp, WebhookDelivery } from '$domain';
 
-  // 'Git' is the workspace-level GitHub connections tab (what settingsJumpTab.set('Git') has always
-  // meant); the project's own repo link is 'ProjectGit'.
-  const allTabs = ['Profile', 'Appearance', 'Accessibility', 'Project', 'ProjectGit', 'Members', 'Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Git', 'Webhooks', 'Features'] as const;
-  type Tab = (typeof allTabs)[number];
+  type Tab = SettingsTab;
   const TAB_LABEL_KEYS: Record<Tab, string> = {
     Profile: 'settings.tabs.profile',
     Appearance: 'settings.tabs.appearance',
@@ -84,10 +82,8 @@
   let mobileMenuOpen = true;
   let rowEls: Partial<Record<Tab, HTMLButtonElement>> = {};
   let detailTitleEl: HTMLElement | undefined;
-  let lastOpenedTab: Tab | null = null;
   async function openTab(tab: Tab) {
     activeTab = tab;
-    lastOpenedTab = tab;
     mobileMenuOpen = false;
     await tick();
     detailTitleEl?.focus();
@@ -95,17 +91,20 @@
   async function backToMenu() {
     mobileMenuOpen = true;
     await tick();
-    if (lastOpenedTab) rowEls[lastOpenedTab]?.focus();
+    rowEls[activeTab]?.focus();
   }
 
   // Lets the TopBar "New…" menu open Settings already on the relevant tab (e.g. "New Label").
   // Reactive, not a one-time check: this component stays mounted across jumps whenever the
   // view is already 'settings' (no {#key} in App.svelte), so a plain top-level `if` would only
   // ever fire once, at first mount. On mobile a jump opens the tab's detail directly.
-  $: if ($settingsJumpTab && (allTabs as readonly string[]).includes($settingsJumpTab)) {
-    activeTab = $settingsJumpTab as Tab;
-    lastOpenedTab = activeTab;
-    mobileMenuOpen = false;
+  $: if ($settingsJumpTab) {
+    // A tab that's hidden right now (its module is off, or it's admin-only) can't be jumped to; ignore the jump
+    // and stay where we are instead of landing on the fallback tab.
+    if (tabs.includes($settingsJumpTab)) {
+      activeTab = $settingsJumpTab;
+      mobileMenuOpen = false;
+    }
     settingsJumpTab.set(null);
   }
 
@@ -321,8 +320,8 @@
   {#if $isMobile && mobileMenuOpen}
     <nav class="menu" aria-label={$t('settings.title')}>
       {#each groups as group (group.id)}
-        <div class="menu-group">
-          <div class="menu-heading">{groupLabel(group.id)}</div>
+        <div class="menu-group" role="group" aria-labelledby="settings-group-{group.id}">
+          <div class="menu-heading" id="settings-group-{group.id}">{groupLabel(group.id)}</div>
           {#each group.tabs as tab (tab)}
             <button type="button" class="menu-row" bind:this={rowEls[tab]} on:click={() => openTab(tab)}>
               <span>{$t(TAB_LABEL_KEYS[tab])}</span>
@@ -347,10 +346,10 @@
     {:else}
       <nav class="tabs" aria-label={$t('settings.title')}>
         {#each groups as group (group.id)}
-          <div class="tab-group">
-            <div class="tab-heading">{groupLabel(group.id)}</div>
+          <div class="tab-group" role="group" aria-labelledby="settings-group-{group.id}">
+            <div class="tab-heading" id="settings-group-{group.id}">{groupLabel(group.id)}</div>
             {#each group.tabs as tab (tab)}
-              <button class="tab" class:active={tab === activeTab} on:click={() => (activeTab = tab)}>{$t(TAB_LABEL_KEYS[tab])}</button>
+              <button class="tab" class:active={tab === activeTab} aria-current={tab === activeTab ? 'page' : undefined} on:click={() => (activeTab = tab)}>{$t(TAB_LABEL_KEYS[tab])}</button>
             {/each}
           </div>
         {/each}
@@ -674,6 +673,7 @@
     .toggle input[type="checkbox"] { width: 18px; height: 18px; }
     .appearance-row { padding: 18px 16px; gap: 18px; }
     .theme-picker { gap: 18px; }
+    .language-option { min-height: 44px; }
     .add-form { flex-wrap: wrap; }
     .add-form input, .add-form select { padding: 9px 11px; }
     .add-form button { padding: 10px 14px; }
@@ -689,8 +689,10 @@
   .row-tag { color: var(--text-3); font-size: 11.5px; flex: 1; }
   .dot { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 8px; }
   .appearance-row {
-    display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 900px;
+    display: flex; flex-direction: column; gap: 20px; width: 100%; box-sizing: border-box;
     padding: 24px 28px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
+    /* Lets the language options below pick their column count from the card's own width, not the viewport's. */
+    container-type: inline-size;
   }
   .appearance-row + .appearance-row { margin-top: 20px; }
   .appearance-copy { display: flex; flex-direction: column; gap: 5px; }
@@ -740,9 +742,14 @@
   /* Simpler than the theme picker above — a language has no meaningful "preview" the way a
      color scheme does, so this is just a row of selectable pills reusing the same
      check-and-label footer pattern instead of a big preview swatch. */
-  .language-picker { display: flex; flex-wrap: wrap; gap: 10px; }
+  /* Fills the card instead of hugging the left: equal-width options in as many columns as the card has room
+     for (one on a phone, then 2 / 4 / 8). Thresholds allow ~185px per option, enough for the longest label. */
+  .language-picker { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  @container (min-width: 400px) { .language-picker { grid-template-columns: repeat(2, 1fr); } }
+  @container (min-width: 770px) { .language-picker { grid-template-columns: repeat(4, 1fr); } }
+  @container (min-width: 1550px) { .language-picker { grid-template-columns: repeat(8, 1fr); } }
   .language-option {
-    display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px;
+    display: flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 999px; min-width: 0;
     background: var(--surface-sunken); border: 1px solid var(--border); transition: border-color .12s ease;
   }
   .language-option:hover { border-color: var(--border-strong); }
@@ -752,7 +759,7 @@
     background: var(--surface); border: 1px solid var(--border-strong); color: transparent; transition: all .12s ease;
   }
   .language-option.active .language-option-check { background: var(--accent); border-color: var(--accent); color: var(--accent-on); }
-  .language-option-label { font-size: 13px; color: var(--text-2); }
+  .language-option-label { font-size: 13px; color: var(--text-2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .language-option.active .language-option-label { color: var(--text); font-weight: 600; }
   .language-disclaimer {
     font-size: 12px; line-height: 1.5; color: var(--warning); background: var(--warning-soft);

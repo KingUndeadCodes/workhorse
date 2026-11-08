@@ -41,10 +41,26 @@ export class UserRepository {
     return row?.password_hash;
   }
 
-  /** Replaces a user's stored password hash (already hashed — see auth/password.ts). Callers verify the current password first. */
+  /**
+   * Replaces a user's stored password hash (already hashed — see auth/password.ts) and stamps the change time,
+   * which is what makes every token issued before it stop working (see {@link getPasswordChangedAt}). Callers
+   * verify the current password first.
+   */
   async setPasswordHash(userId: string, passwordHash: string): Promise<void> {
-    await this.db.updateTable('credentials').set({ password_hash: passwordHash }).where('user_id', '=', userId).execute();
+    const result = await this.db
+      .updateTable('credentials')
+      .set({ password_hash: passwordHash, password_changed_at: Math.floor(Date.now() / 1000) })
+      .where('user_id', '=', userId)
+      .executeTakeFirst();
+    // No credentials row means nothing was changed and no older token was revoked — don't let that pass silently.
+    if (!result.numUpdatedRows) throw new Error(`no credentials for user ${userId}`);
     persistState();
+  }
+
+  /** Unix seconds of the user's last password change, or 0 if it has never changed. Tokens issued before this are rejected by requireAuth. */
+  async getPasswordChangedAt(userId: string): Promise<number> {
+    const row = await this.db.selectFrom('credentials').select('password_changed_at').where('user_id', '=', userId).executeTakeFirst();
+    return row?.password_changed_at ?? 0;
   }
 
   /** Creates a human account with a credential row. Does not touch workspace membership — see {@link WorkspaceRepository.addMember}. */

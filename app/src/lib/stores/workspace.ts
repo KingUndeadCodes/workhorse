@@ -79,11 +79,20 @@ export const loadError = writable<string | null>(null);
 export const currentView = writable<'board' | 'backlog' | 'settings' | 'stats' | 'myIssues'>('board');
 
 /**
+ * Every tab of the Settings screen, in the order they appear. Defined here (not in Settings.svelte) so the
+ * type below can be shared: 'Git' is the workspace-level GitHub connections tab, the project's own repo link
+ * is 'ProjectGit'.
+ */
+export const SETTINGS_TABS = ['Profile', 'Appearance', 'Accessibility', 'Project', 'ProjectGit', 'Members', 'Labels', 'Fields', 'Workflow', 'Automations', 'Agents', 'Git', 'Webhooks', 'Features'] as const;
+export type SettingsTab = (typeof SETTINGS_TABS)[number];
+
+/**
  * Settings tab to land on next time Settings mounts — set by the TopBar "New…" menu (e.g.
  * "New Label" should open Settings already on the Labels tab). Settings.svelte reads and
- * clears this on mount.
+ * clears this on mount. Typed, so a misspelt or renamed tab is a compile error at the caller; a jump to a
+ * tab that is currently hidden (its module is switched off) is ignored by Settings rather than misrouted.
  */
-export const settingsJumpTab = writable<string | null>(null);
+export const settingsJumpTab = writable<SettingsTab | null>(null);
 
 // Reference data plus mutable issue/comment state, all populated from the API by
 // initWorkspace and otherwise treated as read-only by components — every write goes

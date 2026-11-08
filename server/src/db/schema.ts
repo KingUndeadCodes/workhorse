@@ -45,6 +45,8 @@ export function migrateStateDb(): void {
   // via rowToUser, so a password hash living there is one lazy `SELECT *` away from being
   // shipped to the client. A separate table makes that structurally impossible.
   run(stateDb, `CREATE TABLE IF NOT EXISTS credentials (user_id TEXT PRIMARY KEY, password_hash TEXT NOT NULL, created_at TEXT)`);
+  // Unix seconds of the last password change; a token issued before it is no longer accepted — see requireAuth.
+  addColumnIfMissing('credentials', 'password_changed_at', 'INTEGER');
   run(
     stateDb,
     `CREATE TABLE IF NOT EXISTS workspace_members (workspace_id TEXT, user_id TEXT, role TEXT, joined_at TEXT, PRIMARY KEY (workspace_id, user_id))`,
