@@ -33,7 +33,8 @@
   import Avatar from './Avatar.svelte';
   import Icon from './Icon.svelte';
   import MarkdownEditor from './MarkdownEditor.svelte';
-  import { displayName, formatRelativeDate, renderMarkdown } from '../util';
+  import { displayName, formatRelativeDate } from '../util';
+  import { renderMarkdown } from '../markdown';
   import { lineNumbers } from '../actions/lineNumbers';
   import { isMobile } from '../stores/viewport';
   import { locale, t, tn } from '../i18n';

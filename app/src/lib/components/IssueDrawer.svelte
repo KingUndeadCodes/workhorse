@@ -36,8 +36,9 @@
     workspaceFeatures,
   } from '../stores/workspace';
   import { createBranch as apiCreateBranch, deleteBranch as apiDeleteBranch, fetchEventDetail, fetchIssueEvents, getBranch, triggerAgent, type ActivityEventSummary } from '../api';
-  import { describeEvent, describeEventType, displayName, formatHours, formatRelativeDate, groupActivityEvents, legalTargetStatusIds, priorityIcon, renderMarkdown, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
+  import { describeEvent, describeEventType, displayName, formatHours, formatRelativeDate, groupActivityEvents, legalTargetStatusIds, priorityIcon, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
   import { lineNumbers } from '../actions/lineNumbers';
+  import { renderMarkdown } from '../markdown';
   import { locale, t, tn } from '../i18n';
   import { STORY_POINT_VALUES, slugifyBranchName, type Branch, type EventEnvelope, type Issue, type IssueLinkType } from '$domain';
 

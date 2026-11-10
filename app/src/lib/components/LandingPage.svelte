@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
-  import LandingShowcase from './LandingShowcase.svelte';
 
   export let onGetStarted: () => void;
   export let onLogin: () => void;
@@ -17,11 +16,34 @@
 
   const currentYear = new Date().getFullYear();
 
+  // The showcase is large, animated and below the fold, so it is its own chunk, fetched as the visitor nears it
+  // (see the placeholder in the template) rather than with the page.
+  let Showcase: typeof import('./LandingShowcase.svelte').default | undefined;
+  let showcaseSlot: HTMLElement;
+  let showcaseRequested = false;
+  function loadShowcase() {
+    if (showcaseRequested) return;
+    showcaseRequested = true;
+    import('./LandingShowcase.svelte').then((m) => (Showcase = m.default));
+  }
+
   // The tab title is otherwise the app's ("Workhorse — Board"); restore it when the visitor
   // moves on to login or signs in.
   onMount(() => {
     document.title = 'Workhorse — Project management with AI agents';
-    return undefined;
+    // Start well before it scrolls into view, so it is in place by the time the visitor gets there.
+    if (typeof IntersectionObserver === 'undefined') {
+      loadShowcase();
+      return undefined;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        loadShowcase();
+        observer.disconnect();
+      }
+    }, { rootMargin: '600px 0px' });
+    observer.observe(showcaseSlot);
+    return () => observer.disconnect();
   });
 </script>
 
@@ -43,7 +65,9 @@
       <p class="subtitle">Plan sprints, move work across the board, and let AI agents pick up tickets and work them — with you approving every step that matters. Self-hosted, so your data stays yours.</p>
     </section>
 
-    <LandingShowcase />
+    <div class="showcase-slot" bind:this={showcaseSlot} aria-hidden={Showcase ? undefined : 'true'}>
+      {#if Showcase}<svelte:component this={Showcase} />{/if}
+    </div>
 
     <section class="section">
       <h2>Automation you can trust</h2>
@@ -85,6 +109,9 @@
 </div>
 
 <style>
+  /* Holds the showcase's place until its chunk arrives, at about its scroll-story height (6 scenes x 78vh, minus its
+     -48px pull-up), so nothing below it jumps when it mounts. */
+  .showcase-slot { width: 100%; display: flex; flex-direction: column; align-items: center; min-height: calc(6 * 78vh - 48px); }
   /* This page is shown to unauthenticated visitors and must render purely off the browser's
      own prefers-color-scheme — it deliberately does NOT use the app's shared --bg/--text/etc
      tokens (app.css's :root), since those are mutated at runtime by an explicit [data-theme]

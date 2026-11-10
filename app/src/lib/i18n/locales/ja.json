@@ -422,6 +422,8 @@
     "apiErrorTitle": "Workhorse APIに接続できませんでした",
     "serverRunningHint": "サーバーは起動していますか？",
     "loadingWorkspace": "ワークスペースを読み込み中…",
+    "loadFailedTitle": "アプリを読み込めませんでした",
+    "reload": "再読み込み",
     "skipToContent": "メインコンテンツへスキップ"
   },
   "backlog": {

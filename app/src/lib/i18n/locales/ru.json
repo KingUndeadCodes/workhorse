@@ -440,6 +440,8 @@
     "apiErrorTitle": "Не удалось подключиться к API Workhorse",
     "serverRunningHint": "Сервер запущен?",
     "loadingWorkspace": "Загрузка рабочего пространства…",
+    "loadFailedTitle": "Не удалось загрузить приложение",
+    "reload": "Перезагрузить",
     "skipToContent": "Перейти к основному содержимому"
   },
   "backlog": {

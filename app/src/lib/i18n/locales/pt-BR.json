@@ -434,6 +434,8 @@
     "apiErrorTitle": "Não foi possível acessar a API do Workhorse",
     "serverRunningHint": "O servidor está em execução?",
     "loadingWorkspace": "Carregando espaço de trabalho…",
+    "loadFailedTitle": "Não foi possível carregar o aplicativo",
+    "reload": "Recarregar",
     "skipToContent": "Pular para o conteúdo principal"
   },
   "backlog": {

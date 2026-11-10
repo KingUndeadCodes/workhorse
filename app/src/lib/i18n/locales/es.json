@@ -429,6 +429,8 @@
     "apiErrorTitle": "No se pudo conectar con la API de Workhorse",
     "serverRunningHint": "¿Está el servidor en ejecución?",
     "loadingWorkspace": "Cargando espacio de trabajo…",
+    "loadFailedTitle": "No se pudo cargar la aplicación",
+    "reload": "Recargar",
     "skipToContent": "Saltar al contenido principal"
   },
   "backlog": {
