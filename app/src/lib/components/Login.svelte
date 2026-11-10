@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PasswordToggle from './PasswordToggle.svelte';
   import { login, signup } from '../stores/auth';
 
   /** Set by App.svelte when Login is reached via the landing page, so a visitor can return to
@@ -10,6 +11,7 @@
   let mode: 'login' | 'signup' = initialMode;
   let email = '';
   let password = '';
+  let showPassword = false;
   let displayName = '';
   let error = '';
   let busy = false;
@@ -52,8 +54,11 @@
       <input type="email" name="email" placeholder="you@example.com" bind:value={email} required autocomplete="email" />
     </label>
     <label>
-      <span>Password</span>
-      <input type="password" name="password" placeholder="••••••••" bind:value={password} required minlength="8" autocomplete={mode === 'login' ? 'current-password' : 'new-password'} />
+      <span id="login-password-label">Password</span>
+      <span class="pw-field">
+        <input type={showPassword ? 'text' : 'password'} name="password" placeholder="••••••••" bind:value={password} required minlength="8" autocomplete={mode === 'login' ? 'current-password' : 'new-password'} aria-labelledby="login-password-label" />
+        <PasswordToggle bind:visible={showPassword} showLabel="Show password" hideLabel="Hide password" />
+      </span>
     </label>
     {#if error}<p class="error">{error}</p>{/if}
     <button type="submit" class="primary" disabled={busy}>{busy ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Sign up'}</button>
@@ -132,6 +137,8 @@
     background: var(--lp-surface-2);
     color: var(--lp-text);
   }
+  .pw-field { position: relative; display: flex; }
+  .pw-field input { flex: 1; min-width: 0; padding-right: 46px; }
   input:focus-visible {
     outline: 2px solid var(--lp-accent);
     outline-offset: 1px;
