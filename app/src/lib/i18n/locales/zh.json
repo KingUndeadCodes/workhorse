@@ -725,5 +725,18 @@
     "title": "我的问题",
     "loading": "加载中…",
     "empty": "没有分配给你的未完成问题"
+  },
+  "profileCard": {
+    "label": "{name} 的个人资料",
+    "agentBadge": "AI 代理",
+    "email": "邮箱",
+    "memberSince": "加入时间",
+    "assigned": "已分配",
+    "model": "模型",
+    "status": "状态",
+    "disabled": "已停用",
+    "openIssues": {
+      "other": "{count} 个未完成问题"
+    }
   }
 }

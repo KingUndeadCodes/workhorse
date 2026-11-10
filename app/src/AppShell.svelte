@@ -9,6 +9,7 @@
   import MyIssuesView from './lib/components/MyIssuesView.svelte';
   import Stats from './lib/components/Stats.svelte';
   import IssueDrawer from './lib/components/IssueDrawer.svelte';
+  import ProfileCard from './lib/components/ProfileCard.svelte';
   import { currentView, featureFlags, selectedIssueId, statusChangeError, workspaceFeatures } from './lib/stores/workspace';
   import { isMobile } from './lib/stores/viewport';
   import { t } from './lib/i18n';
@@ -46,6 +47,7 @@
   </main>
   <MobileNav />
 </div>
+<ProfileCard />
 {#if $statusChangeError}
   <!-- A refused status change (drag, menu, or drawer) — see statusChangeError in stores/workspace.ts. -->
   <div class="notice" role="alert">

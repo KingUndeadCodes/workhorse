@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { AgentRun, AutomationAction, Comment, EventEnvelope, User, Workflow } from '$domain';
 import {
   agentRunStatusLabel, avatarColor, legalColumnTarget, legalTargetStatusIds, describeAutomationAction, describeEvent, describeEventType, formatBucketLabel, formatDuration, formatHours,
-  formatRelativeDate, formatTokenCount, groupActivityEvents, initials, priorityIcon, recentRunsForAgent, removeCommentSubtree, splitHumansAndAgents,
+  formatRelativeDate, formatTokenCount, groupActivityEvents, initials, openAssignedIssueCount, priorityIcon, recentRunsForAgent, removeCommentSubtree, splitHumansAndAgents,
   storyPointColor, storyPointDueDateWarning, totalTokensForAgent, typeIcon,
 } from '../src/lib/util';
 
@@ -254,5 +254,31 @@ describe('groupActivityEvents', () => {
 
   it('returns nothing for no events', () => {
     expect(groupActivityEvents([])).toEqual([]);
+  });
+});
+
+describe('openAssignedIssueCount', () => {
+  const workflow = { statuses: [{ id: 's-todo', categoryId: 'c-todo' }, { id: 's-done', categoryId: 'c-done' }] } as unknown as Workflow;
+  const categories = [{ id: 'c-todo', type: 'todo' }, { id: 'c-done', type: 'done' }];
+  const issues = [
+    { assigneeIds: ['u1'], statusId: 's-todo' },
+    { assigneeIds: ['u1', 'u2'], statusId: 's-todo' },
+    { assigneeIds: ['u1'], statusId: 's-done' },
+    { assigneeIds: ['u2'], statusId: 's-todo' },
+  ];
+
+  it('counts only issues assigned to the person whose status is not in a done category', () => {
+    expect(openAssignedIssueCount('u1', issues, workflow, categories)).toBe(2);
+    expect(openAssignedIssueCount('u2', issues, workflow, categories)).toBe(2);
+    expect(openAssignedIssueCount('nobody', issues, workflow, categories)).toBe(0);
+  });
+
+  it('counts an attached AI agent as assigned, since agents are never assignees', () => {
+    const withAgent = [...issues, { assigneeIds: [], agentAssignments: ['bot'], statusId: 's-todo' }, { assigneeIds: [], agentAssignments: ['bot'], statusId: 's-done' }];
+    expect(openAssignedIssueCount('bot', withAgent, workflow, categories)).toBe(1);
+  });
+
+  it('treats everything as open when the workflow has not loaded', () => {
+    expect(openAssignedIssueCount('u1', issues, null, categories)).toBe(3);
   });
 });

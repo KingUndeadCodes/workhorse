@@ -752,5 +752,21 @@
     "title": "Мои задачи",
     "loading": "Загрузка…",
     "empty": "У вас нет открытых назначенных задач"
+  },
+  "profileCard": {
+    "label": "Профиль: {name}",
+    "agentBadge": "ИИ-агент",
+    "email": "Эл. почта",
+    "memberSince": "В команде с",
+    "assigned": "Назначено",
+    "model": "Модель",
+    "status": "Статус",
+    "disabled": "Отключён",
+    "openIssues": {
+      "one": "{count} открытая задача",
+      "few": "{count} открытые задачи",
+      "many": "{count} открытых задач",
+      "other": "{count} открытой задачи"
+    }
   }
 }

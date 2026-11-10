@@ -734,5 +734,19 @@
     "title": "मेरे इश्यू",
     "loading": "लोड हो रहा है…",
     "empty": "आपको कोई खुला इश्यू नहीं सौंपा गया है"
+  },
+  "profileCard": {
+    "label": "{name} की प्रोफ़ाइल",
+    "agentBadge": "AI एजेंट",
+    "email": "ईमेल",
+    "memberSince": "सदस्य बने",
+    "assigned": "असाइन किए गए",
+    "model": "मॉडल",
+    "status": "स्थिति",
+    "disabled": "अक्षम",
+    "openIssues": {
+      "one": "{count} खुला इश्यू",
+      "other": "{count} खुले इश्यू"
+    }
   }
 }

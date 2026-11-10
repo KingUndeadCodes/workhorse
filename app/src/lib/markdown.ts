@@ -1,4 +1,4 @@
-import { marked } from 'marked';
+import { Marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js';
 import DOMPurify from 'dompurify';
@@ -12,13 +12,16 @@ import type { Mentionable } from '$domain';
  * this from util.ts.
  */
 
-marked.setOptions({ breaks: true, gfm: true });
+// A private instance, not marked's global one: configuring the shared singleton adds another highlight step every
+// time this module is evaluated again (Vite hot-reloading it in dev), and stacked steps highlight already-highlighted
+// HTML, so code blocks end up showing raw <span> tags. A fresh instance per evaluation can't accumulate.
+//
 // Syntax-highlights fenced code blocks (```js, ```python, ...) via highlight.js, tagging each
 // token with an .hljs-* class. No hardcoded theme here — the colors for those classes live in
 // CommentThread.svelte/IssueDrawer.svelte's :global(.hljs-*) rules, built from the same
 // --accent/--success/--text-3/etc. tokens as everything else, so highlighted code follows the
 // light/dark toggle and color scheme for free instead of needing its own light/dark stylesheet.
-marked.use(
+const md = new Marked(
   markedHighlight({
     langPrefix: 'hljs language-',
     highlight(code, lang) {
@@ -26,6 +29,7 @@ marked.use(
       return hljs.highlight(code, { language }).value;
     },
   }),
+  { breaks: true, gfm: true },
 );
 
 
@@ -39,7 +43,8 @@ marked.use(
 function highlightMentions(text: string, users: Mentionable[]): string {
   return replaceMentions(text, users, (name, user) => {
     const cls = user.kind === 'agent' ? 'mention mention-agent' : 'mention';
-    return `<span class="${cls}">@${name}</span>`;
+    // data-profile-user + role/tabindex make the pill open that person's profile card (see ProfileCard.svelte).
+    return `<span class="${cls}" data-profile-user="${user.id}" role="button" tabindex="0">@${name}</span>`;
   });
 }
 
@@ -52,6 +57,6 @@ function highlightMentions(text: string, users: Mentionable[]): string {
 export function renderMarkdown(text: string, mentionUsers: Mentionable[] = []): string {
   if (!text.trim()) return '';
   const withMentions = highlightMentions(text, mentionUsers);
-  const html = marked.parse(withMentions, { async: false }) as string;
+  const html = md.parse(withMentions, { async: false }) as string;
   return DOMPurify.sanitize(html);
 }

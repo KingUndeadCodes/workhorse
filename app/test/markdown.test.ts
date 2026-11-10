@@ -18,8 +18,8 @@ describe('renderMarkdown', () => {
 
   it('turns an @Full Name match into a mention pill, with a different class for agents', () => {
     const html = renderMarkdown('hi @Jordan Cole and @Triage Bot', users);
-    expect(html).toContain('<span class="mention">@Jordan Cole</span>');
-    expect(html).toContain('<span class="mention mention-agent">@Triage Bot</span>');
+    expect(html).toMatch(/<span class="mention"[^>]*>@Jordan Cole<\/span>/);
+    expect(html).toMatch(/<span class="mention mention-agent"[^>]*>@Triage Bot<\/span>/);
   });
 
   it('does not style an @name that is not a known user, or one inside a code span', () => {
@@ -33,7 +33,17 @@ describe('renderMarkdown', () => {
   });
 
   it('syntax-highlights fenced code blocks, and still renders one with an unknown language', () => {
-    expect(renderMarkdown('```js\nconst x = 1;\n```')).toMatch(/hljs-keyword/);
+    const html = renderMarkdown('```js\nconst x = 1;\n```');
+    expect(html).toMatch(/hljs-keyword/);
+    // Highlighted exactly once: a second pass would escape the first pass's <span> tags and show them as text.
+    expect(html).not.toContain('&lt;span');
     expect(renderMarkdown('```nonsense\nplain text\n```')).toContain('<pre><code');
+  });
+
+  it('marks a mention with its user id so it can open a profile card, and the sanitizer keeps the attributes', () => {
+    const html = renderMarkdown('hi @Jordan Cole', users);
+    expect(html).toContain('data-profile-user="u1"');
+    expect(html).toContain('role="button"');
+    expect(html).toContain('tabindex="0"');
   });
 });

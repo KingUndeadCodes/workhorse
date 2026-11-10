@@ -735,5 +735,20 @@
     "title": "Mis incidencias",
     "loading": "Cargando…",
     "empty": "No tienes incidencias abiertas asignadas"
+  },
+  "profileCard": {
+    "label": "Perfil de {name}",
+    "agentBadge": "Agente de IA",
+    "email": "Correo",
+    "memberSince": "Miembro desde",
+    "assigned": "Asignado",
+    "model": "Modelo",
+    "status": "Estado",
+    "disabled": "Desactivado",
+    "openIssues": {
+      "one": "{count} incidencia abierta",
+      "many": "{count} incidencias abiertas",
+      "other": "{count} incidencias abiertas"
+    }
   }
 }

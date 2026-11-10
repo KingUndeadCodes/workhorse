@@ -31,6 +31,7 @@
   // itself be replied to). Renders itself again via <svelte:self> for each child, so the
   // whole tree is just this component repeated with `depth` incremented.
   import Avatar from './Avatar.svelte';
+  import { profileTrigger } from '../actions/profileTrigger';
   import Icon from './Icon.svelte';
   import MarkdownEditor from './MarkdownEditor.svelte';
   import { displayName, formatRelativeDate } from '../util';
@@ -147,7 +148,7 @@
 
 {#if author}
   <div class="comment" style="--depth:{depthLevel}">
-    <Avatar userId={author.id} name={displayName(author)} avatarUrl={author.avatarUrl} kind={author.kind} size={depth === 0 ? 26 : 22} />
+    <span class="profile-link" use:profileTrigger={author.id}><Avatar userId={author.id} name={displayName(author)} avatarUrl={author.avatarUrl} kind={author.kind} size={depth === 0 ? 26 : 22} /></span>
     <div class="comment-body">
       <button type="button" class="comment-meta" on:click={() => (collapsed = !collapsed)} aria-expanded={!collapsed}>
         <Icon name={collapsed ? 'chevron' : 'chevdown'} size={9} />
@@ -242,8 +243,14 @@
 {/if}
 
 <style>
+  .profile-link { display: inline-flex; align-items: center; gap: inherit; cursor: pointer; border-radius: 6px; }
+  .profile-link:hover { text-decoration: underline; text-decoration-color: var(--text-3); text-underline-offset: 3px; }
+  .profile-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .comment { display: flex; gap: 9px; margin-top: 14px; margin-left: calc(var(--depth) * 22px); }
   .comment-body { flex: 1; min-width: 0; }
+  /* The row is as tall as the whole thread (replies nest inside the body), so the avatar's wrapper must not stretch
+     to it — a stretched wrapper centres the avatar halfway down the thread. */
+  .comment > .profile-link { align-self: flex-start; flex: 0 0 auto; }
   .comment-meta {
     display: flex; align-items: baseline; gap: 7px; margin-bottom: 3px;
     width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; border-radius: 4px;
@@ -278,6 +285,11 @@
   .markdown :global(.mention) {
     font-weight: 600; color: var(--accent-strong); background: var(--accent-soft); border-radius: 4px; padding: 0 3px;
   }
+  .markdown :global(.mention) { cursor: pointer; }
+  /* Mentions open a profile card, so they react to the pointer: the pill's tint deepens slightly while hovered. */
+  .markdown :global(.mention) { transition: background-color .12s ease; }
+  .markdown :global(.mention:hover) { background: color-mix(in srgb, var(--accent-strong) 24%, transparent); }
+  .markdown :global(.mention-agent:hover) { background: color-mix(in srgb, var(--agent-accent) 30%, transparent); }
   .markdown :global(.mention-agent) { color: var(--agent-accent); background: var(--agent-accent-soft); }
   /* highlight.js token colors for fenced code blocks (see renderMarkdown in util.ts) — built
      from the same tokens as the rest of the theme, so highlighted code follows the light/dark

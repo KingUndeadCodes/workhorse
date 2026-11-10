@@ -735,5 +735,20 @@
       "thisWeek": "Esta semana",
       "earlier": "Anteriores"
     }
+  },
+  "profileCard": {
+    "label": "Perfil de {name}",
+    "agentBadge": "Agente de IA",
+    "email": "E-mail",
+    "memberSince": "Membro desde",
+    "assigned": "Atribuído",
+    "model": "Modelo",
+    "status": "Status",
+    "disabled": "Desativado",
+    "openIssues": {
+      "one": "{count} tarefa aberta",
+      "many": "{count} tarefas abertas",
+      "other": "{count} tarefas abertas"
+    }
   }
 }

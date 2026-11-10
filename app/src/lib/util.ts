@@ -416,3 +416,14 @@ export function groupActivityEvents(events: ActivityEventSummary[]): ActivityGro
   }
   return groups;
 }
+
+/**
+ * How many of a person's assigned issues are still open — i.e. whose status doesn't belong to a 'done' category.
+ * The profile card shows this; it's derived from what the app already holds, not asked of the server.
+ */
+export function openAssignedIssueCount(userId: string, issues: { assigneeIds: string[]; agentAssignments?: string[]; statusId: string }[], workflow: Workflow | null | undefined, categories: { id: string; type: string }[]): number {
+  const doneCategories = new Set(categories.filter((c) => c.type === 'done').map((c) => c.id));
+  const doneStatuses = new Set((workflow?.statuses ?? []).filter((s) => doneCategories.has(s.categoryId)).map((s) => s.id));
+  // An AI agent is never an assignee — it is attached (agentAssignments) — so count either, for humans and agents alike.
+  return issues.filter((i) => (i.assigneeIds.includes(userId) || (i.agentAssignments ?? []).includes(userId)) && !doneStatuses.has(i.statusId)).length;
+}

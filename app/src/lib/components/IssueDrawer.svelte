@@ -38,6 +38,7 @@
   import { createBranch as apiCreateBranch, deleteBranch as apiDeleteBranch, fetchEventDetail, fetchIssueEvents, getBranch, triggerAgent, type ActivityEventSummary } from '../api';
   import { describeEvent, describeEventType, displayName, formatHours, formatRelativeDate, groupActivityEvents, legalTargetStatusIds, priorityIcon, splitHumansAndAgents, storyPointColor, storyPointDueDateWarning, typeIcon } from '../util';
   import { lineNumbers } from '../actions/lineNumbers';
+  import { profileTrigger } from '../actions/profileTrigger';
   import { renderMarkdown } from '../markdown';
   import { locale, t, tn } from '../i18n';
   import { STORY_POINT_VALUES, slugifyBranchName, type Branch, type EventEnvelope, type Issue, type IssueLinkType } from '$domain';
@@ -473,8 +474,8 @@
                 {@const u = $users.find((usr) => usr.id === uid)}
                 {#if u}
                   <span class="assignee-chip">
-                    <Avatar userId={u.id} name={displayName(u)} avatarUrl={u.avatarUrl} kind={u.kind} size={16} />
-                    {displayName(u)}
+                    <span class="profile-link" use:profileTrigger={u.id}><Avatar userId={u.id} name={displayName(u)} avatarUrl={u.avatarUrl} kind={u.kind} size={16} />
+                    {displayName(u)}</span>
                     <button type="button" class="chip-remove" aria-label={$t('common.removeNamed', { name: displayName(u) })} on:click={() => toggleAssignee(u.id)}><Icon name="x" size={10} /></button>
                   </span>
                 {/if}
@@ -501,8 +502,8 @@
                 {@const u = $users.find((usr) => usr.id === uid)}
                 {#if u}
                   <span class="assignee-chip">
-                    <Avatar userId={u.id} name={displayName(u)} avatarUrl={u.avatarUrl} kind={u.kind} size={16} />
-                    {displayName(u)}
+                    <span class="profile-link" use:profileTrigger={u.id}><Avatar userId={u.id} name={displayName(u)} avatarUrl={u.avatarUrl} kind={u.kind} size={16} />
+                    {displayName(u)}</span>
                     <button type="button" class="chip-remove" aria-label={$t('common.removeNamed', { name: displayName(u) })} on:click={() => toggleAssignee(u.id)}><Icon name="x" size={10} /></button>
                   </span>
                 {/if}
@@ -527,7 +528,7 @@
             <span class="field-label">{$t('issueDrawer.reporterLabel')}</span>
             <span class="field-value">
               {#if reporter}
-                <Avatar userId={reporter.id} name={displayName(reporter)} avatarUrl={reporter.avatarUrl} kind={reporter.kind} size={19} />{displayName(reporter)}
+                <span class="profile-link" use:profileTrigger={reporter.id}><Avatar userId={reporter.id} name={displayName(reporter)} avatarUrl={reporter.avatarUrl} kind={reporter.kind} size={19} />{displayName(reporter)}</span>
               {:else}
                 {$t('issueDrawer.unassigned')}
               {/if}
@@ -858,6 +859,9 @@
 {/if}
 
 <style>
+  .profile-link { display: inline-flex; align-items: center; gap: inherit; cursor: pointer; border-radius: 6px; }
+  .profile-link:hover { text-decoration: underline; text-decoration-color: var(--text-3); text-underline-offset: 3px; }
+  .profile-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .drawer {
     width: 100%; flex: 1; min-width: 0; background: var(--surface);
     display: flex; flex-direction: column; height: 100%; overflow: hidden;
@@ -999,9 +1003,14 @@
   .markdown :global(blockquote) { border-left: 2px solid var(--border); margin: 0 0 8px; padding-left: 10px; color: var(--text-3); }
   .markdown :global(img) { max-width: 100%; border-radius: 6px; }
   .markdown :global(.mention) {
+    cursor: pointer;
     font-weight: 600; color: var(--accent-strong); background: var(--accent-soft); border-radius: 4px; padding: 0 3px;
   }
   .markdown :global(.mention-agent) { color: var(--agent-accent); background: var(--agent-accent-soft); }
+  /* Mentions open a profile card, so they react to the pointer: the pill's tint deepens slightly while hovered. */
+  .markdown :global(.mention) { transition: background-color .12s ease; }
+  .markdown :global(.mention:hover) { background: color-mix(in srgb, var(--accent-strong) 24%, transparent); }
+  .markdown :global(.mention-agent:hover) { background: color-mix(in srgb, var(--agent-accent) 30%, transparent); }
   /* highlight.js token colors for fenced code blocks (see renderMarkdown in util.ts) — built
      from the same tokens as the rest of the theme, so highlighted code follows the light/dark
      toggle and color scheme without needing its own separate hljs theme stylesheet. */

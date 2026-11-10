@@ -734,5 +734,19 @@
       "thisWeek": "Earlier this week",
       "earlier": "Earlier"
     }
+  },
+  "profileCard": {
+    "label": "Profile of {name}",
+    "agentBadge": "AI agent",
+    "email": "Email",
+    "memberSince": "Member since",
+    "assigned": "Assigned",
+    "model": "Model",
+    "status": "Status",
+    "disabled": "Disabled",
+    "openIssues": {
+      "one": "{count} open issue",
+      "other": "{count} open issues"
+    }
   }
 }

@@ -725,5 +725,18 @@
     "title": "自分の課題",
     "loading": "読み込み中…",
     "empty": "割り当てられた未解決の課題はありません"
+  },
+  "profileCard": {
+    "label": "{name} のプロフィール",
+    "agentBadge": "AIエージェント",
+    "email": "メール",
+    "memberSince": "参加日",
+    "assigned": "担当",
+    "model": "モデル",
+    "status": "ステータス",
+    "disabled": "無効",
+    "openIssues": {
+      "other": "未完了の課題 {count} 件"
+    }
   }
 }
