@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import type { IssueLink } from '$domain';
 import type { AgentRun, AutomationAction, Comment, EventEnvelope, User, Workflow } from '$domain';
 import {
   agentRunStatusLabel, avatarColor, legalColumnTarget, legalTargetStatusIds, describeAutomationAction, describeEvent, describeEventType, formatBucketLabel, formatDuration, formatHours,
-  formatRelativeDate, formatTokenCount, groupActivityEvents, initials, openAssignedIssueCount, priorityIcon, recentRunsForAgent, removeCommentSubtree, splitHumansAndAgents,
+  formatRelativeDate, formatTokenCount, groupActivityEvents, groupIssueLinks, initials, openBlockerKeys, relationFor, relationToStored, openAssignedIssueCount, priorityIcon, recentRunsForAgent, removeCommentSubtree, splitHumansAndAgents,
   storyPointColor, storyPointDueDateWarning, totalTokensForAgent, typeIcon,
 } from '../src/lib/util';
 
@@ -280,5 +281,57 @@ describe('openAssignedIssueCount', () => {
 
   it('treats everything as open when the workflow has not loaded', () => {
     expect(openAssignedIssueCount('u1', issues, null, categories)).toBe(3);
+  });
+});
+
+describe('issue links', () => {
+  const link = (id: string, type: IssueLink['type'], source: string, target: string, createdAt = '2026-01-01T00:00:00Z') => ({ id, type, sourceIssueId: source, targetIssueId: target, createdAt, createdBy: 'u1' }) as IssueLink;
+
+  it('reads each link one way from its source and the other way from its target', () => {
+    const cases: [IssueLink['type'], string, string][] = [
+      ['blocks', 'blocks', 'blockedBy'],
+      ['causes', 'causes', 'causedBy'],
+      ['duplicates', 'duplicates', 'duplicatedBy'],
+      ['clones', 'clones', 'clonedBy'],
+      ['relatesTo', 'relatesTo', 'relatesTo'],
+    ];
+    for (const [type, fromSource, fromTarget] of cases) {
+      expect(relationFor('A', link('l', type, 'A', 'B'))).toBe(fromSource);
+      expect(relationFor('B', link('l', type, 'A', 'B'))).toBe(fromTarget);
+    }
+  });
+
+  it('stores a relation chosen from this issue so the direction is right ("is blocked by B" is saved as "B blocks this")', () => {
+    expect(relationToStored('blocks')).toEqual({ type: 'blocks', reverse: false });
+    expect(relationToStored('blockedBy')).toEqual({ type: 'blocks', reverse: true });
+    expect(relationToStored('clonedBy')).toEqual({ type: 'clones', reverse: true });
+    expect(relationToStored('relatesTo')).toEqual({ type: 'relatesTo', reverse: false });
+  });
+
+  it('groups by relation with what blocks you first, oldest first within a group, ignoring links that are not this issue\'s', () => {
+    const links = [
+      link('1', 'relatesTo', 'A', 'B', '2026-01-03T00:00:00Z'),
+      link('2', 'blocks', 'A', 'C', '2026-01-02T00:00:00Z'),
+      link('3', 'blocks', 'D', 'A', '2026-01-05T00:00:00Z'),
+      link('4', 'blocks', 'E', 'A', '2026-01-04T00:00:00Z'),
+      link('5', 'blocks', 'X', 'Y'),
+    ];
+    const groups = groupIssueLinks('A', links);
+    expect(groups.map((g) => g.relation)).toEqual(['blockedBy', 'blocks', 'relatesTo']);
+    expect(groups[0].links.map((l) => l.otherId)).toEqual(['E', 'D']);
+    expect(groups[1].links.map((l) => l.otherId)).toEqual(['C']);
+  });
+
+  it('names the unfinished blockers of each issue, skipping finished ones and non-blocking links', () => {
+    const issues = [
+      { id: 'A', key: 'P-1', statusId: 's-todo' },
+      { id: 'B', key: 'P-2', statusId: 's-todo' },
+      { id: 'C', key: 'P-3', statusId: 's-done' },
+      { id: 'D', key: 'P-4', statusId: 's-todo' },
+    ];
+    const links = [link('1', 'blocks', 'A', 'B'), link('2', 'blocks', 'C', 'B'), link('3', 'blocks', 'D', 'B'), link('4', 'relatesTo', 'A', 'D')];
+    const result = openBlockerKeys(links, issues, new Set(['s-done']));
+    expect(result.get('B')).toEqual(['P-1', 'P-4']);
+    expect(result.has('D')).toBe(false);
   });
 });

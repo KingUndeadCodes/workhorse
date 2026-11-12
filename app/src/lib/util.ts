@@ -1,6 +1,6 @@
 import { PROJECT_COLORS, STORY_POINT_VALUES } from '$domain';
 import type { ActivityEventSummary } from './api';
-import type { AgentRun, AgentRunStatus, AutomationAction, Comment, EventEnvelope, EventType, FieldDefinition, Label, Mentionable, StatsWindow, User, Workflow } from '$domain';
+import type { AgentRun, AgentRunStatus, AutomationAction, Comment, EventEnvelope, EventType, FieldDefinition, IssueLink, IssueLinkType, Label, Mentionable, StatsWindow, User, Workflow } from '$domain';
 
 /** The resolved value of the `t`/`tn` i18n stores (see `lib/i18n/index.ts`) — plain functions,
  * not stores, since these are called from ordinary functions below rather than `.svelte`
@@ -426,4 +426,64 @@ export function openAssignedIssueCount(userId: string, issues: { assigneeIds: st
   const doneStatuses = new Set((workflow?.statuses ?? []).filter((s) => doneCategories.has(s.categoryId)).map((s) => s.id));
   // An AI agent is never an assignee — it is attached (agentAssignments) — so count either, for humans and agents alike.
   return issues.filter((i) => (i.assigneeIds.includes(userId) || (i.agentAssignments ?? []).includes(userId)) && !doneStatuses.has(i.statusId)).length;
+}
+
+/** How one issue relates to another *as seen from this one* — each stored link reads one way from its source and the other way from its target. */
+export type LinkRelation = 'blockedBy' | 'blocks' | 'causedBy' | 'causes' | 'duplicatedBy' | 'duplicates' | 'clonedBy' | 'clones' | 'relatesTo';
+
+/** Display order: what blocks you first (the one that matters most), then causes, duplicates, clones, and the undirected "relates to" last. */
+export const LINK_RELATION_ORDER: LinkRelation[] = ['blockedBy', 'blocks', 'causedBy', 'causes', 'duplicatedBy', 'duplicates', 'clonedBy', 'clones', 'relatesTo'];
+
+const FORWARD_RELATION: Record<IssueLinkType, LinkRelation> = { blocks: 'blocks', causes: 'causes', duplicates: 'duplicates', clones: 'clones', relatesTo: 'relatesTo' };
+const INVERSE_RELATION: Record<IssueLinkType, LinkRelation> = { blocks: 'blockedBy', causes: 'causedBy', duplicates: 'duplicatedBy', clones: 'clonedBy', relatesTo: 'relatesTo' };
+
+/** The relation `issueId` has to the other end of `link` — "blocks" on the source, "is blocked by" on the target. */
+export function relationFor(issueId: string, link: IssueLink): LinkRelation {
+  return link.sourceIssueId === issueId ? FORWARD_RELATION[link.type] : INVERSE_RELATION[link.type];
+}
+
+/**
+ * How to *store* a relation chosen from one issue's point of view: "is blocked by B" is saved as `B blocks this`, so
+ * `reverse` says the open issue is the target, not the source. Stored direction never depends on the user knowing it.
+ */
+export function relationToStored(relation: LinkRelation): { type: IssueLinkType; reverse: boolean } {
+  for (const type of Object.keys(FORWARD_RELATION) as IssueLinkType[]) {
+    if (FORWARD_RELATION[type] === relation) return { type, reverse: false };
+    if (INVERSE_RELATION[type] === relation) return { type, reverse: true };
+  }
+  return { type: 'relatesTo', reverse: false };
+}
+
+export interface LinkGroup {
+  relation: LinkRelation;
+  links: { link: IssueLink; otherId: string }[];
+}
+
+/** An issue's links grouped by relation in {@link LINK_RELATION_ORDER}, oldest first within a group; empty groups are left out. */
+export function groupIssueLinks(issueId: string, links: IssueLink[]): LinkGroup[] {
+  const byRelation = new Map<LinkRelation, LinkGroup>();
+  for (const link of [...links].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) {
+    if (link.sourceIssueId !== issueId && link.targetIssueId !== issueId) continue;
+    const relation = relationFor(issueId, link);
+    const group = byRelation.get(relation) ?? { relation, links: [] };
+    group.links.push({ link, otherId: link.sourceIssueId === issueId ? link.targetIssueId : link.sourceIssueId });
+    byRelation.set(relation, group);
+  }
+  return LINK_RELATION_ORDER.flatMap((r) => byRelation.get(r) ?? []);
+}
+
+/**
+ * For every issue, the keys of the issues that block it and aren't finished yet — so a board can flag "blocked" and
+ * the resolve warning can name the blocker. Built once over all links (not per card) and keyed by the blocked issue.
+ */
+export function openBlockerKeys(links: IssueLink[], issues: { id: string; key: string; statusId: string }[], doneStatusIds: Set<string>): Map<string, string[]> {
+  const byId = new Map(issues.map((i) => [i.id, i]));
+  const result = new Map<string, string[]>();
+  for (const link of links) {
+    if (link.type !== 'blocks') continue;
+    const blocker = byId.get(link.sourceIssueId);
+    if (!blocker || doneStatusIds.has(blocker.statusId)) continue;
+    result.set(link.targetIssueId, [...(result.get(link.targetIssueId) ?? []), blocker.key]);
+  }
+  return result;
 }

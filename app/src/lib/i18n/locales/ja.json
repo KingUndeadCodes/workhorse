@@ -116,14 +116,6 @@
     "advancedToggle": "詳細設定",
     "linkedIssuesLabel": "リンクされた課題",
     "removeLinkLabel": "{key} へのリンクを削除",
-    "relationRelatesTo": "関連する",
-    "relationBlocks": "ブロックする",
-    "relationDuplicates": "重複する",
-    "relationClones": "クローンである",
-    "relationCauses": "原因となる",
-    "relationInverse": "{type}（逆方向）",
-    "issueKeyPlaceholder": "課題キー（例: ATL-131）",
-    "linkButton": "リンク",
     "timeTrackingLabel": "時間トラッキング",
     "loggedSuffix": "{hours} 時間記録済み",
     "estimateSuffix": "見積もり {hours} 時間",
@@ -737,6 +729,27 @@
     "disabled": "無効",
     "openIssues": {
       "other": "未完了の課題 {count} 件"
+    }
+  },
+  "linkedIssues": {
+    "addButton": "課題をリンク",
+    "relationLabel": "この課題は…",
+    "searchPlaceholder": "キーまたはタイトルで検索",
+    "noResults": "一致する課題がありません",
+    "openIssue": "{key} を開く",
+    "blockedBadge": "ブロック中",
+    "blockedByTitle": "{keys} にブロックされています",
+    "stillBlocked": "完了に移動しましたが、まだ {keys} にブロックされています",
+    "relations": {
+      "blockedBy": "次にブロックされている",
+      "blocks": "次をブロックする",
+      "causedBy": "次が原因",
+      "causes": "次の原因となる",
+      "duplicatedBy": "次に重複されている",
+      "duplicates": "次の重複",
+      "clonedBy": "次に複製されている",
+      "clones": "次の複製",
+      "relatesTo": "次に関連"
     }
   }
 }

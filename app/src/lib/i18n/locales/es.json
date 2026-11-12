@@ -117,14 +117,6 @@
     "advancedToggle": "Avanzado",
     "linkedIssuesLabel": "Tareas vinculadas",
     "removeLinkLabel": "Quitar enlace a {key}",
-    "relationRelatesTo": "se relaciona con",
-    "relationBlocks": "bloquea",
-    "relationDuplicates": "duplica",
-    "relationClones": "clona",
-    "relationCauses": "causa",
-    "relationInverse": "{type} (inversa)",
-    "issueKeyPlaceholder": "Clave de la tarea (p. ej., ATL-131)",
-    "linkButton": "Vincular",
     "timeTrackingLabel": "Seguimiento de tiempo",
     "loggedSuffix": "{hours} h registradas",
     "estimateSuffix": "{hours} h estimadas",
@@ -749,6 +741,27 @@
       "one": "{count} incidencia abierta",
       "many": "{count} incidencias abiertas",
       "other": "{count} incidencias abiertas"
+    }
+  },
+  "linkedIssues": {
+    "addButton": "Vincular incidencia",
+    "relationLabel": "Esta incidencia…",
+    "searchPlaceholder": "Buscar por clave o título",
+    "noResults": "Ninguna incidencia coincide",
+    "openIssue": "Abrir {key}",
+    "blockedBadge": "Bloqueada",
+    "blockedByTitle": "Bloqueada por {keys}",
+    "stillBlocked": "Movida a hecho, pero sigue bloqueada por {keys}",
+    "relations": {
+      "blockedBy": "Está bloqueada por",
+      "blocks": "Bloquea a",
+      "causedBy": "Es causada por",
+      "causes": "Causa a",
+      "duplicatedBy": "Está duplicada por",
+      "duplicates": "Duplica a",
+      "clonedBy": "Está clonada por",
+      "clones": "Clona a",
+      "relatesTo": "Se relaciona con"
     }
   }
 }

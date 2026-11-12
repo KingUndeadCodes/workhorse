@@ -3,7 +3,7 @@
   import Icon from './Icon.svelte';
   import Avatar from './Avatar.svelte';
   import BottomSheet from './BottomSheet.svelte';
-  import { draggedIssueId, issueTypes, users, labels, featureFlags, workflow, workspaceFeatures } from '../stores/workspace';
+  import { draggedIssueId, issueTypes, users, labels, featureFlags, openBlockers, workflow, workspaceFeatures } from '../stores/workspace';
   import { displayName, legalColumnTarget, priorityIcon, storyPointColor, typeIcon } from '../util';
   import { t } from '../i18n';
 
@@ -44,6 +44,9 @@
   export let onGrab: (() => void) | undefined = undefined;
 
   let showMoveMenu = false;
+
+  // Keys of unfinished issues blocking this one — a finished issue isn't "blocked" any more, whatever its links say.
+  $: blockers = doneStatusIds.has(issue.statusId) ? [] : ($openBlockers.get(issue.id) ?? []);
 
   const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -157,6 +160,9 @@
 
   <div class="bottom">
     <div class="bottom-left">
+      {#if blockers.length}
+        <span class="due-chip blocked mono" title={$t('linkedIssues.blockedByTitle', { keys: blockers.join(', ') })}>{$t('linkedIssues.blockedBadge')}</span>
+      {/if}
       {#if $featureFlags.dueDates && isOverdue}
         <span class="due-chip overdue mono">{$t('issueCard.overdueLabel')}</span>
       {:else if $featureFlags.dueDates && isDueSoon}
@@ -266,6 +272,7 @@
   .due-chip { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 5px; }
   .due-chip.overdue { background: var(--critical-soft); color: var(--critical); }
   .due-chip.due-soon { background: var(--warning-soft); color: var(--warning); }
+  .due-chip.blocked { background: var(--critical-soft); color: var(--critical); }
   .assignee-stack { display: flex; }
   .assignee-stack :global(> *) { margin-left: -6px; border-radius: 50%; box-shadow: 0 0 0 2px var(--surface); }
   .assignee-stack :global(> *:first-child) { margin-left: 0; }

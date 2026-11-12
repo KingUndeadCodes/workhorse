@@ -416,12 +416,21 @@ issuesRouter.delete('/issues/:issueId/comments/:commentId', async (c) => {
   return c.json({ event });
 });
 
-/** POST /api/issues/:id/links — links two issues; emits `issue.linked`. */
+const ISSUE_LINK_TYPES: IssueLinkType[] = ['blocks', 'duplicates', 'relatesTo', 'clones', 'causes'];
+
+/** POST /api/issues/:id/links — links two issues; emits `issue.linked`. 409 if the same link already exists. */
 issuesRouter.post('/issues/:id/links', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json<{ type: IssueLinkType; targetIssueId: string }>();
+  if (!ISSUE_LINK_TYPES.includes(body.type)) return c.json({ error: `type must be one of ${ISSUE_LINK_TYPES.join(', ')}` }, 400);
   if (id === body.targetIssueId) return c.json({ error: "An issue can't be linked to itself" }, 400);
   if (!(await issueRepo.get(id)) || !(await issueRepo.get(body.targetIssueId))) return c.json({ error: 'Issue not found' }, 404);
+  // Linking the same pair the same way twice would just show two identical rows. "relates to" has no direction,
+  // so the reverse pairing is the same link too; for the directional types the reverse (A blocks B vs B blocks A) is a different fact.
+  const alreadyLinked = (await issueRepo.listLinksFor(id)).some(
+    (l) => l.type === body.type && ((l.sourceIssueId === id && l.targetIssueId === body.targetIssueId) || (body.type === 'relatesTo' && l.sourceIssueId === body.targetIssueId && l.targetIssueId === id)),
+  );
+  if (alreadyLinked) return c.json({ error: 'These issues are already linked that way' }, 409);
 
   const linkId = `link_${randomUUID()}`;
   const event = await engine.emitEvent({

@@ -64,7 +64,7 @@ import {
   updateWorkspaceMemberRole as apiUpdateWorkspaceMemberRole,
 } from '../api';
 import { t } from '../i18n';
-import { legalColumnTarget, removeCommentSubtree } from '../util';
+import { legalColumnTarget, openBlockerKeys, removeCommentSubtree } from '../util';
 import { currentUser, setCurrentUser } from './auth';
 
 /** Key used to persist which project was last active, so a reload lands back on it. */
@@ -129,6 +129,15 @@ export const automationRules = writable<AutomationRule[]>([]);
 export const webhookSubscriptions = writable<WebhookSubscriptionPublic[]>([]);
 export const issuesStore = writable<Issue[]>([]);
 export const issueLinks = writable<IssueLink[]>([]);
+
+/** Ids of every status whose category is 'done' — what "finished" means for blockers, overdue styling and the like. */
+export const doneStatusIds = derived([workflow, statusCategories], ([$workflow, $categories]) => {
+  const done = new Set($categories.filter((c) => c.type === 'done').map((c) => c.id));
+  return new Set(($workflow?.statuses ?? []).filter((s) => done.has(s.categoryId)).map((s) => s.id));
+});
+
+/** Issue id -> keys of the unfinished issues blocking it. Recomputed only when links, issues or the workflow change, so a board of cards does one lookup each. */
+export const openBlockers = derived([issueLinks, issuesStore, doneStatusIds], ([$links, $issues, $done]) => openBlockerKeys($links, $issues, $done));
 export const comments = writable<Comment[]>([]);
 export const worklogs = writable<Worklog[]>([]);
 export const attachments = writable<Attachment[]>([]);
@@ -298,6 +307,9 @@ export async function unlinkGitRepo(projectId: string): Promise<void> {
 export async function moveIssueToStatus(issueId: string, toStatusId: string): Promise<void> {
   const { issue } = await patchIssueStatus(issueId, toStatusId);
   replaceIssue(issue);
+  // A nudge, not a rule: finishing something that still has an open blocker is allowed, but say so.
+  const blockers = get(openBlockers).get(issueId);
+  if (blockers?.length && get(doneStatusIds).has(toStatusId)) reportStatusChangeError(get(t)('linkedIssues.stillBlocked', { keys: blockers.join(', ') }));
 }
 
 /** A short-lived message for a status change that was refused — shown by App.svelte. Moves are started from drag-and-drop and menus that don't await anything, so without this a refusal would vanish as an unhandled rejection. */
@@ -384,7 +396,9 @@ export async function removeComment(issueId: string, commentId: string): Promise
 
 export async function addIssueLink(issueId: string, type: IssueLinkType, targetIssueId: string): Promise<void> {
   const { link } = await apiAddIssueLink(issueId, type, targetIssueId);
-  issueLinks.update((list) => [...list, link]);
+  // The `issue.linked` live event (ws.ts) usually lands before this response does and has already added the link —
+  // adding it again would put the same id in the list twice and break any keyed list rendering it.
+  issueLinks.update((list) => (list.some((l) => l.id === link.id) ? list : [...list, link]));
 }
 
 export async function removeIssueLink(issueId: string, linkId: string): Promise<void> {

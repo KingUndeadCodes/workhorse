@@ -119,14 +119,6 @@
     "advancedToggle": "Дополнительно",
     "linkedIssuesLabel": "Связанные задачи",
     "removeLinkLabel": "Убрать связь с {key}",
-    "relationRelatesTo": "связана с",
-    "relationBlocks": "блокирует",
-    "relationDuplicates": "дублирует",
-    "relationClones": "клонирует",
-    "relationCauses": "вызывает",
-    "relationInverse": "{type} (обратная связь)",
-    "issueKeyPlaceholder": "Ключ задачи (например, ATL-131)",
-    "linkButton": "Связать",
     "timeTrackingLabel": "Учёт времени",
     "loggedSuffix": "{hours} ч. затрачено",
     "estimateSuffix": "{hours} ч. оценка",
@@ -767,6 +759,27 @@
       "few": "{count} открытые задачи",
       "many": "{count} открытых задач",
       "other": "{count} открытой задачи"
+    }
+  },
+  "linkedIssues": {
+    "addButton": "Связать задачу",
+    "relationLabel": "Эта задача…",
+    "searchPlaceholder": "Поиск по ключу или названию",
+    "noResults": "Подходящих задач нет",
+    "openIssue": "Открыть {key}",
+    "blockedBadge": "Заблокирована",
+    "blockedByTitle": "Заблокирована: {keys}",
+    "stillBlocked": "Перенесено в «Готово», но всё ещё заблокировано: {keys}",
+    "relations": {
+      "blockedBy": "Заблокирована",
+      "blocks": "Блокирует",
+      "causedBy": "Вызвана",
+      "causes": "Вызывает",
+      "duplicatedBy": "Дублируется",
+      "duplicates": "Дублирует",
+      "clonedBy": "Клонируется",
+      "clones": "Клонирует",
+      "relatesTo": "Связана с"
     }
   }
 }

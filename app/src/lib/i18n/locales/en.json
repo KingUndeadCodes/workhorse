@@ -122,14 +122,6 @@
     "advancedToggle": "Advanced",
     "linkedIssuesLabel": "Linked Issues",
     "removeLinkLabel": "Remove link to {key}",
-    "relationRelatesTo": "relates to",
-    "relationBlocks": "blocks",
-    "relationDuplicates": "duplicates",
-    "relationClones": "clones",
-    "relationCauses": "causes",
-    "relationInverse": "{type} (inverse)",
-    "issueKeyPlaceholder": "Issue key (e.g. ATL-131)",
-    "linkButton": "Link",
     "timeTrackingLabel": "Time Tracking",
     "loggedSuffix": "{hours}h logged",
     "estimateSuffix": "{hours}h est.",
@@ -747,6 +739,27 @@
     "openIssues": {
       "one": "{count} open issue",
       "other": "{count} open issues"
+    }
+  },
+  "linkedIssues": {
+    "addButton": "Link issue",
+    "relationLabel": "This issue…",
+    "searchPlaceholder": "Search by key or title",
+    "noResults": "No matching issues",
+    "openIssue": "Open {key}",
+    "blockedBadge": "Blocked",
+    "blockedByTitle": "Blocked by {keys}",
+    "stillBlocked": "Moved to done, but still blocked by {keys}",
+    "relations": {
+      "blockedBy": "Is blocked by",
+      "blocks": "Blocks",
+      "causedBy": "Is caused by",
+      "causes": "Causes",
+      "duplicatedBy": "Is duplicated by",
+      "duplicates": "Duplicates",
+      "clonedBy": "Is cloned by",
+      "clones": "Clones",
+      "relatesTo": "Relates to"
     }
   }
 }

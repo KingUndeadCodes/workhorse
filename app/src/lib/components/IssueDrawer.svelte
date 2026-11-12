@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import Avatar from './Avatar.svelte';
+  import LinkedIssues from './LinkedIssues.svelte';
   import MarkdownEditor from './MarkdownEditor.svelte';
   import CommentThread from './CommentThread.svelte';
   import BottomSheet from './BottomSheet.svelte';
@@ -11,19 +12,16 @@
     addComment,
     editComment,
     removeComment,
-    addIssueLink,
     agents,
     assignAgent,
     comments,
     featureFlags,
     fieldDefinitions,
     gitRepoLink,
-    issueLinks,
     issueTypes,
     issuesStore,
     labels,
     logWork,
-    removeIssueLink,
     selectedIssueId,
     setIssueField,
     sprints,
@@ -41,7 +39,7 @@
   import { profileTrigger } from '../actions/profileTrigger';
   import { renderMarkdown } from '../markdown';
   import { locale, t, tn } from '../i18n';
-  import { STORY_POINT_VALUES, slugifyBranchName, type Branch, type EventEnvelope, type Issue, type IssueLinkType } from '$domain';
+  import { STORY_POINT_VALUES, slugifyBranchName, type Branch, type EventEnvelope, type Issue } from '$domain';
 
   let draftComment = '';
   let submittingComment = false;
@@ -49,9 +47,6 @@
   let replyingToId: string | null = null;
   let draftReply = '';
   let submittingReply = false;
-
-  let linkTargetKey = '';
-  let linkType: IssueLinkType = 'relatesTo';
 
   let worklogHours = '';
   let worklogNote = '';
@@ -81,8 +76,6 @@
   $: timePct = issue?.originalEstimateSeconds ? Math.min(100, (issue.loggedSeconds / issue.originalEstimateSeconds) * 100) : 0;
   $: pointsDueDateWarning = issue?.storyPoints ? storyPointDueDateWarning(issue.storyPoints, issue.dueDate, $t, $tn) : null;
   $: applicableFields = $fieldDefinitions.filter((f) => !f.scope.projectIds || (issue && f.scope.projectIds.includes(issue.projectId)));
-  $: issueLinksForIssue = issue ? $issueLinks.filter((l) => l.sourceIssueId === issue.id || l.targetIssueId === issue.id) : [];
-  $: otherIssues = issue ? $issuesStore.filter((i) => i.id !== issue.id) : [];
 
   // Reset to the read view whenever the drawer switches to a different issue, so the
   // previous issue's edit state doesn't leak onto the next one.
@@ -217,38 +210,38 @@
     }
   }
 
-  /** Why the last save failed, shown under the editor — which stays open with the draft intact, so nothing typed is lost. */
-  let descriptionError = '';
   function handleTitleBlur(e: FocusEvent) {
     if (!issue) return;
     const value = (e.target as HTMLInputElement).value.trim();
-    descriptionError = '';
     if (value && value !== issue.title) updateIssue(issue.id, { title: value });
   }
 
   let savingDescription = false;
-    descriptionError = '';
+  /** Why the last save failed, shown under the editor — which stays open with the draft intact, so nothing typed is lost. */
+  let descriptionError = '';
 
   function startEditingDescription() {
     draftDescription = issue?.description?.plainText ?? '';
+    descriptionError = '';
     editingDescription = true;
   }
 
   function cancelEditingDescription() {
-      descriptionError = '';
+    descriptionError = '';
     editingDescription = false;
   }
-      } catch (err) {
-        // Without this a refused save looked like the Save button doing nothing.
-        descriptionError = err instanceof Error ? err.message : String(err);
-        return;
 
   async function submitDescription() {
     if (!issue || savingDescription) return;
     if (draftDescription !== (issue.description?.plainText ?? '')) {
       savingDescription = true;
+      descriptionError = '';
       try {
         await updateIssue(issue.id, { description: { format: 'richtext-v1', content: null, plainText: draftDescription } });
+      } catch (err) {
+        // Without this a refused save looked like the Save button doing nothing.
+        descriptionError = err instanceof Error ? err.message : String(err);
+        return;
       } finally {
         savingDescription = false;
       }
@@ -394,14 +387,6 @@
     setIssueField(issue.id, fieldId, (e.target as HTMLSelectElement).value);
   }
 
-  async function submitLink() {
-    if (!issue) return;
-    const target = otherIssues.find((i) => i.key === linkTargetKey.trim().toUpperCase());
-    if (!target) return;
-    await addIssueLink(issue.id, linkType, target.id);
-    linkTargetKey = '';
-  }
-
   async function submitWorklog() {
     if (!issue) return;
     const hours = Number(worklogHours);
@@ -410,14 +395,6 @@
     worklogHours = '';
     worklogNote = '';
   }
-
-  const RELATION_LABEL_KEYS: Record<IssueLinkType, string> = {
-    relatesTo: 'issueDrawer.relationRelatesTo',
-    blocks: 'issueDrawer.relationBlocks',
-    duplicates: 'issueDrawer.relationDuplicates',
-    clones: 'issueDrawer.relationClones',
-    causes: 'issueDrawer.relationCauses',
-  };
 </script>
 
 {#if issue}
@@ -439,7 +416,6 @@
              16px/zoom-safe/tappable behavior without it ever being visible. -->
         <span class="status-pill" class:done={category?.type === 'done'} class:inprogress={category?.type === 'inProgress'}>
           {status?.name}
-          {#if descriptionError}<p class="points-warning" role="alert">{descriptionError}</p>{/if}
           <select class="status-pill-select" value={issue.statusId} on:change={handleStatusChange}>
             {#each statusOptions as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
           </select>
@@ -463,6 +439,7 @@
             onCancel={cancelEditingDescription}
             mentionUsers={$users}
           />
+          {#if descriptionError}<p class="points-warning" role="alert">{descriptionError}</p>{/if}
         {:else}
           <button class="desc-view" on:click={startEditingDescription}>
             {#if issue.description?.plainText}
@@ -685,38 +662,15 @@
       {/if}
 
       <div class="section">
+        <LinkedIssues {issue} />
+      </div>
+
+      <div class="section">
         <button class="advanced-toggle" on:click={() => (showAdvanced = !showAdvanced)}>
           <Icon name={showAdvanced ? 'chevup' : 'chevdown'} size={11} />{$t('issueDrawer.advancedToggle')}
         </button>
         {#if showAdvanced}
           <div class="advanced-body">
-            <div class="subsection">
-              <div class="section-label">{$t('issueDrawer.linkedIssuesLabel')}</div>
-              {#each issueLinksForIssue as link (link.id)}
-                {@const otherId = link.sourceIssueId === issue.id ? link.targetIssueId : link.sourceIssueId}
-                {@const other = $issuesStore.find((i) => i.id === otherId)}
-                {#if other}
-                  <div class="link-row">
-                    <span class="link-type">{link.sourceIssueId === issue.id ? $t(RELATION_LABEL_KEYS[link.type]) : $t('issueDrawer.relationInverse', { type: $t(RELATION_LABEL_KEYS[link.type]) })}</span>
-                    <span class="key mono">{other.key}</span>
-                    <span class="link-title">{other.title}</span>
-                    <button class="icon-btn small" aria-label={$t('issueDrawer.removeLinkLabel', { key: other.key })} on:click={() => removeIssueLink(issue.id, link.id)}><Icon name="x" size={12} /></button>
-                  </div>
-                {/if}
-              {/each}
-              <form class="inline-form" on:submit|preventDefault={submitLink}>
-                <select class="inline-select" bind:value={linkType}>
-                  <option value="relatesTo">{$t('issueDrawer.relationRelatesTo')}</option>
-                  <option value="blocks">{$t('issueDrawer.relationBlocks')}</option>
-                  <option value="duplicates">{$t('issueDrawer.relationDuplicates')}</option>
-                  <option value="clones">{$t('issueDrawer.relationClones')}</option>
-                  <option value="causes">{$t('issueDrawer.relationCauses')}</option>
-                </select>
-                <input class="inline-input" type="text" placeholder={$t('issueDrawer.issueKeyPlaceholder')} bind:value={linkTargetKey} />
-                <button class="inline-btn" type="submit">{$t('issueDrawer.linkButton')}</button>
-              </form>
-            </div>
-
             {#if $featureFlags.timeTracking}
               <div class="subsection">
                 <div class="section-label">{$t('issueDrawer.timeTrackingLabel')}</div>
@@ -881,7 +835,6 @@
   .crumb b { color: var(--text-2); font-weight: 600; }
   .icon-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 7px; color: var(--text-2); }
   .icon-btn:hover { background: var(--surface-sunken); color: var(--text); }
-  .icon-btn.small { width: 22px; height: 22px; flex: 0 0 auto; }
   .drawer-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 20px 24px 32px; }
   .key-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
   .type-icon { width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: var(--success-soft); color: var(--success); }
@@ -1058,15 +1011,12 @@
   .time-label { font-size: 11px; color: var(--text-3); white-space: nowrap; }
   .new-comment { margin-top: 4px; }
   .inline-form { display: flex; gap: 6px; margin-top: 6px; }
-  .inline-input, .inline-select {
+  .inline-input {
     font: inherit; font-size: 12px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border);
     border-radius: 6px; padding: 5px 7px; flex: 1; min-width: 0;
   }
   .inline-input.small { flex: 0 0 60px; }
   .inline-btn { font-size: 12px; font-weight: 600; color: var(--accent-strong); background: var(--accent-soft); border-radius: 6px; padding: 5px 10px; flex: 0 0 auto; }
-  .link-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 12px; }
-  .link-type { color: var(--text-3); text-transform: capitalize; flex: 0 0 auto; }
-  .link-title { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 
   @media (max-width: 767px) {
     .drawer-body { padding: 14px 14px 28px; }
@@ -1074,7 +1024,6 @@
     .assignee-field { grid-column: auto; }
     .drawer-head { padding: 12px 14px 10px; }
     .icon-btn { width: 44px; height: 44px; }
-    .icon-btn.small { width: 32px; height: 32px; }
     .title-input { font-size: 17px; }
     /* Selects/inputs go from a cramped 30px desktop row to a real ~40px tap target; app.css
        separately forces their font-size to 16px here to stop iOS auto-zoom-on-focus. */
@@ -1098,7 +1047,7 @@
     .activity-child { padding: 6px 4px; }
     .desc-view { padding: 11px; }
     .inline-form { flex-wrap: wrap; }
-    .inline-input, .inline-select, .inline-btn { padding: 8px 10px; }
+    .inline-input, .inline-btn { padding: 8px 10px; }
     .advanced-toggle { padding: 8px 0; }
   }
 </style>

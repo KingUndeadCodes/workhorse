@@ -119,14 +119,6 @@
     "advancedToggle": "Додатково",
     "linkedIssuesLabel": "Пов'язані задачі",
     "removeLinkLabel": "Прибрати зв'язок з {key}",
-    "relationRelatesTo": "пов'язана з",
-    "relationBlocks": "блокує",
-    "relationDuplicates": "дублює",
-    "relationClones": "клонує",
-    "relationCauses": "спричиняє",
-    "relationInverse": "{type} (зворотний зв'язок)",
-    "issueKeyPlaceholder": "Ключ задачі (наприклад, ATL-131)",
-    "linkButton": "Зв'язати",
     "timeTrackingLabel": "Облік часу",
     "loggedSuffix": "{hours} год. витрачено",
     "estimateSuffix": "{hours} год. оцінка",
@@ -767,6 +759,27 @@
       "few": "{count} відкриті задачі",
       "many": "{count} відкритих задач",
       "other": "{count} відкритої задачі"
+    }
+  },
+  "linkedIssues": {
+    "addButton": "Зв’язати задачу",
+    "relationLabel": "Ця задача…",
+    "searchPlaceholder": "Пошук за ключем або назвою",
+    "noResults": "Відповідних задач немає",
+    "openIssue": "Відкрити {key}",
+    "blockedBadge": "Заблокована",
+    "blockedByTitle": "Заблокована: {keys}",
+    "stillBlocked": "Переміщено до «Готово», але все ще заблоковано: {keys}",
+    "relations": {
+      "blockedBy": "Заблокована",
+      "blocks": "Блокує",
+      "causedBy": "Спричинена",
+      "causes": "Спричиняє",
+      "duplicatedBy": "Дублюється",
+      "duplicates": "Дублює",
+      "clonedBy": "Клонується",
+      "clones": "Клонує",
+      "relatesTo": "Пов’язана з"
     }
   }
 }

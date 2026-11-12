@@ -122,14 +122,6 @@
     "advancedToggle": "Avançado",
     "linkedIssuesLabel": "Tarefas vinculadas",
     "removeLinkLabel": "Remover vínculo com {key}",
-    "relationRelatesTo": "relaciona-se a",
-    "relationBlocks": "bloqueia",
-    "relationDuplicates": "duplica",
-    "relationClones": "clona",
-    "relationCauses": "causa",
-    "relationInverse": "{type} (inverso)",
-    "issueKeyPlaceholder": "Chave da tarefa (ex.: ATL-131)",
-    "linkButton": "Vincular",
     "timeTrackingLabel": "Controle de tempo",
     "loggedSuffix": "{hours} h registradas",
     "estimateSuffix": "{hours} h est.",
@@ -749,6 +741,27 @@
       "one": "{count} tarefa aberta",
       "many": "{count} tarefas abertas",
       "other": "{count} tarefas abertas"
+    }
+  },
+  "linkedIssues": {
+    "addButton": "Vincular tarefa",
+    "relationLabel": "Esta tarefa…",
+    "searchPlaceholder": "Buscar por chave ou título",
+    "noResults": "Nenhuma tarefa encontrada",
+    "openIssue": "Abrir {key}",
+    "blockedBadge": "Bloqueada",
+    "blockedByTitle": "Bloqueada por {keys}",
+    "stillBlocked": "Movida para concluído, mas ainda bloqueada por {keys}",
+    "relations": {
+      "blockedBy": "É bloqueada por",
+      "blocks": "Bloqueia",
+      "causedBy": "É causada por",
+      "causes": "Causa",
+      "duplicatedBy": "É duplicada por",
+      "duplicates": "Duplica",
+      "clonedBy": "É clonada por",
+      "clones": "Clona",
+      "relatesTo": "Relaciona-se com"
     }
   }
 }

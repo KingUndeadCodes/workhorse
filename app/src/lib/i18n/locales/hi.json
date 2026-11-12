@@ -117,14 +117,6 @@
     "advancedToggle": "उन्नत",
     "linkedIssuesLabel": "लिंक्ड इश्यूज़",
     "removeLinkLabel": "{key} से लिंक हटाएं",
-    "relationRelatesTo": "से संबंधित है",
-    "relationBlocks": "को रोकता है",
-    "relationDuplicates": "की डुप्लिकेट है",
-    "relationClones": "का क्लोन है",
-    "relationCauses": "का कारण है",
-    "relationInverse": "{type} (उलटा)",
-    "issueKeyPlaceholder": "इश्यू की (जैसे, ATL-131)",
-    "linkButton": "लिंक करें",
     "timeTrackingLabel": "समय ट्रैकिंग",
     "loggedSuffix": "{hours} घंटे लॉग किए गए",
     "estimateSuffix": "{hours} घंटे अनुमानित",
@@ -747,6 +739,27 @@
     "openIssues": {
       "one": "{count} खुला इश्यू",
       "other": "{count} खुले इश्यू"
+    }
+  },
+  "linkedIssues": {
+    "addButton": "इश्यू लिंक करें",
+    "relationLabel": "यह इश्यू…",
+    "searchPlaceholder": "की या शीर्षक से खोजें",
+    "noResults": "कोई मेल खाता इश्यू नहीं",
+    "openIssue": "{key} खोलें",
+    "blockedBadge": "अवरुद्ध",
+    "blockedByTitle": "{keys} द्वारा अवरुद्ध",
+    "stillBlocked": "पूर्ण में ले गए, लेकिन अब भी {keys} द्वारा अवरुद्ध",
+    "relations": {
+      "blockedBy": "इससे अवरुद्ध है",
+      "blocks": "अवरुद्ध करता है",
+      "causedBy": "इससे हुआ है",
+      "causes": "कारण बनता है",
+      "duplicatedBy": "इससे डुप्लिकेट है",
+      "duplicates": "का डुप्लिकेट है",
+      "clonedBy": "इससे क्लोन है",
+      "clones": "का क्लोन है",
+      "relatesTo": "से संबंधित है"
     }
   }
 }

@@ -202,6 +202,7 @@
           <button class="btn" on:click={() => completeSprint(sprint.id)}>{$t('backlog.completeSprintButton')}</button>
         {/if}
       </div>
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex: tabindex is only ever -1 (never in the Tab order): it makes an empty section a target the arrow-key navigation can move focus to, which the compiler can't tell from the conditional. -->
       <div
         class="issue-list"
         id="backlog-nav-section-{si}"
@@ -233,6 +234,7 @@
       <span class="sprint-spacer"></span>
       <span class="sprint-points mono">{$tn('backlog.issuesCount', backlogIssues.length)}</span>
     </div>
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex: tabindex is only ever -1 (never in the Tab order): it makes an empty section a target the arrow-key navigation can move focus to, which the compiler can't tell from the conditional. -->
     <div
       class="issue-list"
       id="backlog-nav-section-{orderedSprints.length}"

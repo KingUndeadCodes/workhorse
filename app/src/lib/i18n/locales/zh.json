@@ -116,14 +116,6 @@
     "advancedToggle": "高级",
     "linkedIssuesLabel": "关联事项",
     "removeLinkLabel": "移除到 {key} 的关联",
-    "relationRelatesTo": "关联到",
-    "relationBlocks": "阻塞",
-    "relationDuplicates": "重复于",
-    "relationClones": "克隆自",
-    "relationCauses": "导致",
-    "relationInverse": "{type}（反向）",
-    "issueKeyPlaceholder": "事项编号（例如 ATL-131）",
-    "linkButton": "关联",
     "timeTrackingLabel": "时间跟踪",
     "loggedSuffix": "已记录 {hours} 小时",
     "estimateSuffix": "预计 {hours} 小时",
@@ -737,6 +729,27 @@
     "disabled": "已停用",
     "openIssues": {
       "other": "{count} 个未完成问题"
+    }
+  },
+  "linkedIssues": {
+    "addButton": "关联问题",
+    "relationLabel": "此问题…",
+    "searchPlaceholder": "按编号或标题搜索",
+    "noResults": "没有匹配的问题",
+    "openIssue": "打开 {key}",
+    "blockedBadge": "被阻塞",
+    "blockedByTitle": "被 {keys} 阻塞",
+    "stillBlocked": "已移至完成，但仍被 {keys} 阻塞",
+    "relations": {
+      "blockedBy": "被阻塞于",
+      "blocks": "阻塞",
+      "causedBy": "起因于",
+      "causes": "导致",
+      "duplicatedBy": "被重复于",
+      "duplicates": "重复",
+      "clonedBy": "被克隆于",
+      "clones": "克隆",
+      "relatesTo": "相关于"
     }
   }
 }
