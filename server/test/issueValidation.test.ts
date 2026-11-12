@@ -61,6 +61,21 @@ describe('PATCH /api/issues/:id validates what it is given', () => {
     expect((await container.issueRepo.get(issue.id))?.priority).toBe('medium'); // not even the valid field in the same body was applied
   });
 
+  it('saves a rich-text description (what the drawer sends), clears it with null, and refuses anything else', async () => {
+    const { call, issue, container } = await boot();
+    const richText = { format: 'richtext-v1', content: null, plainText: 'Steps to reproduce\n\n```js\nconst x = 1;\n```' };
+    const saved = await call(`/issues/${issue.id}`, { method: 'PATCH', body: { description: richText } });
+    expect(saved.status).toBe(200);
+    expect((await container.issueRepo.get(issue.id))?.description).toEqual(richText);
+
+    for (const bad of ['just a string', { plainText: 'no format' }, { format: 'richtext-v1' }, { format: 'richtext-v1', plainText: 42 }, 7]) {
+      expect((await call(`/issues/${issue.id}`, { method: 'PATCH', body: { description: bad } })).status, JSON.stringify(bad)).toBe(400);
+    }
+    expect((await container.issueRepo.get(issue.id))?.description).toEqual(richText); // refusals changed nothing
+
+    expect((await call(`/issues/${issue.id}`, { method: 'PATCH', body: { description: null } })).status).toBe(200);
+  });
+
   it('rejects a sprint that belongs to a different project, and an issue as its own parent', async () => {
     const { call, issue, otherProjectSprint } = await boot();
     expect((await call(`/issues/${issue.id}`, { method: 'PATCH', body: { sprintId: otherProjectSprint.id } })).status).toBe(400);

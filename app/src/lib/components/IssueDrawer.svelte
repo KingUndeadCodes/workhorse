@@ -217,13 +217,17 @@
     }
   }
 
+  /** Why the last save failed, shown under the editor — which stays open with the draft intact, so nothing typed is lost. */
+  let descriptionError = '';
   function handleTitleBlur(e: FocusEvent) {
     if (!issue) return;
     const value = (e.target as HTMLInputElement).value.trim();
+    descriptionError = '';
     if (value && value !== issue.title) updateIssue(issue.id, { title: value });
   }
 
   let savingDescription = false;
+    descriptionError = '';
 
   function startEditingDescription() {
     draftDescription = issue?.description?.plainText ?? '';
@@ -231,8 +235,13 @@
   }
 
   function cancelEditingDescription() {
+      descriptionError = '';
     editingDescription = false;
   }
+      } catch (err) {
+        // Without this a refused save looked like the Save button doing nothing.
+        descriptionError = err instanceof Error ? err.message : String(err);
+        return;
 
   async function submitDescription() {
     if (!issue || savingDescription) return;
@@ -430,6 +439,7 @@
              16px/zoom-safe/tappable behavior without it ever being visible. -->
         <span class="status-pill" class:done={category?.type === 'done'} class:inprogress={category?.type === 'inProgress'}>
           {status?.name}
+          {#if descriptionError}<p class="points-warning" role="alert">{descriptionError}</p>{/if}
           <select class="status-pill-select" value={issue.statusId} on:change={handleStatusChange}>
             {#each statusOptions as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
           </select>

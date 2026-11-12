@@ -49,6 +49,12 @@ async function checkTransition(issue: Issue, toStatusId: string): Promise<string
   return `Set ${names.join(', ')} before moving to "${statusName(toStatusId)}"`;
 }
 
+function isRichText(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return v.format === 'richtext-v1' && typeof v.plainText === 'string';
+}
+
 /**
  * Checks that every field a client sent for an issue has the right type and — for references — points at
  * something that exists. Without this a bad `statusId`, a made-up label, or a number where an array belongs
@@ -61,7 +67,9 @@ async function checkTransition(issue: Issue, toStatusId: string): Promise<string
  */
 async function validateIssueFields(body: Record<string, unknown>, projectId: string, selfId?: string): Promise<string | undefined> {
   if ('title' in body && (typeof body.title !== 'string' || !body.title.trim())) return 'title must be a non-empty string';
-  if ('description' in body && body.description != null && typeof body.description !== 'string') return 'description must be a string';
+  // A description is a RichText object ({ format, content, plainText } — see domain/issue.ts), which is what the drawer sends and
+  // every reader (the agent prompt, the UI) expects; `null` clears it. A bare string would store fine and then break those readers.
+  if ('description' in body && body.description != null && !isRichText(body.description)) return 'description must be a rich-text object ({ format: "richtext-v1", plainText })';
   if ('priority' in body && !PRIORITIES.includes(body.priority as string)) return `priority must be one of ${PRIORITIES.join(', ')}`;
   if ('dueDate' in body && body.dueDate != null) {
     if (typeof body.dueDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(body.dueDate) || Number.isNaN(Date.parse(body.dueDate))) return 'dueDate must be a YYYY-MM-DD date';
